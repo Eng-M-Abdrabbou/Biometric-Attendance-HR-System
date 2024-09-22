@@ -110,21 +110,21 @@ async  deleteEmployee(uid) {
     }
   }
 
-async updateClockingAndRecords(uid, shiftId) {
+async updateClockingAndRecords(uid) {
+    console.log("db is working");
     try {
       const timestamp = new Date().toISOString();
-      const result1 = await db.query(
-        'UPDATE clocking SET cout = ? WHERE cid = (SELECT MAX(cid) FROM clocking WHERE uid = ?)',
-        [timestamp, uid]
-      );
-      const result2 = await db.query(
-        'INSERT INTO records (uid, cid, shiftId, timestamp) VALUES (?, (SELECT MAX(cid) FROM clocking WHERE uid = ?), ?, ?)',
-        [uid, uid, shiftId, timestamp]
-      );
-      return [result1, result2];
+      const response = await new Promise((resolve, reject) => {
+        const query = "UPDATE clocking SET cout = ? WHERE cid = (SELECT MAX(cid) FROM clocking WHERE uid = ?); INSERT INTO records (uid, cid, shiftId, timestamp) VALUES (?,?,(SELECT shiftId FROM test_user WHERE uid = ?),?);";
+        connection.query(query, [timestamp, uid, uid, uid, timestamp], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      console.log(response, "response");
+      return response;
     } catch (error) {
-      console.error('Error updating clocking and records:', error);
-      throw error;
+      console.log(error);
     }
   }
 

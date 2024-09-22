@@ -50,10 +50,10 @@ async function testInput() {
   console.log(jsonString);
   const valueOnly = jsonString.replace(/[^0-9]/g, '');
 
-  // document.getElementById('in').addEventListener('click', () => {
-  //   document.getElementById('in').style.display = 'none';
-  //   document.getElementById('out').style.display = 'block';
-  // });
+  document.getElementById('in').addEventListener('click', () => {
+    document.getElementById('in').style.display = 'none';
+    document.getElementById('out').style.display = 'block';
+  });
 
 
     console.log(inputField.value);
