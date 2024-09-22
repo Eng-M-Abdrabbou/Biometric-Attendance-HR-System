@@ -85,7 +85,10 @@ The **Biometric Attendance System for Federal Transformers Company LLC Branch 1*
 **License and Author Info:**
 
 **Author/s:
-Mahmoud Abdrabou - Software Engineer - Github(Eng-M-Abdrabbou) - Al Ain University student 202010177
+Mahmoud Abdrabbou - Software Engineer - Github(Eng-M-Abdrabbou) - Al Ain University student 202010177
+Talal Qassim - Software Engineer - Github() - Al Ain University student 202010728
+Mohammed Saqib - Software Engineer - Github() - Al Ain University student 202030601
+Dina Al Taha - Software Engineer - Github() - Al Ain University student 
 
 
 **Individual Code Ownership License**
