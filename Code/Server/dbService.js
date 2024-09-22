@@ -110,6 +110,24 @@ async  deleteEmployee(uid) {
     }
   }
 
+async updateClockingAndRecords(uid, shiftId) {
+    try {
+      const timestamp = new Date().toISOString();
+      const result1 = await db.query(
+        'UPDATE clocking SET cout = ? WHERE cid = (SELECT MAX(cid) FROM clocking WHERE uid = ?)',
+        [timestamp, uid]
+      );
+      const result2 = await db.query(
+        'INSERT INTO records (uid, cid, shiftId, timestamp) VALUES (?, (SELECT MAX(cid) FROM clocking WHERE uid = ?), ?, ?)',
+        [uid, uid, shiftId, timestamp]
+      );
+      return [result1, result2];
+    } catch (error) {
+      console.error('Error updating clocking and records:', error);
+      throw error;
+    }
+  }
+
 //get employee
 
 // async getEmployee(uid) {
