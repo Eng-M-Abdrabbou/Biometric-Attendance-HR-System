@@ -109,6 +109,8 @@ Attribution: Any modifications to the code must be clearly attributed to the ori
 
 Infringement: The code may not be used in a way that infringes on the rights of any individual owner or other third party.
 
+Commit History: The commit history on GitHub serves as a record of contributions and ownership. It is essential for tracking changes, resolving disputes, and verifying the authenticity of the code.
+
 Reservation of Rights: The individual owners reserve all rights to the code, including but not limited to the right to modify, improve, or terminate this license at any time. Any unauthorized use, copying, modification, or distribution of the code may result in legal action.
 
 Acceptance: By using or contributing to this project, you agree to these terms and conditions.
