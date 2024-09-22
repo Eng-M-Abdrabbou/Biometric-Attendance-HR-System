@@ -111,7 +111,6 @@ async  deleteEmployee(uid) {
   }
 
 async updateClockingAndRecords(uid) {
-    console.log("db is working");
     try {
       const timestamp = new Date().toISOString();
       const response = await new Promise((resolve, reject) => {
