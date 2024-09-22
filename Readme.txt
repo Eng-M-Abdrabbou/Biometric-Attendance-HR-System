@@ -91,19 +91,27 @@ Mohammed Saqib - Software Engineer - Github() - Al Ain University student 202030
 Dina Al Taha - Software Engineer - Github() - Al Ain University student 
 
 
-**Individual Code Ownership License**
+**Individual Code Ownership License
+Purpose: To establish clear ownership rights for individual contributors to a project, while granting limited, non-transferable rights to use, copy, modify, and distribute the code within the project.
 
-This code is protected by copyright laws. Each individual contributor to this project retains ownership of the code they have written. No individual can claim ownership of the entire project or any code written by others.
+Terms and Conditions:
 
-Any use, copying, modification, or distribution of this code or any part thereof without the express written consent of the individual owner is strictly prohibited and may result in legal action.
+Individual Ownership: Each individual contributor to this project retains exclusive ownership of the code they have written. No individual, including non-authors and contributors, can claim ownership of the entire project or any code written by others.
 
-The individual owners of this code grant a limited, non-exclusive, non-transferable license to use, copy, modify, and distribute this code as part of this project. This license is subject to the following conditions:
+Limited License: The individual owners grant a limited, non-exclusive, non-transferable license to use, copy, modify, and distribute this code solely as part of this project. This license does not extend to any other use or purpose.
 
-- The individual owners retain ownership of the code they have written.
-- Any modifications to the code must be clearly attributed to the original author.
-- The code may not be used in a way that infringes on the rights of any individual owner.
+Restrictions:
 
-By using or contributing to this project, you agree to these terms and conditions.
+Non-Author Use: Non-authors are strictly prohibited from using, copying, modifying, or distributing this code outside the scope of this project.
+Contributor Use: Contributors may use, copy, modify, and distribute the code within the project, but they must comply with the terms of this license and may not claim ownership of the code they did not write.
+Commercial Use: Commercial use of the code, in whole or in part, is prohibited without the express written consent of all individual owners.
+Attribution: Any modifications to the code must be clearly attributed to the original author.
+
+Infringement: The code may not be used in a way that infringes on the rights of any individual owner or other third party.
+
+Reservation of Rights: The individual owners reserve all rights to the code, including but not limited to the right to modify, improve, or terminate this license at any time. Any unauthorized use, copying, modification, or distribution of the code may result in legal action.
+
+Acceptance: By using or contributing to this project, you agree to these terms and conditions.
 
 ---
 
