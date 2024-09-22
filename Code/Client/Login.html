@@ -1,0 +1,56 @@
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+   
+</head>
+   <body>
+    
+    <form action="/login" id="adminLoginForm" method="POST" style="display: flex; justify-content: center; align-items: center;">
+        <div class="form-group" > 
+            <label for="email"> Email address</label>
+            <input type="email" class="form-control" id="adminEmail" name="email" aria-describedby="emailHelp" placeholder="Enter email">
+        </div>
+        <br>
+        <div class="form-group">
+            <label for="password"> Password</label>
+            <input type="password" class="form-control" id="adminPassword" name="password" placeholder="Password">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+   </body>
+
+   <SCRIPT>
+
+document.getElementById('adminLoginForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+        const inputEmail = document.getElementById('adminEmail').value;
+        const inputPassword = document.getElementById('adminPassword').value;
+console.log("1");
+        try {
+                // Fetch the actual credentials from the backend
+                const response = await fetch('/api/admin-credentials');
+                const data = await response.json();
+                console.log("2");
+                const { email, password } = data;
+
+                // Compare the input values with the actual values
+                if (inputEmail === email && inputPassword === password) {
+                    console.log('success'); 
+                    window.location.href = "Dashboard.html";
+                } else {
+                    console.log('Invalid credentials');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+   </SCRIPT>
+   </html>
+   
+   
+

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form action="" method="post" style="margin: auto;">
+<h3>Type your ID</h3>
+<br>
+<input type="text" name="id" id="input">
+   <br>
+    <button style="Display: none;" type="submit" id="in"> Clock In </button>
+    </form>
+
+
+
+</body>
+<script>
+
+async function getEmployeeById(id) {
+if(id.length===3){
+    const response = await fetch(`/api/employees/${id}`);
+  console.log("1");
+  const employee = await response.json();
+  console.log("2");
+  const jsonString = JSON.stringify(employee);
+  console.log(jsonString);
+  const valueOnly = jsonString.replace(/[^0-9]/g, '');
+  console.log(valueOnly);
+  //console.log(employee);
+  return employee;}
+  
+}
+
+const inputField = document.getElementById('input');
+
+inputField.addEventListener('input', testInput);
+
+async function testInput() {
+  const input = inputField.value;
+  try {
+  console.log("3");
+    const employee = await getEmployeeById(input);
+    console.log("4");
+    console.log(employee.value);
+   
+    const jsonString = JSON.stringify(employee);
+  console.log(jsonString);
+  const valueOnly = jsonString.replace(/[^0-9]/g, '');
+
+
+    console.log(inputField.value);
+    if (valueOnly === inputField.value) {
+      console.log('Success!');
+      document.getElementById('in').style.display = 'block';
+    } else {
+      console.log('Employee not found');
+      document.getElementById('in').style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error testing input:', error);
+  }
+}
+
+</script>
+</html>
+
