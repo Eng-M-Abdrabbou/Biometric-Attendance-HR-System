@@ -11,9 +11,9 @@
 <br>
 <input type="text" name="id" id="input">
    <br>
-    <button style="Display: none;" type="submit" id="in"> Clock In </button>
+    
     </form>
-
+    <button style="Display: none;" type="submit" id="in"> Clock In </button>
     <button style="Display: none;" type="submit" id="out"> Clock out </button>
 
 </body>
@@ -50,10 +50,42 @@ async function testInput() {
   console.log(jsonString);
   const valueOnly = jsonString.replace(/[^0-9]/g, '');
 
-  document.getElementById('in').addEventListener('click', () => {
-    document.getElementById('in').style.display = 'none';
-    document.getElementById('out').style.display = 'block';
-  });
+  document.getElementById('in').addEventListener('click', async () => {
+    try {
+        const response = await fetch(`/api/input/${valueOnly}`, {
+            method: 'POST'
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(data);
+
+        document.getElementById('in').style.display = 'none';
+        document.getElementById('out').style.display = 'block';
+    } catch (error) {
+        console.error('Error during fetch:', error);
+    }
+});
+
+document.getElementById('out').addEventListener('click', async () => {
+  try {
+      const response = await fetch(`/api/update/${valueOnly}`, {
+          method: 'PATCH'
+      });
+      if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log(data);
+
+      document.getElementById('in').style.display = 'none';
+      document.getElementById('out').style.display = 'block';
+  } catch (error) {
+      console.error('Error during fetch:', error);
+  }
+});
+
 
 
     console.log(inputField.value);
@@ -68,6 +100,8 @@ async function testInput() {
     console.error('Error testing input:', error);
   }
 }
+
+
 
 </script>
 </html>

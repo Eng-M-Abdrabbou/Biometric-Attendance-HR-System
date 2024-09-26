@@ -38,6 +38,37 @@ app.get('/', (req, res) => {
 });
 
 
+app.post('/api/input/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const result = await db.insertInput(id);
+        if (result === null) {
+            res.status(404).send({ message: 'Employee not found' });
+        } else {
+            res.json({ result });
+        }
+    } catch (error) {
+        console.error('Error handling POST request:', error);
+        res.status(500).send({ message: 'Internal Server Error' });
+    }
+});
+
+app.patch('/api/update/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const result = await db.updateClockOut(id);
+        if (result.affectedRows === 0) {
+            res.status(404).send({ message: 'Employee not found or no record to update' });
+        } else {
+            res.json({ message: 'Clock out time updated successfully', result });
+        }
+    } catch (error) {
+        console.error('Error handling PATCH request:', error);
+        res.status(500).send({ message: 'Internal Server Error' });
+    }
+});
+
+
 
 app.get('/api/employees/:id', async (req, res) => {
     console.log(req.params.id);

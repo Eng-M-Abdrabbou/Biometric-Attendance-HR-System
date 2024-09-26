@@ -110,37 +110,77 @@ async  deleteEmployee(uid) {
     }
   }
 
-async updateClockingAndRecords(uid) {
-    try {
-      const timestamp = new Date().toISOString();
-      const response = await new Promise((resolve, reject) => {
-        const query = "UPDATE clocking SET cout = ? WHERE cid = (SELECT MAX(cid) FROM clocking WHERE uid = ?); INSERT INTO records (uid, cid, shiftId, timestamp) VALUES (?,?,(SELECT shiftId FROM test_user WHERE uid = ?),?);";
-        connection.query(query, [timestamp, uid, uid, uid, timestamp], (err, results) => {
-          if (err) reject(new Error(err.message));
-          resolve(results);
-        });
-      });
-      console.log(response, "response");
-      return response;
-    } catch (error) {
-      console.log(error);
-    }
-  }
 
-//get employee
-
-// async getEmployee(uid) {
+// async updateClockingAndRecords(uid) {
 //     try {
-//         const result = await db.query(
-//             'SELECT * FROM test_user WHERE uId = ?',
-//             [uid]
-//         );
-//         return result[0];
+//       const timestamp = new Date().toISOString();
+//       const response = await new Promise((resolve, reject) => {
+//         const query = "UPDATE clocking SET cout = ? WHERE cid = (SELECT MAX(cid) FROM clocking WHERE uid = ?); INSERT INTO records (uid, cid, shiftId, timestamp) VALUES (?,?,(SELECT shiftId FROM test_user WHERE uid = ?),?);";
+//         connection.query(query, [timestamp, uid, uid, uid, timestamp], (err, results) => {
+//           if (err) reject(new Error(err.message));
+//           resolve(results);
+//         });
+//       });
+//       console.log(response, "response");
+//       return response;
 //     } catch (error) {
-//         console.error('Error getting employee:', error);
-//         throw error;
+//       console.log(error);
 //     }
-// }
+//   }
+
+
+async insertInput(uid) {
+  console.log("db is working");
+  try {
+    const response = await new Promise((resolve, reject) => {
+      const query = "INSERT INTO input_data (empid, clock_in) VALUES (?, NOW());";
+      connection.query(query, [uid], (err, results) => {
+        if (err) reject(new Error(err.message));
+        resolve(results);
+      });
+    });
+    console.log(response, "response");
+    return response;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async updateClockOut(empid) {
+  try {
+    const response = await new Promise((resolve, reject) => {
+      const query = `
+        UPDATE input_data 
+        SET clock_out = NOW() 
+        WHERE empid = ? AND date = CURDATE();
+      `;
+      connection.query(query, [empid], (err, results) => {
+        if (err) reject(new Error(err.message));
+        resolve(results);
+      });
+    });
+    console.log(response, "response");
+    return response;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+
+
+async addClockingRecord(){
+try{
+
+
+
+}catch(error){
+
+
+
+
+}
+}
+
 
 
 }
