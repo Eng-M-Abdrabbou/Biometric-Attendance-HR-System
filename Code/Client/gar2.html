@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAR Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>General Attendance Report</h1>
+        <button id="fetchReport">Fetch GAR Report</button>
+        <div id="reportContainer"></div>
+    </div>
+
+    <script>
+        document.getElementById('fetchReport').addEventListener('click', fetchGARReport);
+
+        async function fetchGARReport() {
+            try {
+                const response = await fetch('/api/attendance-report');
+                console.log("response", response);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayReport(data);
+            } catch (error) {
+                console.error('Error fetching report:', error);
+                document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
+            }
+        }
+    
+        function displayReport(data) {
+            const container = document.getElementById('reportContainer');
+            if (data.length === 0) {
+                container.innerHTML = '<p>No data available.</p>';
+                return;
+            }
+    
+            let html = '<table><thead><tr><th>Emp. ID</th><th>Date</th><th>Department</th><th>Designation</th><th>First In</th><th>Last Out</th><th>Status</th><th>AWH</th><th>OT</th></tr></thead><tbody>';
+    
+            data.forEach(record => {
+                html += `
+                    <tr>
+                        <td>${record.emp_id}</td>
+                        <td>${record.date}</td>
+                        <td>${record.department}</td>
+                        <td>${record.designation}</td>
+                        <td>${record.first_in}</td>
+                        <td>${record.last_out}</td>
+                        <td>${record.status}</td>
+                        <td>${record.awh}</td>
+                        <td>${record.ot}</td>
+                    </tr>
+                `;
+            });
+    
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

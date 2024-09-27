@@ -5,6 +5,7 @@ const mysql = require('mysql');
 const cors = require('cors');
 const app = express();
 const path = require("path");
+
 dotenv.config();
 
 
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const dbService = require('./dbService.js'); 
  const { Console } = require('console');
+const moment = require('moment/moment.js');
 const db = dbService.getDbServiceInstance();
 
 
@@ -85,8 +87,56 @@ app.get('/api/employees/:id', async (req, res) => {
       }
 })
 
+app.get('/api/attendance-report', async (req, res) => {
+    try {
+        console.log("api is working");
+        const report = await db.generateAttendanceReport();
+        res.json(report);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/departments', async (req, res) => {
+    try {
+        const departments = await db.getDepartments();
+        res.json(departments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// app.get('/api/attendance-report', async (req, res) => {
+//     try {
+//         const { startDate, endDate, department } = req.query;
+//         const report = await db.generateAttendanceReport(startDate, endDate, department);
+//         res.json(report);
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// });
+
+
+
+app.get('/api/data', async (req, res) => {
+    try {
+      const query = 'SELECT * FROM your_table_name';
+      const [rows] = await db.execute(query);
+      res.json(rows);
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  });
+  
+
+
 app.get('/Clocking', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Clocking.html'));
+});
+
+app.get('/gar', (req, res) => {
+    res.sendFile(path.join(__dirname,'..','Client','GAR2.html'));
 });
 
 app.get('/Dashboard', (req, res) => {

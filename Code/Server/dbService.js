@@ -1,23 +1,62 @@
 const mysql = require('mysql');
 const dotenv = require('dotenv');
+const moment = require('moment'); 
+
 let instance = null;
 dotenv.config();
 
-const connection = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+// const connection = mysql.createConnection({
+//     host: process.env.DB_HOST,
+//     user: process.env.DB_USER,
+//     password: process.env.DB_PASSWORD,
+//     database: process.env.DB_NAME,
+//     port: process.env.DB_PORT
+// });
+
+// connection.connect((err) => {
+//     if (err) {
+//         console.log(err.message);
+//     }
+//      console.log('db ' + connection.state);
+// });
+
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+  
 });
 
-connection.connect((err) => {
-    if (err) {
-        console.log(err.message);
-    }
-     console.log('db ' + connection.state);
+pool.getConnection((err, connection) => {
+  console.log('Callback:', typeof connection);
+  if (err) {
+      console.error('Error getting connection:', err);
+      return;
+  }
+  connection.release();
 });
 
+
+pool.getConnection((err, connection) => {
+  if (err) {
+      console.error(err);
+      return;
+  }
+  // Use the connection
+  connection.release();
+});
+
+// pool.connect((err) => {
+//   if (err) {
+//       console.log(err.message);
+//   }
+//    console.log('db pool ' + pool.state);
+// });
 
 class DbService {
 
@@ -32,7 +71,7 @@ class DbService {
         try {
           const response = await new Promise((resolve, reject) => {
             const query = "SELECT uId FROM test_user WHERE uId = ?;";
-            connection.query(query, [id], (err, results) => {
+            pool.query(query, [id], (err, results) => {
               if (err) reject(new Error(err.message));
               if (results.length === 0) {
                 resolve(null); // or throw an error
@@ -50,65 +89,6 @@ class DbService {
       }
 
 
-async  addClockingRecord() {
-    try {
-      const timestamp = new Date().toISOString();
-      const result = await db.query(
-        'INSERT INTO clocking (cin) VALUES (?)',
-        [timestamp]
-      );
-      return result;
-    } catch (error) {
-      console.error('Error adding clocking record:', error);
-      throw error;
-    }
-  }
-
-// insert employee
-
-async  addEmployee(uid) {
-    try {
-      const result = await db.query(
-        'INSERT INTO test_user (uid) VALUES (?)',
-        [uid]
-      );
-      return result;
-    } catch (error) {
-      console.error('Error adding employee:', error);
-      throw error;
-    }
-  }
-
-
-//update employee
-
-async  updateEmployee(uid, newUid) {
-    try {
-      const result = await db.query(
-        'UPDATE test_user SET uid = ? WHERE uid = ?',
-        [newUid, uid]
-      );
-      return result;
-    } catch (error) {
-      console.error('Error updating employee:', error);
-      throw error;
-    }
-  }
-
-//delete employee
-
-async  deleteEmployee(uid) {
-    try {
-      const result = await db.query(
-        'DELETE FROM test_user WHERE uid = ?',
-        [uid]
-      );
-      return result;
-    } catch (error) {
-      console.error('Error deleting employee:', error);
-      throw error;
-    }
-  }
 
 
 // async updateClockingAndRecords(uid) {
@@ -134,7 +114,7 @@ async insertInput(uid) {
   try {
     const response = await new Promise((resolve, reject) => {
       const query = "INSERT INTO input_data (empid, clock_in) VALUES (?, NOW());";
-      connection.query(query, [uid], (err, results) => {
+      pool.query(query, [uid], (err, results) => {
         if (err) reject(new Error(err.message));
         resolve(results);
       });
@@ -154,7 +134,7 @@ async updateClockOut(empid) {
         SET clock_out = NOW() 
         WHERE empid = ? AND date = CURDATE();
       `;
-      connection.query(query, [empid], (err, results) => {
+      pool.query(query, [empid], (err, results) => {
         if (err) reject(new Error(err.message));
         resolve(results);
       });
@@ -166,24 +146,295 @@ async updateClockOut(empid) {
   }
 }
 
+async generateAttendanceReport() {
+  console.log("db is trying");
+  let conn;
+  try {
+      conn = await new Promise((resolve, reject) => {
+          pool.getConnection((err, connection) => {
+              if (err) {
+                  reject(new Error('Error getting connection from pool: ' + err.message));
+              } else {
+                  resolve(connection);
+              }
+          });
+      });
+
+      console.log("pool is working");
+
+      const [shifts] = await new Promise((resolve, reject) => {
+          conn.query('SELECT * FROM shift', (err, results) => {
+              if (err) {
+                  reject(new Error('Error fetching shifts: ' + err.message));
+              } else {
+                  resolve([results]);
+              }
+          });
+      });
+      console.log("got shifts", shifts);
+
+      const [employees] = await new Promise((resolve, reject) => {
+          conn.query('SELECT * FROM employee_master', (err, results) => {
+              if (err) {
+                  reject(new Error('Error fetching employees: ' + err.message));
+              } else {
+                  resolve([results]);
+              }
+          });
+      });
+      console.log("got employees", employees);
+
+      const [inputData] = await new Promise((resolve, reject) => {
+          conn.query('SELECT * FROM input_data', (err, results) => {
+              if (err) {
+                  reject(new Error('Error fetching input data: ' + err.message));
+              } else {
+                  resolve([results]);
+              }
+          });
+      });
+      console.log("got input data", inputData);
+
+      const report = this.processAttendanceData(shifts, employees, inputData);
+      console.log("processed data", report);
+
+      await this.insertDataIntoGAR(conn, report);
+      return report;
+  } catch (error) {
+      console.log(error);
+  } finally {
+      if (conn) conn.release();
+  }
+}
+
+// processAttendanceData(shifts, employees, inputData) {
+//   const report = [];
+//   console.log("trying to process");
+//   // Group input data by employee and date
+//   const groupedData = this.groupByEmployeeAndDate(inputData);
+
+//   for (const [empId, dates] of Object.entries(groupedData)) {
+//       const employee = employees.find(emp => emp.EmpID === parseInt(empId));
+//       if (!employee) {
+//           console.error(`Employee not found for empId ${empId}`);
+//           continue; // Skip to the next iteration if employee is not found
+//       }
+//       const shift = shifts.find(s => s.Shift_id === employee.ShiftId);
+//       if (!shift) {
+//           console.error(`Shift not found for employee ${employee.EmpID} with shift_id ${employee.ShiftId}`);
+//           continue; // Skip to the next iteration if shift is not found
+//       }
+
+//       for (const [date, records] of Object.entries(dates)) {
+//           const attendanceRecord = this.processEmployeeAttendance(employee, shift, records, date);
+//           if (attendanceRecord) {
+//               report.push(attendanceRecord);
+//           }
+//       }
+//   }
+
+//   return report;
+// }
 
 
-async addClockingRecord(){
-try{
+// async processEmployeeAttendance(employee, shift, records, date) {
+//   console.log("trying to process employee attendance", employee, shift, records, date);
+
+//   if (!employee) {
+//       console.error(`Employee is undefined for date ${date}`);
+//       return null; // or handle the error as needed
+//   }
+
+//   if (!shift) {
+//       console.error(`Shift is undefined for employee ${employee.EmpID} on date ${date}`);
+//       return null; // or handle the error as needed
+//   }
+
+//   const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
+//   const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
+//   const lgtMinutes = shift.lgt_in_minutes;
+
+//   const clockInTime = moment.min(...records.map(r => moment(r.clock_in, 'HH:mm:ss')));
+//   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
+
+//   const status = await this.determineStatus(clockInTime, shiftStart, lgtMinutes);
+//   const awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
+//   const ot = await this.calculateOT(clockOutTime, shiftEnd);
+
+//   return {
+//       emp_id: employee.EmpID,
+//       date,
+//       shift_id: shift.Shift_id,
+//       first_in: clockInTime.format('HH:mm:ss'),
+//       last_out: clockOutTime.format('HH:mm:ss'),
+//       status,
+//       awh,
+//       ot,
+//       department: employee.depId, // Assuming depId corresponds to department
+//       designation: employee.jobTitle
+//   };
+// }
+
+
+async processAttendanceData(shifts, employees, inputData) {
+  const report = [];
+  console.log("trying to process");
+  // Group input data by employee and date
+  const groupedData = this.groupByEmployeeAndDate(inputData);
+
+  for (const [empId, dates] of Object.entries(groupedData)) {
+      const employee = employees.find(emp => emp.EmpID === parseInt(empId));
+      if (!employee) {
+          console.error(`Employee not found for empId ${empId}`);
+          continue; // Skip to the next iteration if employee is not found
+      }
+      const shift = shifts.find(s => s.Shift_id === employee.ShiftId);
+      if (!shift) {
+          console.error(`Shift not found for employee ${employee.EmpID} with shift_id ${employee.ShiftId}`);
+          continue; // Skip to the next iteration if shift is not found
+      }
+
+      for (const [date, records] of Object.entries(dates)) {
+          const attendanceRecord = await this.processEmployeeAttendance(employee, shift, records, date);
+          if (attendanceRecord) {
+              report.push(attendanceRecord);
+          }
+      }
+  }
+
+  return report;
+}
+
+async processEmployeeAttendance(employee, shift, records, date) {
+  console.log("trying to process employee attendance", employee, shift, records, date);
+
+  if (!employee) {
+      console.error(`Employee is undefined for date ${date}`);
+      return null; // or handle the error as needed
+  }
+
+  if (!shift) {
+      console.error(`Shift is undefined for employee ${employee.EmpID} on date ${date}`);
+      return null; // or handle the error as needed
+  }
+
+  const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
+  const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
+  const lgtMinutes = shift.lgt_in_minutes;
+
+  const clockInTime = moment.min(...records.map(r => moment(r.clock_in, 'HH:mm:ss')));
+  const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
+
+  const status = await this.determineStatus(clockInTime, shiftStart, lgtMinutes);
+  const awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
+  const ot = await this.calculateOT(clockOutTime, shiftEnd);
+
+  return {
+      emp_id: employee.EmpID,
+      date,
+      shift_id: shift.Shift_id,
+      first_in: clockInTime.format('HH:mm:ss'),
+      last_out: clockOutTime.format('HH:mm:ss'),
+      status,
+      awh,
+      ot,
+      department: employee.depId, // Assuming depId corresponds to department
+      designation: employee.jobTitle
+  };
+}
+
+groupByEmployeeAndDate(inputData) {
+  console.log("trying to group", inputData);
+  return inputData.reduce((acc, record) => {
+      const { empid, date } = record;
+      if (!acc[empid]) acc[empid] = {};
+      if (!acc[empid][date]) acc[empid][date] = [];
+      acc[empid][date].push(record);
+      return acc;
+  }, {});
+}
 
 
 
-}catch(error){
+async determineStatus(clockInTime, shiftStart, lgtMinutes) {
+  console.log("trying to determine status", clockInTime, shiftStart, lgtMinutes);
+  const latestAllowedTime = moment(shiftStart).add(lgtMinutes, 'minutes');
+  const status = clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A';
+  console.log("status", status);
+  return status;
+}
+
+async calculateAWH(clockInTime, clockOutTime, breakHours) {
+  console.log("trying to calculate awh", clockInTime, clockOutTime, breakHours);
+  const totalHours = moment.duration(clockOutTime.diff(clockInTime)).asHours();
+  const awh = Math.max(totalHours - breakHours, 0).toFixed(2);
+  console.log("AWH", awh);
+  return awh;
+}
+
+async calculateOT(clockOutTime, shiftEnd) {
+  console.log("trying to calculate ot", clockOutTime, shiftEnd);
+  const otHours = moment.duration(clockOutTime.diff(shiftEnd)).asHours();
+  const ot = Math.max(otHours, 0).toFixed(2);
+  console.log("ot", ot);
+  return ot;
+}
+// async  insertGARData(conn, reportData) {
+//   console.log(" trying to insert in gar", reportData );
+
+//   const query = `
+//       INSERT INTO gar 
+//       (emp_id, date, shift_id, first_in, last_out, status, awh, ot) 
+//       VALUES ?
+//   `;
+
+//   const values = reportData.map(record => [
+//       record.emp_id,
+//       record.date,
+//       record.shift_id,
+//       record.first_in,
+//       record.last_out,
+//       record.status,
+//       record.awh,
+//       record.ot
+//   ]);
+
+//   try {
+//       await conn.query(query, [values]);
+//       console.log(`Inserted ${reportData.length} records into GAR table.`);
+//   } catch (error) {
+//       console.error('Error inserting data into GAR table:', error);
+//       throw error;
+//   }
+// }
 
 
+async  insertDataIntoGAR(report) {
+  try {
+      const conn = await pool.getConnection();
+      const insertPromises = report.map(record => {
+          return new Promise((resolve, reject) => {
+              conn.query('INSERT INTO gar SET ?', record, (error, results) => {
+                  if (error) {
+                      return reject(error);
+                  }
+                  resolve(results);
+              });
+          });
+      });
+      await Promise.all(insertPromises);
+      conn.release();
+      console.log(`Inserted ${report.length} records into GAR table.`);
+  } catch (error) {
+      console.error('Error inserting data into GAR table:', error);
+  }
+}
 
 
 }
-}
 
 
 
-}
 
 
 module.exports = DbService;
