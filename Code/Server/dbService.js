@@ -76,24 +76,6 @@ class DbService {
 
 
 
-// async updateClockingAndRecords(uid) {
-//     try {
-//       const timestamp = new Date().toISOString();
-//       const response = await new Promise((resolve, reject) => {
-//         const query = "UPDATE clocking SET cout = ? WHERE cid = (SELECT MAX(cid) FROM clocking WHERE uid = ?); INSERT INTO records (uid, cid, shiftId, timestamp) VALUES (?,?,(SELECT shiftId FROM test_user WHERE uid = ?),?);";
-//         connection.query(query, [timestamp, uid, uid, uid, timestamp], (err, results) => {
-//           if (err) reject(new Error(err.message));
-//           resolve(results);
-//         });
-//       });
-//       console.log(response, "response");
-//       return response;
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   }
-
-
 async insertInput(uid) {
   console.log("db is working");
   try {
@@ -131,96 +113,35 @@ async updateClockOut(empid) {
   }
 }
 
-// async generateAttendanceReport() {
-//   console.log("db is trying");
-//   let conn;
-//   try {
-//       conn = await new Promise((resolve, reject) => {
-//           pool.getConnection((err, connection) => {
-//               if (err) {
-//                   reject(new Error('Error getting connection from pool: ' + err.message));
-//               } else {
-//                   resolve(connection);
-//               }
-//           });
-//       });
-
-//       console.log("pool is working");
-
-//       const [shifts] = await new Promise((resolve, reject) => {
-//           conn.query('SELECT * FROM shift', (err, results) => {
-//               if (err) {
-//                   reject(new Error('Error fetching shifts: ' + err.message));
-//               } else {
-//                   resolve([results]);
-//               }
-//           });
-//       });
-//       console.log("got shifts", shifts);
-
-//       const [employees] = await new Promise((resolve, reject) => {
-//           conn.query('SELECT * FROM employee_master', (err, results) => {
-//               if (err) {
-//                   reject(new Error('Error fetching employees: ' + err.message));
-//               } else {
-//                   resolve([results]);
-//               }
-//           });
-//       });
-//       console.log("got employees", employees);
-
-//       const [inputData] = await new Promise((resolve, reject) => {
-//           conn.query('SELECT * FROM input_data', (err, results) => {
-//               if (err) {
-//                   reject(new Error('Error fetching input data: ' + err.message));
-//               } else {
-//                   resolve([results]);
-//               }
-//           });
-//       });
-//       console.log("got input data", inputData);
-
-//       const report = this.processAttendanceData(shifts, employees, inputData);
-//       console.log("processed data", report);
-
-//       await this.insertDataIntoGAR(conn, report);
-//       return report;
-//   } catch (error) {
-//       console.log(error);
-//   } finally {
-//       if (conn) conn.release();
-//   }
-// }
-
 
 async generateAttendanceReport() {
   console.log("db is trying");
   let conn;
   try {
-      conn = await this.getConnection();
-      console.log("pool is working");
+    conn = await this.getConnection();
+    console.log("pool is working");
 
-      const shifts = await this.query(conn, 'SELECT * FROM shift');
-      console.log("got shifts", shifts);
+    const shifts = await this.query(conn, 'SELECT * FROM shift');
+    console.log("got shifts", shifts);
 
-      const employees = await this.query(conn, 'SELECT * FROM employee_master');
-      console.log("got employees", employees);
+    const employees = await this.query(conn, 'SELECT * FROM employee_master');
+    console.log("got employees", employees);
 
-      const inputData = await this.query(conn, 'SELECT * FROM input_data');
-      console.log("got input data", inputData);
+    const inputData = await this.query(conn, 'SELECT * FROM input_data');
+    console.log("got input data", inputData);
 
-      const report = await this.processAttendanceData(shifts, employees, inputData);
-      console.log("processed data", report);
+    const report = await this.processAttendanceData(shifts, employees, inputData);
+    console.log("processed data", report);
 
-      await this.insertDataIntoGAR(conn, report);
-      return report;
+    await this.insertOrUpdateGAR(conn, report);
+    return report;
   } catch (error) {
-      console.log(error);
+    console.error("Error in generateAttendanceReport:", error);
+    throw error;
   } finally {
-      if (conn) conn.release();
+    if (conn) conn.release();
   }
 }
-
 async getConnection() {
   return new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -279,13 +200,13 @@ async processEmployeeAttendance(employee, shift, records, date) {
   console.log("trying to process employee attendance", employee, shift, records, date);
 
   if (!employee) {
-      console.error(`Employee is undefined for date ${date}`);
-      return null; // or handle the error as needed
+    console.error(`Employee is undefined for date ${date}`);
+    return null;
   }
 
   if (!shift) {
-      console.error(`Shift is undefined for employee ${employee.EmpID} on date ${date}`);
-      return null; // or handle the error as needed
+    console.error(`Shift is undefined for employee ${employee.EmpID} on date ${date}`);
+    return null;
   }
 
   const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
@@ -300,19 +221,18 @@ async processEmployeeAttendance(employee, shift, records, date) {
   const ot = await this.calculateOT(clockOutTime, shiftEnd);
 
   return {
-      emp_id: employee.EmpID,
-      date,
-      shift_id: shift.Shift_id,
-      first_in: clockInTime.format('HH:mm:ss'),
-      last_out: clockOutTime.format('HH:mm:ss'),
-      status,
-      awh,
-      ot,
-      department: employee.depId, // Assuming depId corresponds to department
-      designation: employee.jobTitle
+    emp_id: employee.EmpID,
+    emp_fname: employee.EmpFName, // Assuming these fields exist in your employee object
+    emp_lname: employee.EmpLName,  // Assuming these fields exist in your employee object
+    shift_date: moment(date).format('YYYY-MM-DD'),
+    first_in: clockInTime.format('HH:mm:ss'),
+    last_out: clockOutTime.format('HH:mm:ss'),
+    status,
+    leave_id: 11, // You may need to determine this value based on your business logic
+    awh,
+    ot
   };
 }
-
 groupByEmployeeAndDate(inputData) {
   console.log("trying to group", inputData);
   return inputData.reduce((acc, record) => {
@@ -351,42 +271,97 @@ async calculateOT(clockOutTime, shiftEnd) {
 }
 
 
-// async  insertDataIntoGAR(report) {
-//   try {
-//       const conn = await pool.getConnection();
-//       const insertPromises = report.map(record => {
-//           return new Promise((resolve, reject) => {
-//               conn.query('INSERT INTO gar SET ?', record, (error, results) => {
-//                   if (error) {
-//                       return reject(error);
-//                   }
-//                   resolve(results);
-//               });
-//           });
-//       });
-//       await Promise.all(insertPromises);
-//       conn.release();
-//       console.log(`Inserted ${report.length} records into GAR table.`);
-//   } catch (error) {
-//       console.error('Error inserting data into GAR table:', error);
-//   }
-// }
-
 async insertDataIntoGAR(conn, report) {
   if (!Array.isArray(report)) {
-      console.error('Report is not an array:', report);
-      return;
+    console.error('Report is not an array:', report);
+    return;
   }
   try {
-      const insertPromises = report.map(record => {
-          return this.query(conn, 'INSERT INTO general_attendance_report SET ?', record);
-      });
-      await Promise.all(insertPromises);
-      console.log(`Inserted ${report.length} records into GAR table.`);
+    const insertPromises = report.map(record => {
+      // Ensure only valid fields are included
+      const validRecord = {
+        emp_id: record.emp_id,
+        emp_fname: record.emp_fname,
+        emp_lname: record.emp_lname,
+        shift_date: record.shift_date,
+        first_in: record.first_in,
+        last_out: record.last_out,
+        status: record.status,
+        leave_id: record.leave_id,
+        awh: record.awh,
+        ot: record.ot
+      };
+      return this.query(conn, 'INSERT INTO general_attendance_report SET ?', validRecord);
+    });
+    await Promise.all(insertPromises);
+    console.log(`Inserted ${report.length} records into GAR table.`);
   } catch (error) {
-      console.error('Error inserting data into GAR table:', error);
+    console.error('Error inserting data into general_attendance_report table:', error);
+    throw error;
   }
 }
+
+async insertOrUpdateGAR(conn, report) {
+  if (!Array.isArray(report)) {
+    console.error('Report is not an array:', report);
+    return;
+  }
+  try {
+    const insertOrUpdatePromises = report.map(async (record) => {
+      const validRecord = {
+        emp_id: record.emp_id,
+        emp_fname: record.emp_fname,
+        emp_lname: record.emp_lname,
+        shift_date: record.shift_date,
+        first_in: record.first_in,
+        last_out: record.last_out,
+        status: record.status,
+        leave_id: record.leave_id,
+        awh: record.awh,
+        ot: record.ot
+      };
+
+      // Check if a record already exists
+      const existingRecord = await this.query(
+        conn,
+        'SELECT * FROM general_attendance_report WHERE emp_id = ? AND shift_date = ?',
+        [validRecord.emp_id, validRecord.shift_date]
+      );
+
+      if (existingRecord.length > 0) {
+        // Record exists, check if it needs updating
+        const currentRecord = existingRecord[0];
+        const needsUpdate = Object.keys(validRecord).some(key => 
+          key !== 'emp_id' && key !== 'shift_date' && currentRecord[key] !== validRecord[key]
+        );
+
+        if (needsUpdate) {
+          // Update the existing record
+          await this.query(
+            conn,
+            'UPDATE general_attendance_report SET ? WHERE emp_id = ? AND shift_date = ?',
+            [validRecord, validRecord.emp_id, validRecord.shift_date]
+          );
+          console.log(`Updated record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
+        } else {
+          console.log(`Duplicate record found for employee ${validRecord.emp_id} on ${validRecord.shift_date}, no changes needed`);
+        }
+      } else {
+        // Insert new record
+        await this.query(conn, 'INSERT INTO general_attendance_report SET ?', validRecord);
+        console.log(`Inserted new record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
+      }
+    });
+
+    await Promise.all(insertOrUpdatePromises);
+    console.log(`Processed ${report.length} records in GAR table.`);
+  } catch (error) {
+    console.error('Error processing data for general_attendance_report table:', error);
+    throw error;
+  }
+}
+
+
 
 }
 

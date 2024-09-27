@@ -89,16 +89,14 @@
                 container.innerHTML = '<p>No data available.</p>';
                 return;
             }
-    
-            let html = '<table><thead><tr><th>Emp. ID</th><th>Date</th><th>Department</th><th>Designation</th><th>First In</th><th>Last Out</th><th>Status</th><th>AWH</th><th>OT</th></tr></thead><tbody>';
+    console.log(data);
+            let html = '<table><thead><tr><th>Emp. ID</th><th>Shift_Date</th><th>First In</th><th>Last Out</th><th>Status</th><th>AWH</th><th>OT</th></tr></thead><tbody>';
     
             data.forEach(record => {
                 html += `
                     <tr>
                         <td>${record.emp_id}</td>
-                        <td>${record.date}</td>
-                        <td>${record.department}</td>
-                        <td>${record.designation}</td>
+                        <td>${record.shift_date}</td>
                         <td>${record.first_in}</td>
                         <td>${record.last_out}</td>
                         <td>${record.status}</td>
