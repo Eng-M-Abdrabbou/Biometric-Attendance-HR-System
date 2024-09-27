@@ -5,20 +5,6 @@ const moment = require('moment');
 let instance = null;
 dotenv.config();
 
-// const connection = mysql.createConnection({
-//     host: process.env.DB_HOST,
-//     user: process.env.DB_USER,
-//     password: process.env.DB_PASSWORD,
-//     database: process.env.DB_NAME,
-//     port: process.env.DB_PORT
-// });
-
-// connection.connect((err) => {
-//     if (err) {
-//         console.log(err.message);
-//     }
-//      console.log('db ' + connection.state);
-// });
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -28,7 +14,8 @@ const pool = mysql.createPool({
   port: process.env.DB_PORT,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  acquireTimeout: 30000
   
 });
 
@@ -51,12 +38,10 @@ pool.getConnection((err, connection) => {
   connection.release();
 });
 
-// pool.connect((err) => {
-//   if (err) {
-//       console.log(err.message);
-//   }
-//    console.log('db pool ' + pool.state);
-// });
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
 
 class DbService {
 
@@ -146,56 +131,85 @@ async updateClockOut(empid) {
   }
 }
 
+// async generateAttendanceReport() {
+//   console.log("db is trying");
+//   let conn;
+//   try {
+//       conn = await new Promise((resolve, reject) => {
+//           pool.getConnection((err, connection) => {
+//               if (err) {
+//                   reject(new Error('Error getting connection from pool: ' + err.message));
+//               } else {
+//                   resolve(connection);
+//               }
+//           });
+//       });
+
+//       console.log("pool is working");
+
+//       const [shifts] = await new Promise((resolve, reject) => {
+//           conn.query('SELECT * FROM shift', (err, results) => {
+//               if (err) {
+//                   reject(new Error('Error fetching shifts: ' + err.message));
+//               } else {
+//                   resolve([results]);
+//               }
+//           });
+//       });
+//       console.log("got shifts", shifts);
+
+//       const [employees] = await new Promise((resolve, reject) => {
+//           conn.query('SELECT * FROM employee_master', (err, results) => {
+//               if (err) {
+//                   reject(new Error('Error fetching employees: ' + err.message));
+//               } else {
+//                   resolve([results]);
+//               }
+//           });
+//       });
+//       console.log("got employees", employees);
+
+//       const [inputData] = await new Promise((resolve, reject) => {
+//           conn.query('SELECT * FROM input_data', (err, results) => {
+//               if (err) {
+//                   reject(new Error('Error fetching input data: ' + err.message));
+//               } else {
+//                   resolve([results]);
+//               }
+//           });
+//       });
+//       console.log("got input data", inputData);
+
+//       const report = this.processAttendanceData(shifts, employees, inputData);
+//       console.log("processed data", report);
+
+//       await this.insertDataIntoGAR(conn, report);
+//       return report;
+//   } catch (error) {
+//       console.log(error);
+//   } finally {
+//       if (conn) conn.release();
+//   }
+// }
+
+
 async generateAttendanceReport() {
   console.log("db is trying");
   let conn;
   try {
-      conn = await new Promise((resolve, reject) => {
-          pool.getConnection((err, connection) => {
-              if (err) {
-                  reject(new Error('Error getting connection from pool: ' + err.message));
-              } else {
-                  resolve(connection);
-              }
-          });
-      });
-
+      conn = await this.getConnection();
       console.log("pool is working");
 
-      const [shifts] = await new Promise((resolve, reject) => {
-          conn.query('SELECT * FROM shift', (err, results) => {
-              if (err) {
-                  reject(new Error('Error fetching shifts: ' + err.message));
-              } else {
-                  resolve([results]);
-              }
-          });
-      });
+      const shifts = await this.query(conn, 'SELECT * FROM shift');
       console.log("got shifts", shifts);
 
-      const [employees] = await new Promise((resolve, reject) => {
-          conn.query('SELECT * FROM employee_master', (err, results) => {
-              if (err) {
-                  reject(new Error('Error fetching employees: ' + err.message));
-              } else {
-                  resolve([results]);
-              }
-          });
-      });
+      const employees = await this.query(conn, 'SELECT * FROM employee_master');
       console.log("got employees", employees);
 
-      const [inputData] = await new Promise((resolve, reject) => {
-          conn.query('SELECT * FROM input_data', (err, results) => {
-              if (err) {
-                  reject(new Error('Error fetching input data: ' + err.message));
-              } else {
-                  resolve([results]);
-              }
-          });
-      });
+      const inputData = await this.query(conn, 'SELECT * FROM input_data');
       console.log("got input data", inputData);
 
-      const report = this.processAttendanceData(shifts, employees, inputData);
+      const report = await this.processAttendanceData(shifts, employees, inputData);
       console.log("processed data", report);
 
       await this.insertDataIntoGAR(conn, report);
@@ -207,91 +221,47 @@ async generateAttendanceReport() {
   }
 }
 
-// processAttendanceData(shifts, employees, inputData) {
-//   const report = [];
-//   console.log("trying to process");
-//   // Group input data by employee and date
-//   const groupedData = this.groupByEmployeeAndDate(inputData);
+async getConnection() {
+  return new Promise((resolve, reject) => {
+      pool.getConnection((err, connection) => {
+          if (err) {
+              reject(new Error('Error getting connection from pool: ' + err.message));
+          } else {
+              resolve(connection);
+          }
+      });
+  });
+}
 
-//   for (const [empId, dates] of Object.entries(groupedData)) {
-//       const employee = employees.find(emp => emp.EmpID === parseInt(empId));
-//       if (!employee) {
-//           console.error(`Employee not found for empId ${empId}`);
-//           continue; // Skip to the next iteration if employee is not found
-//       }
-//       const shift = shifts.find(s => s.Shift_id === employee.ShiftId);
-//       if (!shift) {
-//           console.error(`Shift not found for employee ${employee.EmpID} with shift_id ${employee.ShiftId}`);
-//           continue; // Skip to the next iteration if shift is not found
-//       }
+async query(conn, sql, values = []) {
+  return new Promise((resolve, reject) => {
+      conn.query(sql, values, (error, results) => {
+          if (error) {
+              reject(error);
+          } else {
+              resolve(results);
+          }
+      });
+  });
+}
 
-//       for (const [date, records] of Object.entries(dates)) {
-//           const attendanceRecord = this.processEmployeeAttendance(employee, shift, records, date);
-//           if (attendanceRecord) {
-//               report.push(attendanceRecord);
-//           }
-//       }
-//   }
-
-//   return report;
-// }
-
-
-// async processEmployeeAttendance(employee, shift, records, date) {
-//   console.log("trying to process employee attendance", employee, shift, records, date);
-
-//   if (!employee) {
-//       console.error(`Employee is undefined for date ${date}`);
-//       return null; // or handle the error as needed
-//   }
-
-//   if (!shift) {
-//       console.error(`Shift is undefined for employee ${employee.EmpID} on date ${date}`);
-//       return null; // or handle the error as needed
-//   }
-
-//   const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
-//   const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
-//   const lgtMinutes = shift.lgt_in_minutes;
-
-//   const clockInTime = moment.min(...records.map(r => moment(r.clock_in, 'HH:mm:ss')));
-//   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
-
-//   const status = await this.determineStatus(clockInTime, shiftStart, lgtMinutes);
-//   const awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
-//   const ot = await this.calculateOT(clockOutTime, shiftEnd);
-
-//   return {
-//       emp_id: employee.EmpID,
-//       date,
-//       shift_id: shift.Shift_id,
-//       first_in: clockInTime.format('HH:mm:ss'),
-//       last_out: clockOutTime.format('HH:mm:ss'),
-//       status,
-//       awh,
-//       ot,
-//       department: employee.depId, // Assuming depId corresponds to department
-//       designation: employee.jobTitle
-//   };
-// }
 
 
 async processAttendanceData(shifts, employees, inputData) {
   const report = [];
   console.log("trying to process");
-  // Group input data by employee and date
   const groupedData = this.groupByEmployeeAndDate(inputData);
 
   for (const [empId, dates] of Object.entries(groupedData)) {
       const employee = employees.find(emp => emp.EmpID === parseInt(empId));
       if (!employee) {
           console.error(`Employee not found for empId ${empId}`);
-          continue; // Skip to the next iteration if employee is not found
+          continue;
       }
       const shift = shifts.find(s => s.Shift_id === employee.ShiftId);
       if (!shift) {
           console.error(`Shift not found for employee ${employee.EmpID} with shift_id ${employee.ShiftId}`);
-          continue; // Skip to the next iteration if shift is not found
+          continue;
       }
 
       for (const [date, records] of Object.entries(dates)) {
@@ -379,59 +349,49 @@ async calculateOT(clockOutTime, shiftEnd) {
   console.log("ot", ot);
   return ot;
 }
-// async  insertGARData(conn, reportData) {
-//   console.log(" trying to insert in gar", reportData );
 
-//   const query = `
-//       INSERT INTO gar 
-//       (emp_id, date, shift_id, first_in, last_out, status, awh, ot) 
-//       VALUES ?
-//   `;
 
-//   const values = reportData.map(record => [
-//       record.emp_id,
-//       record.date,
-//       record.shift_id,
-//       record.first_in,
-//       record.last_out,
-//       record.status,
-//       record.awh,
-//       record.ot
-//   ]);
-
+// async  insertDataIntoGAR(report) {
 //   try {
-//       await conn.query(query, [values]);
-//       console.log(`Inserted ${reportData.length} records into GAR table.`);
+//       const conn = await pool.getConnection();
+//       const insertPromises = report.map(record => {
+//           return new Promise((resolve, reject) => {
+//               conn.query('INSERT INTO gar SET ?', record, (error, results) => {
+//                   if (error) {
+//                       return reject(error);
+//                   }
+//                   resolve(results);
+//               });
+//           });
+//       });
+//       await Promise.all(insertPromises);
+//       conn.release();
+//       console.log(`Inserted ${report.length} records into GAR table.`);
 //   } catch (error) {
 //       console.error('Error inserting data into GAR table:', error);
-//       throw error;
 //   }
 // }
 
-
-async  insertDataIntoGAR(report) {
+async insertDataIntoGAR(conn, report) {
+  if (!Array.isArray(report)) {
+      console.error('Report is not an array:', report);
+      return;
+  }
   try {
-      const conn = await pool.getConnection();
       const insertPromises = report.map(record => {
-          return new Promise((resolve, reject) => {
-              conn.query('INSERT INTO gar SET ?', record, (error, results) => {
-                  if (error) {
-                      return reject(error);
-                  }
-                  resolve(results);
-              });
-          });
+          return this.query(conn, 'INSERT INTO general_attendance_report SET ?', record);
       });
       await Promise.all(insertPromises);
-      conn.release();
       console.log(`Inserted ${report.length} records into GAR table.`);
   } catch (error) {
       console.error('Error inserting data into GAR table:', error);
   }
 }
 
-
 }
+
+
+
 
 
 
