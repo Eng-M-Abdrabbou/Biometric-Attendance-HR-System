@@ -20,17 +20,17 @@
 <script>
 
 async function getEmployeeById(id) {
-if(id.length===3){
+//if(id.length===3){
+  
     const response = await fetch(`/api/employees/${id}`);
-  console.log("1");
   const employee = await response.json();
-  console.log("2");
   const jsonString = JSON.stringify(employee);
   console.log(jsonString);
   const valueOnly = jsonString.replace(/[^0-9]/g, '');
   console.log(valueOnly);
   //console.log(employee);
-  return employee;}
+  return employee;
+//}
   
 }
 
@@ -41,9 +41,7 @@ inputField.addEventListener('input', testInput);
 async function testInput() {
   const input = inputField.value;
   try {
-  console.log("3");
     const employee = await getEmployeeById(input);
-    console.log("4");
     console.log(employee.value);
    
     const jsonString = JSON.stringify(employee);

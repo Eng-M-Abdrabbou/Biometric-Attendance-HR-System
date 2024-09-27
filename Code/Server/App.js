@@ -106,16 +106,6 @@ app.get('/api/departments', async (req, res) => {
     }
 });
 
-// app.get('/api/attendance-report', async (req, res) => {
-//     try {
-//         const { startDate, endDate, department } = req.query;
-//         const report = await db.generateAttendanceReport(startDate, endDate, department);
-//         res.json(report);
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// });
-
 
 
 app.get('/api/data', async (req, res) => {

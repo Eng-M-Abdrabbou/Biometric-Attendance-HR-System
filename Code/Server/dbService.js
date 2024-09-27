@@ -55,14 +55,14 @@ class DbService {
         console.log("db is working");
         try {
           const response = await new Promise((resolve, reject) => {
-            const query = "SELECT uId FROM test_user WHERE uId = ?;";
+            const query = "SELECT EmpID FROM employee_master WHERE EmpID = ?;";
             pool.query(query, [id], (err, results) => {
               if (err) reject(new Error(err.message));
               if (results.length === 0) {
                 resolve(null); // or throw an error
               } else {
-                const [{ uId }] = results;
-                resolve(uId);
+                const [{ EmpID }] = results;
+                resolve(EmpID);
               }
             });
           });
@@ -76,12 +76,12 @@ class DbService {
 
 
 
-async insertInput(uid) {
+async insertInput(EmpID) {
   console.log("db is working");
   try {
     const response = await new Promise((resolve, reject) => {
       const query = "INSERT INTO input_data (empid, clock_in) VALUES (?, NOW());";
-      pool.query(query, [uid], (err, results) => {
+      pool.query(query, [EmpID], (err, results) => {
         if (err) reject(new Error(err.message));
         resolve(results);
       });
@@ -368,7 +368,10 @@ async insertOrUpdateGAR(conn, report) {
 
 
 
-
+// things I plan to do later : if absent make OT and AWH equal zero by default, 
+//make it also display user grade, department, designation==jobtitle(i will change table job title to designation)
+// make it also display shift info 
+//make it order by 1. shift, then by site, then by department, then by date,
 
 
 
