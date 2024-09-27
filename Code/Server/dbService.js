@@ -368,11 +368,6 @@ async insertOrUpdateGAR(conn, report) {
 
 
 
-// things I plan to do later : if absent make OT and AWH equal zero by default, 
-//make it also display user grade, department, designation==jobtitle(i will change table job title to designation)
-// make it also display shift info 
-//make it order by 1. shift, then by site, then by department, then by date,
-
 
 
 module.exports = DbService;
