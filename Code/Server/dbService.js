@@ -115,26 +115,23 @@ async updateClockOut(empid) {
 
 
 async generateAttendanceReport() {
-  console.log("db is trying");
   let conn;
   try {
     conn = await this.getConnection();
     console.log("pool is working");
 
     const shifts = await this.query(conn, 'SELECT * FROM shift');
-    console.log("got shifts", shifts);
-
     const employees = await this.query(conn, 'SELECT * FROM employee_master');
-    console.log("got employees", employees);
-
     const inputData = await this.query(conn, 'SELECT * FROM input_data');
-    console.log("got input data", inputData);
+    const departments = await this.query(conn, 'SELECT * FROM departments');
+    const sections = await this.query(conn, 'SELECT * FROM section');
+    const sites = await this.query(conn, 'SELECT * FROM sites');
+    const designations = await this.query(conn, 'SELECT * FROM jobtitle');
+    const grades = await this.query(conn, 'SELECT * FROM grade');
 
-    const report = await this.processAttendanceData(shifts, employees, inputData);
-    console.log("processed data", report);
-
+    const report = await this.processAttendanceData(shifts, employees, inputData, departments, sections, sites, designations, grades);
     await this.insertOrUpdateGAR(conn, report);
-    return report;
+    return this.organizeReportData(report);
   } catch (error) {
     console.error("Error in generateAttendanceReport:", error);
     throw error;
@@ -142,6 +139,7 @@ async generateAttendanceReport() {
     if (conn) conn.release();
   }
 }
+
 async getConnection() {
   return new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -168,46 +166,35 @@ async query(conn, sql, values = []) {
 
 
 
-async processAttendanceData(shifts, employees, inputData) {
+async processAttendanceData(shifts, employees, inputData, departments, sections, sites, designations, grades) {
   const report = [];
-  console.log("trying to process");
   const groupedData = this.groupByEmployeeAndDate(inputData);
 
   for (const [empId, dates] of Object.entries(groupedData)) {
-      const employee = employees.find(emp => emp.EmpID === parseInt(empId));
-      if (!employee) {
-          console.error(`Employee not found for empId ${empId}`);
-          continue;
-      }
-      const shift = shifts.find(s => s.Shift_id === employee.ShiftId);
-      if (!shift) {
-          console.error(`Shift not found for employee ${employee.EmpID} with shift_id ${employee.ShiftId}`);
-          continue;
-      }
+    const employee = employees.find(emp => emp.EmpID === parseInt(empId));
+    if (!employee) continue;
 
-      for (const [date, records] of Object.entries(dates)) {
-          const attendanceRecord = await this.processEmployeeAttendance(employee, shift, records, date);
-          if (attendanceRecord) {
-              report.push(attendanceRecord);
-          }
+    const shift = shifts.find(s => s.Shift_id === employee.ShiftId);
+    const department = departments.find(d => d.depId === employee.depId);
+    const section = sections.find(s => s.sectionId === department.section_Id);
+    const site = sites.find(s => s.siteId === section.site_Id);
+    const designation = designations.find(d => d.jobTitleId === employee.jobTitle);
+    const grade = grades.find(g => g.gradeId === employee.EmployeeGradeID);
+
+    for (const [date, records] of Object.entries(dates)) {
+      const attendanceRecord = await this.processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade);
+      if (attendanceRecord) {
+        report.push(attendanceRecord);
       }
+    }
   }
 
   return report;
 }
 
-async processEmployeeAttendance(employee, shift, records, date) {
-  console.log("trying to process employee attendance", employee, shift, records, date);
 
-  if (!employee) {
-    console.error(`Employee is undefined for date ${date}`);
-    return null;
-  }
-
-  if (!shift) {
-    console.error(`Shift is undefined for employee ${employee.EmpID} on date ${date}`);
-    return null;
-  }
+async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
+  if (!employee || !shift) return null;
 
   const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
   const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
@@ -217,22 +204,45 @@ async processEmployeeAttendance(employee, shift, records, date) {
   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
 
   const status = await this.determineStatus(clockInTime, shiftStart, lgtMinutes);
-  const awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
-  const ot = await this.calculateOT(clockOutTime, shiftEnd);
+  const awh = status === 'A' ? 0 : await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
+  const ot = status === 'A' ? 0 : await this.calculateOT(clockOutTime, shiftEnd);
 
   return {
     emp_id: employee.EmpID,
-    emp_fname: employee.EmpFName, // Assuming these fields exist in your employee object
-    emp_lname: employee.EmpLName,  // Assuming these fields exist in your employee object
+    emp_fname: employee.EmpFName,
+    emp_lname: employee.EmpLName,
     shift_date: moment(date).format('YYYY-MM-DD'),
     first_in: clockInTime.format('HH:mm:ss'),
     last_out: clockOutTime.format('HH:mm:ss'),
     status,
-    leave_id: 11, // You may need to determine this value based on your business logic
+    leave_id: 11,  // You may need to determine this value based on your business logic
     awh,
-    ot
+    ot,
+    shift_id: shift.Shift_id,
+    shift_name: shift.shift_name,
+    shift_type: shift.shift_type,
+    shift_start: shift.shift_start,
+    shift_end: shift.shift_end,
+    hours_allowed_for_break: shift.hours_allowed_for_break,
+    time_allowed_before_shift: shift.time_allowed_before_shift,
+    shift_incharge: shift.shift_incharge,
+    total_working_hours_before: shift.total_working_hours_before,
+    lgt_in_minutes: shift.lgt_in_minutes,
+    department_id: department.depId,
+    department_name: department.depName,
+    section_id: section.sectionId,
+    section_name: section.sectionName,
+    site_id: site.siteId,
+    site_name: site.siteName,
+    designation_id: designation.jobTitleId,
+    designation_name: designation.jobTitleName,
+    grade_id: grade.gradeId,
+    grade_name: grade.gradeName
   };
 }
+
+
+
 groupByEmployeeAndDate(inputData) {
   console.log("trying to group", inputData);
   return inputData.reduce((acc, record) => {
@@ -244,7 +254,61 @@ groupByEmployeeAndDate(inputData) {
   }, {});
 }
 
+organizeReportData(report) {
+  const organized = {};
 
+  report.forEach(record => {
+    if (!organized[record.shift_id]) {
+      organized[record.shift_id] = {
+        shift_name: record.shift_name,
+        shift_type: record.shift_type,
+        shift_start: record.shift_start,
+        shift_end: record.shift_end,
+        hours_allowed_for_break: record.hours_allowed_for_break,
+
+        time_allowed_before_shift: record.time_allowed_before_shift,
+        shift_incharge: record.shift_incharge,
+        total_working_hours_before: record.total_working_hours_before,
+        lgt_in_minutes: record.lgt_in_minutes,
+        sites: {}
+      };
+    }
+
+    if (!organized[record.shift_id].sites[record.site_id]) {
+      organized[record.shift_id].sites[record.site_id] = {
+        site_name: record.site_name,
+        departments: {}
+      };
+    }
+
+    if (!organized[record.shift_id].sites[record.site_id].departments[record.department_id]) {
+      organized[record.shift_id].sites[record.site_id].departments[record.department_id] = {
+        department_name: record.department_name,
+        employees: {}
+      };
+    }
+
+    if (!organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id]) {
+      organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id] = {
+        emp_name: `${record.emp_fname} ${record.emp_lname}`,
+        grade: record.grade_name,
+        designation: record.designation_name,
+        attendance: []
+      };
+    }
+
+    organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id].attendance.push({
+      shift_date: record.shift_date,
+      first_in: record.first_in,
+      last_out: record.last_out,
+      status: record.status,
+      awh: record.awh,
+      ot: record.ot
+    });
+  });
+
+  return organized;
+}
 
 async determineStatus(clockInTime, shiftStart, lgtMinutes) {
   console.log("trying to determine status", clockInTime, shiftStart, lgtMinutes);

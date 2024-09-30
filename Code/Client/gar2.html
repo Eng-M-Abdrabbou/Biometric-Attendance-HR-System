@@ -67,11 +67,10 @@
 
     <script>
         document.getElementById('fetchReport').addEventListener('click', fetchGARReport);
-
+        
         async function fetchGARReport() {
             try {
                 const response = await fetch('/api/attendance-report');
-                console.log("response", response);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -82,35 +81,87 @@
                 document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
             }
         }
-    
+        
         function displayReport(data) {
             const container = document.getElementById('reportContainer');
-            if (data.length === 0) {
+            if (Object.keys(data).length === 0) {
                 container.innerHTML = '<p>No data available.</p>';
                 return;
             }
-    console.log(data);
-            let html = '<table><thead><tr><th>Emp. ID</th><th>Emp. Name</th><th>Shift_Date</th><th>First In</th><th>Last Out</th><th>Status</th><th>Leave ID</th><th>AWH</th><th>OT</th></tr></thead><tbody>';
-    
-            data.forEach(record => {
+        
+            let html = '';
+        
+            for (const [shiftId, shiftData] of Object.entries(data)) {
+              console.log(shiftData);
                 html += `
-                    <tr>
-                        <td>${record.emp_id}</td>
-                        <td>${record.emp_fname} ${record.emp_lname}</td>
-                        <td>${record.shift_date}</td>
-                        <td>${record.first_in}</td>
-                        <td>${record.last_out}</td>
-                        <td>${record.status}</td>
-                        <td>${record.leave_id}</td>
-                        <td>${record.awh}</td>
-                        <td>${record.ot}</td>
-                    </tr>
-                `;
-            });
-    
-            html += '</tbody></table>';
+                    <h2>Shift: ${shiftData.shift_name}</h2>
+                 <table>
+                        <tr>
+                            <th>Shift Type</th>
+                            <td>${shiftData.shift_type}</td>
+                        </tr>
+                        <tr>
+                            <th>Shift Start</th>
+                            <td>${shiftData.shift_start}</td>
+                        </tr>
+                        <tr>
+                            <th>Shift End</th>
+                            <td>${shiftData.shift_end}</td>
+                        </tr>
+                        <tr>
+                            <th>Break Hours</th>
+                            <td>${shiftData.hours_allowed_for_break}</td>
+                        </tr>
+                        <tr>
+                            <th>Time allowed before shift</th>
+                            <td>${shiftData.time_allowed_before_shift}</td>
+                        </tr>
+                        <tr>
+                            <th>Shift Incharge id</th>
+                            <td>${shiftData.shift_incharge}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Working Hours Before</th>
+                            <td>${shiftData.total_working_hours_before}</td>
+                        </tr>
+                        <tr>
+                            <th>LGT in Minutes</th>
+                            <td>${shiftData.lgt_in_minutes}</td>
+                        </tr>
+                    </table>`;
+        
+                for (const [siteId, siteData] of Object.entries(shiftData.sites)) {
+                    html += `<h3>Site: ${siteData.site_name}</h3>`;
+        
+                    for (const [depId, depData] of Object.entries(siteData.departments)) {
+                        html += `<h4>Department: ${depData.department_name}</h4>`;
+                        html += '<table><thead><tr><th>Emp. Name</th><th>Grade</th><th>Designation</th><th>Date</th><th>First In</th><th>Last Out</th><th>Status</th><th>AWH</th><th>OT</th></tr></thead><tbody>';
+        
+                        for (const [empId, empData] of Object.entries(depData.employees)) {
+                            empData.attendance.forEach((record, index) => {
+                                html += `
+                                    <tr>
+                                        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
+                                        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
+                                        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
+                                        <td>${record.shift_date}</td>
+                                        <td>${record.first_in}</td>
+                                        <td>${record.last_out}</td>
+                                        <td>${record.status}</td>
+                                        <td>${record.awh}</td>
+                                        <td>${record.ot}</td>
+                                    </tr>
+                                `;
+                            });
+                        }
+        
+                        html += '</tbody></table>';
+                    }
+                }
+            }
+        
             container.innerHTML = html;
         }
-    </script>
+        </script>
 </body>
 </html>
