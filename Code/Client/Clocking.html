@@ -15,7 +15,6 @@
     </form>
     <button style="Display: none;" type="submit" id="in"> Clock In </button>
     <button style="Display: none;" type="submit" id="out"> Clock out </button>
-
 </body>
 <script>
 
@@ -85,12 +84,21 @@ document.getElementById('out').addEventListener('click', async () => {
 });
 
 
-
     console.log(inputField.value);
     if (valueOnly === inputField.value) {
-      console.log('Success!');
-      document.getElementById('in').style.display = 'block';
-    } else {
+      console.log('employee found!');
+      const response = await fetch(`/isClocekdin/${valueOnly}`);
+      const clocked = await response.json();
+      console.log(clocked);
+      if (clocked === false) {
+        console.log('Success!');
+        document.getElementById('in').style.display = 'block';
+        document.getElementById('out').style.display = 'none';
+      } else {
+        document.getElementById('in').style.display = 'none';
+        document.getElementById('out').style.display = 'block';
+      }
+    } else if  (valueOnly !== inputField.value){
       console.log('Employee not found');
       document.getElementById('in').style.display = 'none';
     }
@@ -98,6 +106,14 @@ document.getElementById('out').addEventListener('click', async () => {
     console.error('Error testing input:', error);
   }
 }
+
+
+
+
+
+
+ 
+
 
 
 

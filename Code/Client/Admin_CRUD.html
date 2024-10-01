@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+
+
+<select name="table" id="tables">
+    <option value="accommodation">accommodation</option>
+    <option value="asst_master">asst_master</option>
+    <option value="clocking">clocking</option>
+    <option value="company">company</option>
+    <option value="departments">departments</option>
+    <option value="employee_master">employee_master</option>
+    <option value="emp_dep">emp_dep</option>
+    <option value="emp_visa">emp_visa</option>
+    <option value="general_attendance_report">general_attendance_report</option>
+    <option value="grade">grade</option>
+    <option value="holidays">holidays</option>
+    <option value="input_data">input_data</option>
+    <option value="jobtitle">jobtitle</option>
+    <option value="records">records</option>
+    <option value="section">section</option>
+    <option value="shift">shift</option>
+    <option value="sites">sites</option>
+    <option value="test_user">test_user</option>
+    <option value="visa">visa</option>
+    <option value="weekend">weekend</option>
+</select>
+
+<button type="submit" id="submit">Submit</button>
+
+
+</body>
+<script>
+
+
+document.getElementById('submit').addEventListener('click', (e) => {
+e.preventDefault();
+
+const table = document.getElementById('tables').value;
+console.log(table);
+const TABLE = table;
+
+fetch(`/tableInfo/${TABLE}`, {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+})
+.then(response => response.json())
+.then(data => {
+    console.log(data);
+    const parent = document.getElementById('table-info');
+    parent.innerHTML = '';
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const tbody = document.createElement('tbody');
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+
+    // Create table header
+    const headerRow = document.createElement('tr');
+    thead.appendChild(headerRow);
+    Object.keys(data[0]).forEach(key => {
+        const headerCell = document.createElement('th');
+        headerCell.textContent = key;
+        headerRow.appendChild(headerCell);
+    });
+
+    // Create table body
+    data.forEach(row => {
+        const rowElement = document.createElement('tr');
+        tbody.appendChild(rowElement);
+        Object.keys(row).forEach(key => {
+            const cell = document.createElement('td');
+            cell.textContent = row[key];
+            rowElement.appendChild(cell);
+        });
+    });
+
+    parent.appendChild(table);
+});
+});
+
+
+
+
+</script>
+</html>

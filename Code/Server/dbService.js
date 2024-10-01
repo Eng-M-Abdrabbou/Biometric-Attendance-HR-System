@@ -114,6 +114,30 @@ async updateClockOut(empid) {
 }
 
 
+async IsclockedIn(id){
+console.log("is he clocked in");
+  let Conn;
+try {
+  Conn = await this.getConnection();
+  const response = await new Promise((resolve, reject) => {
+    const query = "SELECT * FROM input_data WHERE empid = ? AND clock_in IS NOT NULL;";
+    pool.query(query, [id], (err, results) => {
+      if (err) reject(new Error(err.message));
+      if (results.length === 0) {
+        resolve(false); // or throw an error
+      } else {
+        resolve(true);
+      }
+    });
+  });
+  console.log(response, "the employee response for IsClockedIn");
+  return response;
+} catch (error) {
+  console.log(error);
+}
+
+}
+
 async generateAttendanceReport() {
   let conn;
   try {
@@ -166,6 +190,7 @@ async query(conn, sql, values = []) {
 
 
 
+
 async processAttendanceData(shifts, employees, inputData, departments, sections, sites, designations, grades) {
   const report = [];
   const groupedData = this.groupByEmployeeAndDate(inputData);
@@ -204,8 +229,8 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
 
   const status = await this.determineStatus(clockInTime, shiftStart, lgtMinutes);
-  const awh = status === 'A' ? 0 : await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
-  const ot = status === 'A' ? 0 : await this.calculateOT(clockOutTime, shiftEnd);
+  const awh = status === 'A' ? '0:00' : await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
+  const ot = status === 'A' ? '0:00' : await this.calculateOT(clockOutTime, shiftEnd);
 
   return {
     emp_id: employee.EmpID,
@@ -323,15 +348,28 @@ async calculateAWH(clockInTime, clockOutTime, breakHours) {
   const totalHours = moment.duration(clockOutTime.diff(clockInTime)).asHours();
   const awh = Math.max(totalHours - breakHours, 0).toFixed(2);
   console.log("AWH", awh);
-  return awh;
+  
+  
+  let result = awh % 1;
+  let newawh = Math.floor(awh) + (result * 60) / 100;
+  newawh = newawh.toFixed(2);
+
+  return newawh;
 }
 
 async calculateOT(clockOutTime, shiftEnd) {
   console.log("trying to calculate ot", clockOutTime, shiftEnd);
   const otHours = moment.duration(clockOutTime.diff(shiftEnd)).asHours();
   const ot = Math.max(otHours, 0).toFixed(2);
-  console.log("ot", ot);
-  return ot;
+  let result = ot % 1;
+  let newot = Math.floor(ot) + (result * 60) / 100;
+  newot = newot.toFixed(2);
+  console.log("ot", newot);
+  if(ot>2){
+     let NEWot='2:00';
+    return NEWot;
+  }
+  return newot;
 }
 
 

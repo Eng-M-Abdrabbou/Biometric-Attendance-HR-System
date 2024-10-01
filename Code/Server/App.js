@@ -97,6 +97,25 @@ app.get('/api/attendance-report', async (req, res) => {
     }
 });
 
+app.get(`/tableInfo/:table`, async (req, res) => {
+  try {
+    const TABLE = req.params.table;
+    const response = await db.query(`SELECT * FROM ${TABLE}`);
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/isClocekdin/:id', async (req, res) => {
+    console.log("this is the api working");
+    const id = req.params.id
+    const report = await db.IsclockedIn(id);
+    console.log(report);
+    res.json(report);
+
+})
+
 app.get('/api/departments', async (req, res) => {
     try {
         const departments = await db.getDepartments();
@@ -132,6 +151,11 @@ app.get('/gar', (req, res) => {
 app.get('/Dashboard', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Dashboard.html'));
 });
+
+app.get('/Admin_CRUD.html', (req, res) => {
+    res.sendFile(path.join(__dirname,'..','Client','Admin_CRUD.html'));
+});
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
