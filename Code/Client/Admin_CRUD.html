@@ -2,94 +2,307 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin-CRUD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        select, button {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #616362;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+        .editable:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        .action-buttons {
+            margin-top: 20px;
+        }
+        .action-buttons button {
+            margin-right: 10px;
+        }
+
+        tr.selected {
+            background-color: #a1c5ff !important; 
+        }
+        
+    </style>
 </head>
 <body>
-    
+    <select name="table" id="tables">
+        <option value="accommodation">accommodation</option>
+        <option value="asst_master">asst_master</option>
+        <option value="clocking">clocking</option>
+        <option value="company">company</option>
+        <option value="departments">departments</option>
+        <option value="employee_master">employee_master</option>
+        <option value="emp_dep">emp_dep</option>
+        <option value="emp_visa">emp_visa</option>
+        <option value="general_attendance_report">general_attendance_report</option>
+        <option value="grade">grade</option>
+        <option value="holidays">holidays</option>
+        <option value="input_data">input_data</option>
+        <option value="jobtitle">jobtitle</option>
+        <option value="records">records</option>
+        <option value="section">section</option>
+        <option value="shift">shift</option>
+        <option value="sites">sites</option>
+        <option value="test_user">test_user</option>
+        <option value="visa">visa</option>
+        <option value="weekend">weekend</option>
+    </select>
+    <button type="submit" id="submit">Load Table</button>
+    <p id="info" style="display: none;">press on the value you want to edit, it will turn into a textbox, you can't edit a primary key value.</p>
+    <div class="action-buttons">
+        <button id="addRow">Add New Row</button>
+        <button id="deleteRow">Delete Selected Row</button>
+    </div>
+    <div id="table-info"></div>
 
+    <script>
 
-<select name="table" id="tables">
-    <option value="accommodation">accommodation</option>
-    <option value="asst_master">asst_master</option>
-    <option value="clocking">clocking</option>
-    <option value="company">company</option>
-    <option value="departments">departments</option>
-    <option value="employee_master">employee_master</option>
-    <option value="emp_dep">emp_dep</option>
-    <option value="emp_visa">emp_visa</option>
-    <option value="general_attendance_report">general_attendance_report</option>
-    <option value="grade">grade</option>
-    <option value="holidays">holidays</option>
-    <option value="input_data">input_data</option>
-    <option value="jobtitle">jobtitle</option>
-    <option value="records">records</option>
-    <option value="section">section</option>
-    <option value="shift">shift</option>
-    <option value="sites">sites</option>
-    <option value="test_user">test_user</option>
-    <option value="visa">visa</option>
-    <option value="weekend">weekend</option>
-</select>
+        // Add event listener for row selection
+document.getElementById('table-info').addEventListener('click', selectRow);
 
-<button type="submit" id="submit">Submit</button>
+        document.getElementById('addRow').addEventListener('click', addNewRow);
+        document.getElementById('deleteRow').addEventListener('click', deleteSelectedRow);
+    document.getElementById('submit').addEventListener('click', loadTable);
 
+    let currentTable = '';
+    let currentPrimaryKeys = [];
 
-</body>
-<script>
+    function loadTable() {
+        document.getElementById('info').style.display = 'block';
+        const table = document.getElementById('tables').value;
+        currentTable = table;
+        fetch(`/tableInfo/${table}`)
+        .then(response => response.json())
+        .then(({ primaryKeys, data }) => {
+            currentPrimaryKeys = primaryKeys;
+            const parent = document.getElementById('table-info');
+                parent.innerHTML = '';
+                
+                if (data.length === 0) {
+                    parent.textContent = 'No data available for this table.';
+                    return;
+                }
 
+                
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+                table.appendChild(thead);
+                table.appendChild(tbody);
 
-document.getElementById('submit').addEventListener('click', (e) => {
-e.preventDefault();
+                // Create table header
+                const headerRow = document.createElement('tr');
+                thead.appendChild(headerRow);
+                Object.keys(data[0]).forEach(key => {
+                    const headerCell = document.createElement('th');
+                    headerCell.textContent = key;
+                    headerRow.appendChild(headerCell);
+                });
 
-const table = document.getElementById('tables').value;
-console.log(table);
-const TABLE = table;
+                // Create table body
+                data.forEach(row => {
+                    const rowElement = document.createElement('tr');
+                    tbody.appendChild(rowElement);
+                    Object.entries(row).forEach(([key, value]) => {
+                        const cell = document.createElement('td');
+                        cell.textContent = value !== null ? value : '';
+                        if (!primaryKeys.includes(key)) {
+                            cell.classList.add('editable');
+                            cell.addEventListener('click', () => editCell(cell, key, row, primaryKeys));
+                        }
+                        rowElement.appendChild(cell);
+                    });
+                });
+                parent.appendChild(table);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const parent = document.getElementById('table-info');
+                parent.textContent = 'An error occurred while loading the table.';
+            });
+    }
 
-fetch(`/tableInfo/${TABLE}`, {
-    method: 'GET',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-})
-.then(response => response.json())
-.then(data => {
-    console.log(data);
-    const parent = document.getElementById('table-info');
-    parent.innerHTML = '';
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const tbody = document.createElement('tbody');
+    function editCell(cell, column, row, primaryKeys) {
+        const oldValue = cell.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = oldValue;
+        cell.textContent = '';
+        cell.appendChild(input);
+        input.focus();
 
-    table.appendChild(thead);
-    table.appendChild(tbody);
-
-    // Create table header
-    const headerRow = document.createElement('tr');
-    thead.appendChild(headerRow);
-    Object.keys(data[0]).forEach(key => {
-        const headerCell = document.createElement('th');
-        headerCell.textContent = key;
-        headerRow.appendChild(headerCell);
-    });
-
-    // Create table body
-    data.forEach(row => {
-        const rowElement = document.createElement('tr');
-        tbody.appendChild(rowElement);
-        Object.keys(row).forEach(key => {
-            const cell = document.createElement('td');
-            cell.textContent = row[key];
-            rowElement.appendChild(cell);
+        input.addEventListener('blur', function() {
+            const newValue = this.value;
+            if (newValue !== oldValue) {
+                updateValue(primaryKeys, row, column, newValue, cell);
+            } else {
+                cell.textContent = oldValue;
+            }
         });
+
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.blur();
+            }
+        });
+    }
+
+    function updateValue(primaryKeys, row, column, value, cell) {
+        const table = document.getElementById('tables').value;
+        const primaryKeyValues = primaryKeys.map(key => row[key]);
+        fetch('/updateTable', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ table, primaryKeys, primaryKeyValues, column, value }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                cell.textContent = value;
+            } else {
+                alert('Update failed: ' + data.error);
+                cell.textContent = cell.oldValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Update failed: ' + error.message);
+            cell.textContent = cell.oldValue;
+        });
+    }
+
+    function addNewRow() {
+        if (!currentTable) {
+            alert('Please load a table first');
+            return;
+        }
+        
+        const newRow = {};
+        const table = document.querySelector('table');
+        const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
+        
+        headers.forEach(header => {
+            const value = prompt(`Enter value for ${header}:`);
+            newRow[header] = value;
+        });
+
+        fetch('/insertRow', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ table: currentTable, row: newRow }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('New row inserted successfully');
+                loadTable(); // Reload the table to show the new row
+            } else {
+                alert('Insert failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Insert failed: ' + error.message);
+        });
+    }
+
+
+function deleteSelectedRow() {
+    if (!currentTable) {
+        alert('Please load a table first');
+        return;
+    }
+
+    const selectedRow = document.querySelector('tr.selected');
+    if (!selectedRow) {
+        alert('Please select a row to delete');
+        return;
+    }
+
+    const rowData = {};
+    const table = selectedRow.closest('table');
+    const headerCells = table.querySelector('thead tr').cells;
+
+    currentPrimaryKeys.forEach(key => {
+        const headerIndex = Array.from(headerCells).findIndex(cell => cell.textContent === key);
+        if (headerIndex !== -1) {
+            // +1 because nth-child is 1-based
+            const cell = selectedRow.querySelector(`td:nth-child(${headerIndex + 1})`);
+            rowData[key] = cell.textContent;
+        }
     });
 
-    parent.appendChild(table);
-});
-});
+    if (confirm('Are you sure you want to delete this row?')) {
+        fetch('/deleteRow', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ table: currentTable, primaryKeys: currentPrimaryKeys, rowData }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Row deleted successfully');
+                loadTable(); // Reload the table to reflect the deletion
+            } else {
+                alert('Delete failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Delete failed: ' + error.message);
+        });
+    }
+}
+
+function selectRow(event) {
+    const clickedRow = event.target.closest('tr');
+    if (clickedRow && !event.target.closest('td').classList.contains('editable')) {
+        document.querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
+        clickedRow.classList.add('selected');
+    }
+}
 
 
+    // Add event listener for row selection
+    document.getElementById('table-info').addEventListener('click', selectRow);
 
 
-</script>
+    </script>
+</body>
 </html>

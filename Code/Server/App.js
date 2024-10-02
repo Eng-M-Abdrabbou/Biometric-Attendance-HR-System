@@ -97,15 +97,117 @@ app.get('/api/attendance-report', async (req, res) => {
     }
 });
 
-app.get(`/tableInfo/:table`, async (req, res) => {
-  try {
-    const TABLE = req.params.table;
-    const response = await db.query(`SELECT * FROM ${TABLE}`);
-    res.json(response);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+
+
+
+
+
+
+
+async function getPrimaryKeys(table) {
+    const query = `
+        SELECT k.COLUMN_NAME
+        FROM information_schema.table_constraints t
+        JOIN information_schema.key_column_usage k
+        USING(constraint_name,table_schema,table_name)
+        WHERE t.constraint_type='PRIMARY KEY'
+          AND t.table_schema=DATABASE()
+          AND t.table_name=?;
+    `;
+    return await db.query(query, [table]);
+}
+
+
+
+app.get('/tableInfo/:table', async (req, res) => {
+    try {
+        const TABLE = req.params.table;
+        // Validate table name to prevent SQL injection
+        const validTables = ['accommodation', 'asst_master', 'clocking', 'company', 'departments', 'employee_master', 'emp_dep', 'emp_visa', 'general_attendance_report', 'grade', 'holidays', 'input_data', 'jobtitle', 'records', 'section', 'shift', 'sites', 'test_user', 'visa', 'weekend'];
+        if (!validTables.includes(TABLE)) {
+            return res.status(400).json({ error: 'Invalid table name' });
+        }
+        
+        console.log(`Attempting to fetch data from table: ${TABLE}`);
+        const primaryKeys = await getPrimaryKeys(TABLE);
+        const data = await db.query(`SELECT * FROM ${TABLE}`);
+        console.log(`Data fetched from ${TABLE}:`, data);
+        
+        if (data.length === 0) {
+            console.log(`No data found in table: ${TABLE}`);
+            return res.json({ primaryKeys: primaryKeys.map(pk => pk.COLUMN_NAME), data: [] });
+        }
+        
+        res.json({ primaryKeys: primaryKeys.map(pk => pk.COLUMN_NAME), data });
+    } catch (error) {
+        console.error(`Error fetching data from table ${req.params.table}:`, error);
+        res.status(500).json({ error: error.message });
+    }
 });
+  
+
+app.post('/updateTable', async (req, res) => {
+    try {
+        const { table, primaryKeys, primaryKeyValues, column, value } = req.body;
+        console.log('Update request:', { table, primaryKeys, primaryKeyValues, column, value });
+
+        const whereClause = primaryKeys.map((key, index) => `${key} = ?`).join(' AND ');
+        const sql = `UPDATE ${table} SET ${column} = ? WHERE ${whereClause}`;
+        console.log('SQL query:', sql);
+
+        const result = await db.query(sql, [value, ...primaryKeyValues]);
+        console.log('Update result:', result);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating table:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/insertRow', async (req, res) => {
+    try {
+        const { table, row } = req.body;
+        console.log('Insert request:', { table, row });
+
+        const columns = Object.keys(row).join(', ');
+        const placeholders = Object.keys(row).map(() => '?').join(', ');
+        const values = Object.values(row);
+
+        const sql = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
+        console.log('SQL query:', sql);
+
+        const result = await db.query(sql, values);
+        console.log('Insert result:', result);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error inserting row:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/deleteRow', async (req, res) => {
+    try {
+        const { table, primaryKeys, rowData } = req.body;
+        console.log('Delete request:', { table, primaryKeys, rowData });
+
+        const whereClause = primaryKeys.map(key => `${key} = ?`).join(' AND ');
+        const values = primaryKeys.map(key => rowData[key]);
+
+        const sql = `DELETE FROM ${table} WHERE ${whereClause}`;
+        console.log('SQL query:', sql);
+
+        const result = await db.query(sql, values);
+        console.log('Delete result:', result);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting row:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
+
+
 
 app.get('/isClocekdin/:id', async (req, res) => {
     console.log("this is the api working");

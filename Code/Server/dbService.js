@@ -20,6 +20,24 @@ const pool = mysql.createPool({
 });
 
 pool.getConnection((err, connection) => {
+  if (err) {
+      if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+          console.error('Database connection was closed.');
+      }
+      if (err.code === 'ER_CON_COUNT_ERROR') {
+          console.error('Database has too many connections.');
+      }
+      if (err.code === 'ECONNREFUSED') {
+          console.error('Database connection was refused.');
+      }
+  }
+  if (connection) {
+      connection.release();
+      console.log('Connected to database');
+  } 
+});
+
+pool.getConnection((err, connection) => {
   console.log('Callback:', typeof connection);
   if (err) {
       console.error('Error getting connection:', err);
@@ -176,17 +194,30 @@ async getConnection() {
   });
 }
 
-async query(conn, sql, values = []) {
+// async query(conn, sql, values = []) {
+//   return new Promise((resolve, reject) => {
+//       conn.query(sql, values, (error, results) => {
+//           if (error) {
+//               reject(error);
+//           } else {
+//               resolve(results);
+//           }
+//       });
+//   });
+// }
+
+
+async query(sql, values = []) {
   return new Promise((resolve, reject) => {
-      conn.query(sql, values, (error, results) => {
-          if (error) {
-              reject(error);
-          } else {
-              resolve(results);
-          }
-      });
-  });
-}
+    pool.query(sql, values, (error, results) => {
+      if (error) {
+        console.error('Database query error:', error);
+        reject(error);
+      } else {
+        resolve(results);
+      }
+    });
+  });}
 
 
 
