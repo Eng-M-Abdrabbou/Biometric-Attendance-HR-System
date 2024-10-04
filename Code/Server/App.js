@@ -5,6 +5,7 @@ const mysql = require('mysql');
 const cors = require('cors');
 const app = express();
 const path = require("path");
+const winston = require('winston');
 
 dotenv.config();
 
@@ -20,6 +21,46 @@ const dbService = require('./dbService.js');
  const { Console } = require('console');
 const moment = require('moment/moment.js');
 const db = dbService.getDbServiceInstance();
+
+
+
+
+const logger = winston.createLogger({
+    level: 'debug',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    transports: [
+        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'combined.log' }),
+        new winston.transports.Console({
+            format: winston.format.combine(
+                winston.format.colorize(),
+                winston.format.simple()
+            )
+        })
+    ]
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    logger.error('Unhandled error:', { 
+        error: err.message, 
+        stack: err.stack,
+        path: req.path,
+        method: req.method
+    });
+    res.status(500).json({ 
+        error: 'Internal server error',
+        details: err.message 
+    });
+});
+
+
+
+
+
 
 
 
@@ -88,15 +129,119 @@ app.get('/api/employees/:id', async (req, res) => {
       }
 })
 
-app.get('/api/attendance-report', async (req, res) => {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Filter options endpoint
+app.get('/api/filter-options', async (req, res) => {
+    logger.info('Received request for filter options');
     try {
-        console.log("api is working");
-        const report = await db.generateAttendanceReport();
-        res.json(report);
+        const options = await db.getFilterOptions();
+        logger.debug('Successfully retrieved filter options', { options });
+        res.json(options);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error('Error getting filter options', { 
+            error: error.message, 
+            stack: error.stack 
+        });
+        res.status(500).json({ 
+            error: 'Failed to retrieve filter options',
+            details: error.message 
+        });
     }
 });
+
+// Attendance report endpoint
+app.get('/api/attendance-report', async (req, res) => {
+    logger.info('Received attendance report request', { query: req.query });
+    try {
+        const filters = {
+            dateFrom: req.query.dateFrom,
+            dateTo: req.query.dateTo,
+            empId: req.query.empId,
+            empName: req.query.empName,
+            department: req.query.department,
+            site: req.query.site,
+            nationality: req.query.nationality
+        };
+
+        // Validate date range if provided
+        if (filters.dateFrom && filters.dateTo) {
+            if (new Date(filters.dateFrom) > new Date(filters.dateTo)) {
+                throw new Error('Invalid date range: Start date cannot be after end date');
+            }
+        }
+
+        logger.debug('Processing report with filters', { filters });
+        const report = await db.generateAttendanceReport(filters);
+        logger.info('Successfully generated report', { 
+            recordCount: Object.keys(report).length 
+        });
+        res.json(report);
+    } catch (error) {
+        logger.error('Error generating attendance report', { 
+            error: error.message, 
+            stack: error.stack 
+        });
+        res.status(500).json({ 
+            error: 'Failed to generate attendance report',
+            details: error.message 
+        });
+    }
+});
+
+
+
+
+// app.get('/api/attendance-report', async (req, res) => {
+//     try {
+//         console.log("api is working");
+//         const report = await db.generateAttendanceReport();
+//         res.json(report);
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -5,39 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GAR Report</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
+        .container { padding: 20px; }
+        .filter-form { 
+            margin-bottom: 20px; 
+            padding: 15px;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        h1 {
-            text-align: center;
-            color: #333;
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
         }
-        button {
-            display: block;
-            width: 200px;
-            margin: 20px auto;
-            padding: 10px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #0056b3;
+        .filter-item {
+            flex: 1;
+            min-width: 200px;
         }
         table {
             width: 100%;
@@ -45,16 +28,18 @@
             margin-top: 20px;
         }
         th, td {
-            padding: 12px;
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
         }
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
+        th { background-color: #f4f4f4; }
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
         }
-        tr:hover {
-            background-color: #f5f5f5;
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -63,29 +48,352 @@
 <body>
     <div class="container">
         <h1>General Attendance Report</h1>
-        <button id="fetchReport">Fetch GAR Report</button>
+        
+        <!-- Debug Toggle Button -->
+        <button id="debugToggle" onclick="toggleDebugLog()" style="display: none;">Toggle Debug Log</button>
+        
+        <!-- Debug Log Panel -->
+        <div id="debugLog" class="debug-log" style="display: none;">
+            <h3>Debug Log:</h3>
+            <pre id="debugOutput"></pre>
+        </div>
+
+        <!-- Error Message Display -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <div class="filter-form">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="dateFrom">Date From:</label>
+                    <input type="date" id="dateFrom" name="dateFrom">
+                </div>
+                <div class="filter-item">
+                    <label for="dateTo">Date To:</label>
+                    <input type="date" id="dateTo" name="dateTo">
+                </div>
+                <div class="filter-item">
+                    <label for="empId">Employee ID:</label>
+                    <input type="text" id="empId" name="empId" placeholder="Enter employee ID">
+                </div>
+                <div class="filter-item">
+                    <label for="empName">Employee Name:</label>
+                    <input type="text" id="empName" name="empName" placeholder="Enter employee name">
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="department">Department:</label>
+                    <select id="department" name="department">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label for="site">Site:</label>
+                    <select id="site" name="site">
+                        <option value="">All Sites</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label for="nationality">Nationality:</label>
+                    <select id="nationality" name="nationality">
+                        <option value="">All Nationalities</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-buttons">
+                <button id="fetchReport">Apply Filters</button>
+                <button id="resetFilters">Reset Filters</button>
+                <button style="display: none;" id="printButton" onclick="printDivAsPDF('reportContainer')">Print Report As PDF</button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="loading-spinner">
+            Loading... Please wait...
+        </div>
+
         <div id="reportContainer"></div>
     </div>
-    <button style="display: none;" onclick="printDivAsPDF('reportContainer')" id="printButton">Print Div</button>
+
     <script>
-        document.getElementById('fetchReport').addEventListener('click', fetchGARReport);
-        
-        async function fetchGARReport() {
+
+
+        // Debug logging function
+        function logDebug(message, data = null) {
+            const timestamp = new Date().toISOString();
+            let logMessage = `[${timestamp}] ${message}`;
+            if (data) {
+                logMessage += '\nData: ' + JSON.stringify(data, null, 2);
+            }
+            const debugOutput = document.getElementById('debugOutput');
+            debugOutput.innerHTML += logMessage + '\n\n';
+            console.log(logMessage);
+        }
+
+        // Error handling function
+        function showError(message, error = null) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.innerHTML = `Error: ${message}`;
+            if (error) {
+                errorDiv.innerHTML += `<br>Details: ${error.message}`;
+                logDebug('Error occurred', { message, error: error.message });
+            }
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Toggle debug log visibility
+        function toggleDebugLog() {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.style.display = debugLog.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Load dropdown options when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            logDebug('Page loaded, initializing...');
             try {
-                const response = await fetch('/api/attendance-report');
+                await loadFilterOptions();
+                // Load initial data without filters
+                await fetchGARReport();
+            } catch (error) {
+                showError('Failed to initialize page', error);
+            }
+        });
+
+        async function loadFilterOptions() {
+            logDebug('Loading filter options');
+            try {
+                const response = await fetch('/api/filter-options');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                displayReport(data);
-                document.getElementById('printButton').style.display = 'block';
+                logDebug('Received filter options', data);
+                
+                await populateSelect('department', data.departments);
+                await populateSelect('site', data.sites);
+                await populateSelect('nationality', data.nationalities);
+                
+                logDebug('Filter options loaded successfully');
             } catch (error) {
-                console.error('Error fetching report:', error);
-                document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
+                showError('Error loading filter options', error);
             }
         }
+
+        async function populateSelect(id, options) {
+            logDebug(`Populating ${id} dropdown`, options);
+            const select = document.getElementById(id);
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.id;
+                opt.textContent = option.name;
+                select.appendChild(opt);
+            });
+        }
+
+        document.getElementById('fetchReport').addEventListener('click', () => {
+            logDebug('Fetch report button clicked');
+            fetchGARReport();
+        });
+
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            logDebug('Reset filters button clicked');
+            resetFilters();
+        });
+
+        function resetFilters() {
+            logDebug('Resetting all filters');
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            document.getElementById('empId').value = '';
+            document.getElementById('empName').value = '';
+            document.getElementById('department').value = '';
+            document.getElementById('site').value = '';
+            document.getElementById('nationality').value = '';
+            
+            // Fetch report without filters after reset
+            fetchGARReport();
+        }
+
+        async function fetchGARReport() {
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.style.display = 'block';
+            
+            try {
+                const filters = {
+                    dateFrom: document.getElementById('dateFrom').value,
+                    dateTo: document.getElementById('dateTo').value,
+                    empId: document.getElementById('empId').value,
+                    empName: document.getElementById('empName').value,
+                    department: document.getElementById('department').value,
+                    site: document.getElementById('site').value,
+                    nationality: document.getElementById('nationality').value
+                };
+
+                logDebug('Fetching report with filters', filters);
+
+                // Only include non-empty filters in the query string
+                const queryString = new URLSearchParams(
+                    Object.fromEntries(
+                        Object.entries(filters).filter(([_, v]) => v !== '')
+                    )
+                ).toString();
+
+                logDebug('Generated query string', queryString);
+
+                const response = await fetch(`/api/attendance-report${queryString ? `?${queryString}` : ''}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                logDebug('Received report data', data);
+
+                displayReport(data);
+                document.getElementById('printButton').style.display = 'block';
+                logDebug('Report displayed successfully');
+            } catch (error) {
+                showError('Error fetching report', error);
+                document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        // Validate date range
+        function validateDateRange(dateFrom, dateTo) {
+            if (dateFrom && dateTo) {
+                const fromDate = new Date(dateFrom);
+                const toDate = new Date(dateTo);
+                if (fromDate > toDate) {
+                    showError('Date From cannot be later than Date To');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//        document.addEventListener('DOMContentLoaded', async () => {
+//            await loadFilterOptions();
+//        });
+//
+//        async function loadFilterOptions() {
+//            try {
+//                const response = await fetch('/api/filter-options');
+//                const data = await response.json();
+//                
+//                populateSelect('department', data.departments);
+//                populateSelect('site', data.sites);
+//                populateSelect('nationality', data.nationalities);
+//            } catch (error) {
+//                console.error('Error loading filter options:', error);
+//            }
+//        }
+//
+//        function populateSelect(id, options) {
+//            const select = document.getElementById(id);
+//            options.forEach(option => {
+//                const opt = document.createElement('option');
+//                opt.value = option.id;
+//                opt.textContent = option.name;
+//                select.appendChild(opt);
+//            });
+//        }
+//
+//        document.getElementById('fetchReport').addEventListener('click', fetchGARReport);
+//        document.getElementById('resetFilters').addEventListener('click', resetFilters);
+//
+//        function resetFilters() {
+//            document.getElementById('dateFrom').value = '';
+//            document.getElementById('dateTo').value = '';
+//            document.getElementById('empId').value = '';
+//            document.getElementById('empName').value = '';
+//            document.getElementById('department').value = '';
+//            document.getElementById('site').value = '';
+//            document.getElementById('nationality').value = '';
+//        }
+//
+//        async function fetchGARReport() {
+//            try {
+//                const filters = {
+//                    dateFrom: document.getElementById('dateFrom').value,
+//                    dateTo: document.getElementById('dateTo').value,
+//                    empId: document.getElementById('empId').value,
+//                    empName: document.getElementById('empName').value,
+//                    department: document.getElementById('department').value,
+//                    site: document.getElementById('site').value,
+//                    nationality: document.getElementById('nationality').value
+//                };
+//
+//                const queryString = new URLSearchParams(
+//                    Object.fromEntries(
+//                        Object.entries(filters).filter(([_, v]) => v !== '')
+//                    )
+//                ).toString();
+//
+//                const response = await fetch(`/api/attendance-report?${queryString}`);
+//                if (!response.ok) {
+//                    throw new Error(`HTTP error! status: ${response.status}`);
+//                }
+//                const data = await response.json();
+//                displayReport(data);
+//                document.getElementById('printButton').style.display = 'block';
+//            } catch (error) {
+//                console.error('Error fetching report:', error);
+//                document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
+//            }
+//        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//        document.getElementById('fetchReport').addEventListener('click', fetchGARReport);
+//        
+//        async function fetchGARReport() {
+//            try {
+//                const response = await fetch('/api/attendance-report');
+//                if (!response.ok) {
+//                    throw new Error(`HTTP error! status: ${response.status}`);
+//                }
+//                const data = await response.json();
+//                displayReport(data);
+//                document.getElementById('printButton').style.display = 'block';
+//            } catch (error) {
+//                console.error('Error fetching report:', error);
+//                document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
+//            }
+//        }
         
         function displayReport(data) {
+            console.log(data);
             const container = document.getElementById('reportContainer');
             if (Object.keys(data).length === 0) {
                 container.innerHTML = '<p>No data available.</p>';
@@ -148,7 +456,6 @@
                                     newot1 = 0;
                                     newot2 = 0;
                                 }
-
                                 html += `
                                     <tr>
                                         ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
