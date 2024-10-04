@@ -42,6 +42,7 @@
             cursor: pointer;
         }
     </style>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -104,6 +105,7 @@
                 <button id="fetchReport">Apply Filters</button>
                 <button id="resetFilters">Reset Filters</button>
                 <button style="display: none;" id="printButton" onclick="printDivAsPDF('reportContainer')">Print Report As PDF</button>
+                <button style="display: none;" id="btn-export">Print Report as XLSX(Excel)</button>
             </div>
         </div>
 
@@ -252,6 +254,7 @@
 
                 displayReport(data);
                 document.getElementById('printButton').style.display = 'block';
+                document.getElementById('btn-export').style.display = 'block';
                 logDebug('Report displayed successfully');
             } catch (error) {
                 showError('Error fetching report', error);
@@ -395,6 +398,59 @@
         }
         
 
+
+    document.getElementById('btn-export').addEventListener('click', () => {
+        const div = document.getElementById('reportContainer');
+        const elements = div.querySelectorAll('h2, h3, h4, p, table');
+    
+        // Create a new workbook and add the extracted content
+        const wb = XLSX.utils.book_new();
+        const ws_data = [];
+    
+        // Iterate through all elements in the order they appear
+        elements.forEach(element => {
+            if (element.tagName === 'TABLE') {
+                const tableData = XLSX.utils.sheet_to_json(XLSX.utils.table_to_sheet(element), { header: 1 });
+    
+                // Format dates in the table data
+                tableData.forEach(row => {
+                    row.forEach((cell, index) => {
+                        if (isDate(cell)) {
+                            row[index] = formatDate(cell);
+                        }
+                    });
+                });
+    
+                ws_data.push(...tableData);
+                // Add an empty row after each table
+                ws_data.push([]);
+            } else {
+                ws_data.push([element.innerText]);
+            }
+        });
+    
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    
+        // Export the workbook
+        XLSX.writeFile(wb, 'MyDivContent.xlsx');
+    });
+    
+    // Function to check if a value is a date
+    function isDate(value) {
+        // Check if the value is a number and within a reasonable date range
+        return !isNaN(value) && value > 25569 && value < 2958465; // Excel date range
+    }
+    
+    // Function to format dates
+    function formatDate(excelDate) {
+        const date = new Date((excelDate - 25569) * 86400 * 1000);
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are zero-based
+        const year = date.getUTCFullYear();
+        return `${year}-${month}-${day}`;
+    }
+    
 
         </script>
 
