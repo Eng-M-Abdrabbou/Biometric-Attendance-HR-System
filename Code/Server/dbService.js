@@ -190,32 +190,6 @@ try {
 
 }
 
-// async generateAttendanceReport() {
-//   let conn;
-//   try {
-//     conn = await this.getConnection();
-//     console.log("pool is working");
-
-//     const shifts = await this.query(conn, 'SELECT * FROM shift');
-//     const employees = await this.query(conn, 'SELECT * FROM employee_master');
-//     const inputData = await this.query(conn, 'SELECT * FROM input_data');
-//     const departments = await this.query(conn, 'SELECT * FROM departments');
-//     const sections = await this.query(conn, 'SELECT * FROM section');
-//     const sites = await this.query(conn, 'SELECT * FROM sites');
-//     const designations = await this.query(conn, 'SELECT * FROM jobtitle');
-//     const grades = await this.query(conn, 'SELECT * FROM grade');
-
-//     const report = await this.processAttendanceData(shifts, employees, inputData, departments, sections, sites, designations, grades);
-//     await this.insertOrUpdateGAR(conn, report);
-//     return this.organizeReportData(report);
-//   } catch (error) {
-//     console.error("Error in generateAttendanceReport:", error);
-//     throw error;
-//   } finally {
-//     if (conn) conn.release();
-//   }
-// }
-
 
 
 async generateAttendanceReport(filters = {}) {
@@ -328,29 +302,6 @@ async generateAttendanceReport(filters = {}) {
 
 
 
-// async getFilterOptions() {
-//   let conn;
-//   try {
-//       conn = await this.getConnection();
-      
-//       const departments = await this.query(conn, 'SELECT depId as id, depName as name FROM departments');
-//       const sites = await this.query(conn, 'SELECT siteId as id, siteName as name FROM sites');
-//       const nationalities = await this.query(conn, 'SELECT NationalityID as id, NationalityName as name FROM nationalities');
-
-//       return {
-//           departments,
-//           sites,
-//           nationalities
-//       };
-//   } catch (error) {
-//       console.error("Error getting filter options:", error);
-//       throw error;
-//   } finally {
-//       if (conn) conn.release();
-//   }
-// }
-
-
 async getFilterOptions() {
   let conn;
   try {
@@ -407,35 +358,6 @@ async getConnection() {
 
 
 
-
-// async getConnection() {
-//   return new Promise((resolve, reject) => {
-//       pool.getConnection((err, connection) => {
-//           if (err) {
-//               reject(new Error('Error getting connection from pool: ' + err.message));
-//           } else {
-//               resolve(connection);
-//           }
-//       });
-//   });
-// }
-
-// async query(conn, sql, values = []) {
-//   return new Promise((resolve, reject) => {
-//       pool.query(sql, values, (error, results) => {
-//           if (error) {
-//               console.error('Database query error:', error);
-//               reject(error);
-//           } else {
-//               console.log('Database query results:', results);
-//               resolve(results);
-//           }
-//       });
-//   });
-// }
-
-
-
 async query(conn, sql, values = []) {
   return new Promise((resolve, reject) => {
       logger.debug('Executing query', { sql, values });
@@ -471,35 +393,6 @@ async query1(sql, values = []) {
       }
     });
   });}
-
-
-
-
-// async processAttendanceData(shifts, employees, inputData, departments, sections, sites, designations, grades) {
-//   const report = [];
-//   const groupedData = this.groupByEmployeeAndDate(inputData);
-// 
-//   for (const [empId, dates] of Object.entries(groupedData)) {
-//     const employee = employees.find(emp => emp.EmpID === parseInt(empId));
-//     if (!employee) continue;
-// 
-//     const shift = shifts.find(s => s.Shift_id === employee.ShiftId);
-//     const department = departments.find(d => d.depId === employee.depId);
-//     const section = sections.find(s => s.sectionId === department.section_Id);
-//     const site = sites.find(s => s.siteId === section.site_Id);
-//     const designation = designations.find(d => d.jobTitleId === employee.jobTitle);
-//     const grade = grades.find(g => g.gradeId === employee.EmployeeGradeID);
-// 
-//     for (const [date, records] of Object.entries(dates)) {
-//       const attendanceRecord = await this.processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade);
-//       if (attendanceRecord) {
-//         report.push(attendanceRecord);
-//       }
-//     }
-//   }
-// 
-//   return report;
-// }
 
 
 async processAttendanceData(results) {
@@ -723,19 +616,6 @@ groupByEmployeeAndDate(inputData) {
 }
 
 
-
-
-//groupByEmployeeAndDate(inputData) {
-//  console.log("trying to group", inputData);
-//  return inputData.reduce((acc, record) => {
-//      const { empid, date } = record;
-//      if (!acc[empid]) acc[empid] = {};
-//      if (!acc[empid][date]) acc[empid][date] = [];
-//      acc[empid][date].push(record);
-//      return acc;
-//  }, {});
-//}
-
 organizeReportData(report) {
   const organized = {};
 
@@ -924,13 +804,7 @@ async insertOrUpdateGAR(conn, report) {
   }
 }
 
-
-
 }
-
-
-
-
 
 
 module.exports = DbService;

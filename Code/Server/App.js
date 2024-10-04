@@ -59,12 +59,6 @@ app.use((err, req, res, next) => {
 
 
 
-
-
-
-
-
-
 app.get('/api/admin-credentials', (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
@@ -130,30 +124,6 @@ app.get('/api/employees/:id', async (req, res) => {
 })
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Filter options endpoint
 app.get('/api/filter-options', async (req, res) => {
     logger.info('Received request for filter options');
@@ -211,42 +181,6 @@ app.get('/api/attendance-report', async (req, res) => {
         });
     }
 });
-
-
-
-
-// app.get('/api/attendance-report', async (req, res) => {
-//     try {
-//         console.log("api is working");
-//         const report = await db.generateAttendanceReport();
-//         res.json(report);
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
