@@ -58,6 +58,7 @@ app.post('/api/input/:id', async (req, res) => {
 app.patch('/api/update/:id', async (req, res) => {
     try {
         const id = req.params.id;
+        console.log("id is",id)
         const result = await db.updateClockOut(id);
         if (result.affectedRows === 0) {
             res.status(404).send({ message: 'Employee not found or no record to update' });
@@ -83,7 +84,7 @@ app.get('/api/employees/:id', async (req, res) => {
     if (employee === null) {
         res.status(404).send({ message: 'Employee not found' });
       } else {
-        res.json({ employee });
+     res.json({ employee });
       }
 })
 
@@ -114,7 +115,7 @@ async function getPrimaryKeys(table) {
           AND t.table_schema=DATABASE()
           AND t.table_name=?;
     `;
-    return await db.query(query, [table]);
+    return await db.query1(query, [table]);
 }
 
 
@@ -130,7 +131,7 @@ app.get('/tableInfo/:table', async (req, res) => {
         
         console.log(`Attempting to fetch data from table: ${TABLE}`);
         const primaryKeys = await getPrimaryKeys(TABLE);
-        const data = await db.query(`SELECT * FROM ${TABLE}`);
+        const data = await db.query1(`SELECT * FROM ${TABLE}`);
         console.log(`Data fetched from ${TABLE}:`, data);
         
         if (data.length === 0) {
@@ -155,7 +156,7 @@ app.post('/updateTable', async (req, res) => {
         const sql = `UPDATE ${table} SET ${column} = ? WHERE ${whereClause}`;
         console.log('SQL query:', sql);
 
-        const result = await db.query(sql, [value, ...primaryKeyValues]);
+        const result = await db.query1(sql, [value, ...primaryKeyValues]);
         console.log('Update result:', result);
         res.json({ success: true });
     } catch (error) {
@@ -176,7 +177,7 @@ app.post('/insertRow', async (req, res) => {
         const sql = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
         console.log('SQL query:', sql);
 
-        const result = await db.query(sql, values);
+        const result = await db.query1(sql, values);
         console.log('Insert result:', result);
         res.json({ success: true });
     } catch (error) {
@@ -196,7 +197,7 @@ app.post('/deleteRow', async (req, res) => {
         const sql = `DELETE FROM ${table} WHERE ${whereClause}`;
         console.log('SQL query:', sql);
 
-        const result = await db.query(sql, values);
+        const result = await db.query1(sql, values);
         console.log('Delete result:', result);
         res.json({ success: true });
     } catch (error) {
@@ -209,7 +210,7 @@ app.post('/deleteRow', async (req, res) => {
 
 
 
-app.get('/isClocekdin/:id', async (req, res) => {
+app.get('/isClockedin/:id', async (req, res) => {
     console.log("this is the api working");
     const id = req.params.id
     const report = await db.IsclockedIn(id);

@@ -93,7 +93,6 @@ class DbService {
 
 
 
-
 async insertInput(EmpID) {
   console.log("db is working");
   try {
@@ -113,6 +112,7 @@ async insertInput(EmpID) {
 
 async updateClockOut(empid) {
   try {
+    console.log("trying to update clock out");
     const response = await new Promise((resolve, reject) => {
       const query = `
         UPDATE input_data 
@@ -120,11 +120,14 @@ async updateClockOut(empid) {
         WHERE empid = ? AND date = CURDATE();
       `;
       pool.query(query, [empid], (err, results) => {
+        console.log("trying to update clock out");
+
         if (err) reject(new Error(err.message));
         resolve(results);
+        console.log(results, "results");
       });
     });
-    console.log(response, "response");
+    console.log(response, "response yaaaay");
     return response;
   } catch (error) {
     console.log(error);
@@ -138,7 +141,7 @@ console.log("is he clocked in");
 try {
   Conn = await this.getConnection();
   const response = await new Promise((resolve, reject) => {
-    const query = "SELECT * FROM input_data WHERE empid = ? AND clock_in IS NOT NULL;";
+    const query = "SELECT * FROM input_data WHERE empid = ? AND clock_in IS NOT NULL AND date = CURDATE();";
     pool.query(query, [id], (err, results) => {
       if (err) reject(new Error(err.message));
       if (results.length === 0) {
@@ -194,20 +197,22 @@ async getConnection() {
   });
 }
 
-// async query(conn, sql, values = []) {
-//   return new Promise((resolve, reject) => {
-//       conn.query(sql, values, (error, results) => {
-//           if (error) {
-//               reject(error);
-//           } else {
-//               resolve(results);
-//           }
-//       });
-//   });
-// }
+async query(conn, sql, values = []) {
+  return new Promise((resolve, reject) => {
+      pool.query(sql, values, (error, results) => {
+          if (error) {
+              console.error('Database query error:', error);
+              reject(error);
+          } else {
+              console.log('Database query results:', results);
+              resolve(results);
+          }
+      });
+  });
+}
 
 
-async query(sql, values = []) {
+async query1(sql, values = []) {
   return new Promise((resolve, reject) => {
     pool.query(sql, values, (error, results) => {
       if (error) {
@@ -259,8 +264,10 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
   const clockInTime = moment.min(...records.map(r => moment(r.clock_in, 'HH:mm:ss')));
   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
 
-  const status = await this.determineStatus(clockInTime, shiftStart, lgtMinutes);
-  const awh = status === 'A' ? '0:00' : await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
+  const status = await this.determineStatus(clockInTime,clockOutTime, shiftStart, lgtMinutes);
+  const awh = 
+  //status === 'A' ? '0:00' : 
+  await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
   const ot = status === 'A' ? '0:00' : await this.calculateOT(clockOutTime, shiftEnd);
 
   return {
@@ -271,7 +278,7 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
     first_in: clockInTime.format('HH:mm:ss'),
     last_out: clockOutTime.format('HH:mm:ss'),
     status,
-    leave_id: 11,  // You may need to determine this value based on your business logic
+    leave_id: 11,  
     awh,
     ot,
     shift_id: shift.Shift_id,
@@ -366,10 +373,29 @@ organizeReportData(report) {
   return organized;
 }
 
-async determineStatus(clockInTime, shiftStart, lgtMinutes) {
+// async determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes) {
+//   console.log("trying to determine status", clockInTime, shiftStart, lgtMinutes);
+//   const latestAllowedTime = moment(shiftStart).add(lgtMinutes, 'minutes');
+//   let MSTIme= moment('00:00:00', 'HH:mm:ss');
+//   console.log(" MSTIme is xyz",MSTIme);
+//   console.log(" clockOutTime is xyz",clockOutTime);
+//   if(clockOutTime===MSTIme){
+//     status='MS'; 
+//     console.log("status is xyz", status);
+    
+    
+//     return status;
+//   }
+//   const status = clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A';
+//   console.log("status", status);
+//   return status;
+// }
+
+async determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes) {
   console.log("trying to determine status", clockInTime, shiftStart, lgtMinutes);
   const latestAllowedTime = moment(shiftStart).add(lgtMinutes, 'minutes');
-  const status = clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A';
+  const status = clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss')) ? 'MS' : (clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A');
+ console.log("status is xyz", clockOutTime, );
   console.log("status", status);
   return status;
 }
