@@ -21,9 +21,7 @@
   async function getEmployeeById(id) {
     const response = await fetch(`/api/employees/${id}`);
     const employee = await response.json();
-  //  console.log(employee,"blah blah");
     const valueOnly = employee.employee;
- //   console.log(valueOnly," value only");
     return employee.employee;
 }
 
@@ -56,8 +54,7 @@ async function testInput() {
             document.getElementById('out').style.display = 'none';
         }
     } catch (error) {
-       // console.error('Error testing input:', error);
-     //   alert('An error occurred while fetching employee data. Please try again.');
+        console.error('Error during fetch:', error);
     }
 }
 
@@ -102,138 +99,6 @@ document.getElementById('out').addEventListener('click', async () => {
         console.error('Error during fetch:', error);
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//
-//async function getEmployeeById(id) {
-////if(id.length===3){
-//  
-//    const response = await fetch(`/api/employees/${id}`);
-//  const employee = await response.json();
-//  const jsonString = JSON.stringify(employee);
-//  console.log(jsonString);
-//  const valueOnly = jsonString.replace(/[^0-9]/g, '');
-//  console.log(valueOnly);
-//  //console.log(employee);
-//  return employee;
-////}
-//  
-//}
-//
-//const inputField = document.getElementById('input');
-//
-//inputField.addEventListener('input', testInput);
-//
-//async function testInput() {
-//  const input = inputField.value;
-//  try {
-//    const employee = await getEmployeeById(input);
-//    console.log(employee.value);
-//   
-//    const jsonString = JSON.stringify(employee);
-//  console.log(jsonString);
-//  const valueOnly = jsonString.replace(/[^0-9]/g, '');
-//
-//  document.getElementById('in').addEventListener('click', async () => {
-//    try {
-//        const response = await fetch(`/api/input/${valueOnly}`, {
-//            method: 'POST'
-//        });
-//        if (!response.ok) {
-//            throw new Error(`HTTP error! status: ${response.status}`);
-//        }
-//        const data = await response.json();
-//        console.log(data);
-//
-//        document.getElementById('in').style.display = 'none';
-//        document.getElementById('out').style.display = 'block';
-//    } catch (error) {
-//        console.error('Error during fetch:', error);
-//    }
-//});
-//
-//// document.getElementById('out').addEventListener('click', async () => {
-////   try {
-////       const response = await fetch(`/api/update/${valueOnly}`, {
-////           method: 'PATCH'
-////       });
-////       if (!response.ok) {
-////           throw new Error(`HTTP error! status: ${response.status}`);
-////       }
-////       const data = await response.json();
-////       console.log(data);
-//// 
-////       document.getElementById('in').style.display = 'none';
-////       document.getElementById('out').style.display = 'block';
-////   } catch (error) {
-////       console.error('Error during fetch:', error);
-////   }
-//// });
-//
-//
-//document.getElementById('out').addEventListener('click', async () => {  // Ensure this is correct
-//  try {
-//      const response = await fetch(`/api/update/${valueOnly}`, {
-//          method: 'PATCH'
-//      });
-//      if (!response.ok) {
-//          throw new Error(`HTTP error! status: ${response.status}`);
-//      }
-//      const data = await response.json();
-//      console.log(data);
-//
-//      document.getElementById('in').style.display = 'none';
-//      document.getElementById('out').style.display = 'block';
-//  } catch (error) {
-//      console.error('Error during fetch:', error);
-//  }
-//});
-//
-//
-//
-//    console.log(inputField.value);
-//    if (valueOnly === inputField.value) {
-//      console.log('employee found!');
-//      const response = await fetch(`/isClocekdin/${valueOnly}`);
-//      const clocked = await response.json();
-//      console.log(clocked);
-//      if (clocked === false) {
-//        console.log('Success!');
-//        document.getElementById('in').style.display = 'block';
-//        document.getElementById('out').style.display = 'none';
-//      } else {
-//        document.getElementById('in').style.display = 'none';
-//        document.getElementById('out').style.display = 'block';
-//      }
-//    } else if  (valueOnly !== inputField.value){
-//      console.log('Employee not found');
-//      document.getElementById('in').style.display = 'none';
-//    }
-//  } catch (error) {
-//    console.error('Error testing input:', error);
-//  }
-//}
-//
-//
-//
-//
-//
-
- 
-
-
 
 
 </script>
