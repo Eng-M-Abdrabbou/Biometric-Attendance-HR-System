@@ -525,7 +525,7 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
   const clockInTime = moment.min(...records.map(r => moment(r.clock_in, 'HH:mm:ss')));
   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
 
-  const status = await this.determineStatus(clockInTime,clockOutTime, shiftStart, lgtMinutes);
+  const status = await this.determineStatus(clockInTime,clockOutTime, shiftStart, lgtMinutes, date);
   const awh = 
   //status === 'A' ? '0:00' : 
   await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
@@ -674,15 +674,24 @@ console.log("organized", JSON.stringify(organized, null, 2));
 }
 
 
-
-async determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes) {
+async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) {
   console.log("trying to determine status", clockInTime, shiftStart, lgtMinutes);
   const latestAllowedTime = moment(shiftStart).add(lgtMinutes, 'minutes');
-  const status = clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss')) ? 'MS' : (clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A');
- console.log("status is xyz", clockOutTime, );
-  console.log("status", status);
+  const dayOfWeek = moment(date).day();
+  const isWeekend = (dayOfWeek === 6 || dayOfWeek === 0); 
+
+  let status = 'A';
+  if (isWeekend) {
+    status = 'W';
+  } else {
+    status = clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss')) ? 'MS' : (clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A');
+  }
+
+  console.log("status is", status);
   return status;
 }
+
+
 
 async calculateAWH(clockInTime, clockOutTime, breakHours) {
   console.log("trying to calculate awh", clockInTime, clockOutTime, breakHours);
