@@ -529,7 +529,9 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
   const awh = 
   //status === 'A' ? '0:00' : 
   await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
-  const ot = status === 'A' ? '0:00' : await this.calculateOT(clockOutTime, shiftEnd);
+  const ot = 
+  //status === 'A' ? '0:00' : 
+  await this.calculateOT(clockOutTime, shiftEnd);
 console.log("xxxxxxxxxxxxx",  site.siteId,
   site.siteName,
   designation.jobTitleId,
