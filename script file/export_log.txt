@@ -1,0 +1,7 @@
+2024-10-10 12:45:10,402 - INFO - Script started
+2024-10-10 12:45:10,732 - INFO - Connected to the database
+2024-10-10 12:45:10,739 - INFO - Data fetched successfully
+2024-10-10 12:45:10,740 - INFO - Column names fetched successfully
+2024-10-10 12:45:11,103 - INFO - Data exported to Excel successfully
+2024-10-10 12:45:11,184 - INFO - Database connection closed
+2024-10-10 12:45:11,184 - INFO - Script ended
