@@ -50,19 +50,6 @@ const logger = winston.createLogger({
     ]
 });
 
-// Error handling middleware
-// app.use((err, req, res, next) => {
-//     logger.error('Unhandled error:', { 
-//         error: err.message, 
-//         stack: err.stack,
-//         path: req.path,
-//         method: req.method
-//     });
-//     res.status(500).json({ 
-//         error: 'Internal server error',
-//         details: err.message 
-//     });
-// });
 
 
 app.use((err, req, res, next) => {
@@ -218,48 +205,6 @@ app.get('/api/filter-options', async (req, res) => {
         });
     }
 });
-
-// Attendance report endpoint
-// app.get('/api/attendance-report', async (req, res) => {
-//     logger.info('Received attendance report request', { query: req.query });
-//     try {
-//         const filters = {
-//             dateFrom: req.query.dateFrom,
-//             dateTo: req.query.dateTo,
-//             empId: req.query.empId,
-//             empName: req.query.empName,
-//             department: req.query.department,
-//             site: req.query.site,
-//             nationality: req.query.nationality
-//         };
-
-//         // Validate date range if provided
-//         if (filters.dateFrom && filters.dateTo) {
-//             if (new Date(filters.dateFrom) > new Date(filters.dateTo)) {
-//                 throw new Error('Invalid date range: Start date cannot be after end date');
-//             }
-//         }
-
-//         logger.debug('Processing report with filters', { filters });
-//         const report = await db.generateAttendanceReport(filters);
-//         logger.info('Successfully generated report', { 
-//             recordCount: Object.keys(report).length 
-//         });
-//         res.json(report);
-//     } catch (error) {
-//         logger.error('Error generating attendance report', { 
-//             error: error.message, 
-//             stack: error.stack 
-//         });
-//         res.status(500).json({ 
-//             error: 'Failed to generate attendance report',
-//             details: error.message 
-//         });
-//     }
-// });
-
-
-
 
 
 

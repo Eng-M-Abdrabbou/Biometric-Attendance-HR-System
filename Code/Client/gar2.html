@@ -275,14 +275,6 @@
 
 
 
-
-
-
-
-
-
-
-
         // Validate date range
         function validateDateRange(dateFrom, dateTo) {
             if (dateFrom && dateTo) {
@@ -295,100 +287,6 @@
             }
             return true;
         }
-
-
-
-        /*
-        function displayReport(data) {
-            console.log(data);
-            const container = document.getElementById('reportContainer');
-            if (Object.keys(data).length === 0) {
-                container.innerHTML = '<p>No data available.</p>';
-                return;
-            }
-        
-            let html = '';
-        
-            for (const [shiftId, shiftData] of Object.entries(data)) {
-              console.log(shiftData);
-                html += `
-                  <h2 style="color: red";">&nbsp;&nbsp;Shift: ${shiftData.shift_name}</h2>
-                 <table style="font-color=">
-                        <tr>
-                            <th>Shift Type</th>
-                            <th>Shift Start</th>
-                            <th>Shift End</th>
-                            <th>Break Hours</th>
-                            <th>Time allowed before shift</th>
-                            <th>Shift Incharge id</th>
-                            <th>Total Working Hours Before</th>
-                            <th>LGT in Minutes</th>
-                        </tr>
-                        <tr>
-                            <td>${shiftData.shift_type}</td>
-                            <td>${shiftData.shift_start}</td>
-                            <td>${shiftData.shift_end}</td>
-                            <td>${shiftData.hours_allowed_for_break}</td>
-                            <td>${shiftData.time_allowed_before_shift}</td>
-                            <td>${shiftData.shift_incharge}</td>
-                            <td>${shiftData.total_working_hours_before}</td>
-                            <td>${shiftData.lgt_in_minutes}</td>
-                        </tr>
-                    </table>
-                    `;
-        
-                for (const [siteId, siteData] of Object.entries(shiftData.sites)) {
-                    html += `<h3 style="color: blue";>&nbsp;&nbsp;Site: ${siteData.site_name}</h3>`;
-                    
-  
-
-                    for (const [depId, depData] of Object.entries(siteData.departments)) {
-                        html += `<h4 style="color: green";>&nbsp;&nbsp;Department: ${depData.department_name}</h4>`;
-                        html += '<table><thead><tr> <th>Emp. ID</th> <th>Emp. Name</th><th>Grade</th><th>Designation</th><th>Date</th><th>First In</th><th>Last Out</th><th>Status</th><th>AWH</th><th>OT</th></tr></thead><tbody>';
-        
-                        for (const [empId, empData] of Object.entries(depData.employees)) {
-                            empData.attendance.forEach((record, index) => {
-                                let newawh1 = Math.floor(record.awh);
-                                let newawh2 = Math.floor((record.awh%1)*100); //
-                                console.log(newawh2);
-                                if (isNaN(newawh1) || isNaN(newawh2)) {
-                                    newawh1 = 0;
-                                    newawh2 = 0;
-                                }
-
-                                let newot1 = Math.floor(record.ot);
-                                let newot2 = Math.floor((record.ot%1)*100); //
-                                console.log(newot2);
-                                if (isNaN(newot1) || isNaN(newot2)) {
-                                    newot1 = 0;
-                                    newot2 = 0;
-                                }
-                                html += `
-                                    <tr>
-                                        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
-                                        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
-                                        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
-                                        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
-                                        <td>${record.shift_date}</td>
-                                        <td>${record.first_in}</td>
-                                        <td>${record.last_out}</td>
-                                        <td> ${record.status}</td>
-                                        <td>${newawh1} hr/s ${newawh2} min/s</td>
-                                        <td>${newot1} hr/s ${newot2} min/s</td>
-                                    </tr>
-                                `;
-                            });
-                        }
-        
-                        html += '</tbody></table>';
-                    }
-                }
-            }
-        
-            container.innerHTML = html;
-        }
-*/
-
 
 
 
@@ -498,11 +396,6 @@ function displayReport(data) {
 }
 
 
-
-
-
-
-
         function printDivAsPDF(divId) {
             const { jsPDF } = window.jspdf;
             const divElement = document.getElementById(divId);
@@ -602,23 +495,6 @@ function displayReport(data) {
           alert('Failed to trigger data synchronization');
         }
       });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

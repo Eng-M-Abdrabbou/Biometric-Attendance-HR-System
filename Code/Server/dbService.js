@@ -195,126 +195,6 @@ try {
 }
 
 
-/*
-async generateAttendanceReport(filters = {}) {
-  let conn;
-  try {
-      conn = await this.getConnection();
-      logger.debug('Building attendance report query with filters', { filters });
-
-      let whereConditions = [];
-      let params = [];
-
-      // Build dynamic WHERE clause based on filters
-      if (filters.dateFrom && filters.dateTo) {
-          whereConditions.push('i.date BETWEEN ? AND ?');
-          params.push(filters.dateFrom, filters.dateTo);
-      }
-
-      if (filters.empId) {
-          whereConditions.push('e.EmpID = ?');
-          params.push(filters.empId);
-      }
-
-      if (filters.empName) {
-          whereConditions.push('(e.EmpFName LIKE ? OR e.EmpLName LIKE ?)');
-          params.push(`%${filters.empName}%`, `%${filters.empName}%`);
-      }
-
-      if (filters.department) {
-          whereConditions.push('e.depId = ?');
-          params.push(filters.department);
-      }
-
-      if (filters.site) {
-          whereConditions.push('sec.site_Id = ?');
-          params.push(filters.site);
-      }
-
-      if (filters.nationality) {
-          whereConditions.push('e.NationalityID = ?');
-          params.push(filters.nationality);
-      }
-
-      // Construct the main query
-      let baseQuery = `
-    SELECT DISTINCT 
-        i.*,
-        e.EmpID, e.EmpFName, e.EmpLName, e.IsLive, e.EmployeeGradeID,
-        e.NationalityID, e.EmailID, e.ShiftId, e.depId, e.jobTitle,
-        s.Shift_id, s.shift_name, s.shift_type, s.shift_start, s.shift_end,
-        s.hours_allowed_for_break, s.time_allowed_before_shift,
-        s.shift_incharge, s.total_working_hours_before, s.lgt_in_minutes,
-        d.depId, d.depName, d.section_Id,
-        sec.sectionId, sec.sectionName, sec.site_Id,
-        st.siteId, st.siteName, j.jobTitleId, j.jobTitleName, g.gradeId, g.gradeName
-    FROM input_data i
-    JOIN employee_master e ON i.empid = e.EmpID
-    JOIN shift s ON e.ShiftId = s.Shift_id
-    JOIN departments d ON e.depId = d.depId
-    JOIN section sec ON d.section_Id = sec.sectionId
-    JOIN sites st ON sec.site_Id = st.siteId
-    JOIN jobtitle j ON e.jobTitle = j.jobTitleId
-    JOIN grade g ON e.EmployeeGradeID = g.gradeId
-`;
-// if (whereConditions.length > 0) {
-//     baseQuery += ' AND ' + whereConditions.join(' AND ');
-// }
-      if (whereConditions.length > 0) {
-          baseQuery += ' WHERE ' + whereConditions.join(' AND ');
-      }
-
-      logger.debug('Executing main query', { 
-          query: baseQuery, 
-          parameters: params 
-      });
-
-      const results = await this.query( baseQuery, params);
-      logger.info('Query executed successfully', { 
-          rowCount: results.length 
-      });
-
-      console.log(results,"xxxxxxxxxxxxxxxxxxxx");
-
-      // Process the results
-      const processedData = await this.processAttendanceData(results);
-      logger.debug('Data processing completed', { 
-          processedRecords: Object.keys(processedData).length 
-      });
-
-      // Update GAR table
-      await this.insertOrUpdateGAR(conn, processedData);
-
-      // Organize and return the final report
-      const organizedReport = this.organizeReportData(processedData);
-      logger.info('Report generation completed', { 
-          reportSize: Object.keys(organizedReport).length 
-      });
-
-      return organizedReport;
-  } catch (error) {
-      logger.error('Error generating attendance report', { 
-          error: error.message,
-          stack: error.stack
-      });
-      throw error;
-  } finally {
-      if (conn) {
-          logger.debug('Releasing database connection');
-          conn.release();
-      }
-  }
-}
-*/
-
-
-
-
-
-
-
-
-
 
 
 
@@ -521,34 +401,6 @@ async getConnection() {
       });
   });
 }
-
-
-
-// async query( sql, values = []) {
-//   return new Promise((resolve, reject) => {
-//       logger.debug('Executing query', { sql, values });
-//       pool.query(sql, values, (error, results) => {
-//           if (error) {
-//               logger.error('Database query error', { 
-//                   error: error.message,
-//                   sql,
-//                   values 
-//               });
-//               reject(error);
-//           } else {
-//               logger.debug('Query executed successfully', { 
-//                   rowCount: results.length 
-//               });
-//               resolve(results);
-//           }
-//       });
-//   });
-// }
-
-
-
-
-
 
 
 
@@ -884,7 +736,7 @@ async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) 
   let status = 'A';
   if (isWeekend) {
     status = 'W';
-  } else if(clockOutTime==null){
+  } else if(clockOutTime==null|| clockOutTime===''|| clockOutTime=="Invalid date" || clockOutTime===undefined || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
     status = 'MS';
 
   }else{
@@ -925,107 +777,6 @@ async calculateOT(clockOutTime, shiftEnd) {
   }
   return newot;
 }
-
-
-// async insertDataIntoGAR(conn, report) {
-//   if (!Array.isArray(report)) {
-//     console.error('Report is not an array:', report);
-//     return;
-//   }
-//   try {
-//     const insertPromises = report.map(record => {
-//       // Ensure only valid fields are included
-//       const validRecord = {
-//         emp_id: record.emp_id,
-//         emp_fname: record.emp_fname,
-//         emp_lname: record.emp_lname,
-//         shift_date: record.shift_date,
-//         first_in: record.first_in,
-//         last_out: record.last_out,
-//         status: record.status,
-//         leave_id: record.leave_id,
-//         awh: record.awh,
-//         ot: record.ot
-//       };
-//       return this.query( 'INSERT INTO general_attendance_report SET ?', validRecord);
-//     });
-//     await Promise.all(insertPromises);
-//     console.log(`Inserted ${report.length} records into GAR table.`);
-//   } catch (error) {
-//     console.error('Error inserting data into general_attendance_report table:', error);
-//     throw error;
-//   }
-// }
-
-
-
-
-// async insertOrUpdateGAR(conn, report) {
-//   if (!Array.isArray(report)) {
-//     console.error('Report is not an array:', report);
-//     return;
-//   }
-//   try {
-//     const insertOrUpdatePromises = report.map(async (record) => {
-//       const validRecord = {
-//         emp_id: record.emp_id,
-//         emp_fname: record.emp_fname,
-//         emp_lname: record.emp_lname,
-//         shift_date: record.shift_date,
-//         first_in: record.first_in,
-//         last_out: record.last_out,
-//         status: record.status,
-//         leave_id: record.leave_id,
-//         awh: record.awh,
-//         ot: record.ot
-//       };
-
-//       // Check if a record already exists
-//       const existingRecord = await this.query(
-       
-//         'SELECT * FROM general_attendance_report WHERE emp_id = ? AND shift_date = ?',
-//         [validRecord.emp_id, validRecord.shift_date]
-//       );
-
-//       if (existingRecord.length > 0) {
-//         // Record exists, check if it needs updating
-//         const currentRecord = existingRecord[0];
-//         const needsUpdate = Object.keys(validRecord).some(key => 
-//           key !== 'emp_id' && key !== 'shift_date' && currentRecord[key] !== validRecord[key]
-//         );
-
-//         if (needsUpdate) {
-//           // Update the existing record
-//           await this.query(
-            
-//             'UPDATE general_attendance_report SET ? WHERE emp_id = ? AND shift_date = ?',
-//             [validRecord, validRecord.emp_id, validRecord.shift_date]
-//           );
-//           console.log(`Updated record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
-//         } else {
-//           console.log(`Duplicate record found for employee ${validRecord.emp_id} on ${validRecord.shift_date}, no changes needed`);
-//         }
-//       } else {
-//         // Insert new record
-//         await this.query( 'INSERT INTO general_attendance_report SET ?', validRecord);
-//         console.log(`Inserted new record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
-//       }
-//     });
-
-//     await Promise.all(insertOrUpdatePromises);
-//     console.log(`Processed ${report.length} records in GAR table.`);
-//   } catch (error) {
-//     console.error('Error processing data for general_attendance_report table:', error);
-//     throw error;
-//   }
-// }
-
-
-
-
-
-
-
 
 
 async insertOrUpdateGAR(report) {
@@ -1086,19 +837,6 @@ async insertOrUpdateGAR(report) {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-// async getConnection() {
-//   return await pool.getConnection();
-// }
 
 async endPool() {
   return await pool.end();
