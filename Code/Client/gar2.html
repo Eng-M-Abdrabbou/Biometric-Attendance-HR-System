@@ -51,10 +51,10 @@
         <h1>General Attendance Report</h1>
         
         <!-- Debug Toggle Button -->
-        <button id="debugToggle" onclick="toggleDebugLog()" style="display: none;">Toggle Debug Log</button>
+        <button id="debugToggle" onclick="toggleDebugLog()" style="display: block;">Toggle Debug Log</button>
         
         <!-- Debug Log Panel -->
-        <div id="debugLog" class="debug-log" style="display: none;">
+        <div id="debugLog" class="debug-log" style="display: block;">
             <h3>Debug Log:</h3>
             <pre id="debugOutput"></pre>
         </div>
@@ -106,6 +106,7 @@
                 <button id="resetFilters">Reset Filters</button>
                 <button style="display: none;" id="printButton" onclick="printDivAsPDF('reportContainer')">Print Report As PDF</button>
                 <button style="display: none;" id="btn-export">Print Report as XLSX(Excel)</button>
+                <button id="triggerSync">Refresh Data</button>
             </div>
         </div>
 
@@ -113,6 +114,12 @@
         <div id="loadingSpinner" class="loading-spinner">
             Loading... Please wait...
         </div>
+<!-- Add below the reportContainer div -->
+<div id="paginationControls" class="pagination-controls" style="display: none;">
+    <button id="prevPage">Previous</button>
+    <span>Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
+    <button id="nextPage">Next</button>
+</div>
 
         <div id="reportContainer"></div>
     </div>
@@ -219,6 +226,8 @@
             fetchGARReport();
         }
 
+
+       
         async function fetchGARReport() {
             const loadingSpinner = document.getElementById('loadingSpinner');
             loadingSpinner.style.display = 'block';
@@ -264,6 +273,16 @@
             }
         }
 
+
+
+
+
+
+
+
+
+
+
         // Validate date range
         function validateDateRange(dateFrom, dateTo) {
             if (dateFrom && dateTo) {
@@ -277,6 +296,9 @@
             return true;
         }
 
+
+
+        /*
         function displayReport(data) {
             console.log(data);
             const container = document.getElementById('reportContainer');
@@ -365,6 +387,120 @@
         
             container.innerHTML = html;
         }
+*/
+
+
+
+
+function displayReport(data) {
+    console.log(data);
+    const container = document.getElementById('reportContainer');
+    if (Object.keys(data).length === 0) {
+        container.innerHTML = '<p>No data available.</p>';
+        return;
+    }
+
+    let html = '';
+
+    for (const [shiftId, shiftData] of Object.entries(data)) {
+        console.log(shiftData);
+        html += `
+            <h2 style="color: red;">&nbsp;&nbsp;Shift: ${shiftData.shift_name}</h2>
+            <table>
+                <tr>
+                    <th>Shift Type</th>
+                    <th>Shift Start</th>
+                    <th>Shift End</th>
+                    <th>Break Hours</th>
+                    <th>Time allowed before shift</th>
+                    <th>Shift Incharge id</th>
+                    <th>Total Working Hours Before</th>
+                    <th>LGT in Minutes</th>
+                </tr>
+                <tr>
+                    <td>${shiftData.shift_type}</td>
+                    <td>${shiftData.shift_start}</td>
+                    <td>${shiftData.shift_end}</td>
+                    <td>${shiftData.hours_allowed_for_break}</td>
+                    <td>${shiftData.time_allowed_before_shift}</td>
+                    <td>${shiftData.shift_incharge}</td>
+                    <td>${shiftData.total_working_hours_before}</td>
+                    <td>${shiftData.lgt_in_minutes}</td>
+                </tr>
+            </table>
+        `;
+
+        for (const [siteId, siteData] of Object.entries(shiftData.sites)) {
+            html += `<h3 style="color: blue;">&nbsp;&nbsp;Site: ${siteData.site_name}</h3>`;
+
+            for (const [depId, depData] of Object.entries(siteData.departments)) {
+                html += `<h4 style="color: green;">&nbsp;&nbsp;Department: ${depData.department_name}</h4>`;
+                html += `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Emp. ID</th>
+                                <th>Emp. Name</th>
+                                <th>Grade</th>
+                                <th>Designation</th>
+                                <th>Date</th>
+                                <th>First In</th>
+                                <th>Last Out</th>
+                                <th>Status</th>
+                                <th>AWH</th>
+                                <th>OT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                for (const [empId, empData] of Object.entries(depData.employees)) {
+                    empData.attendance.forEach((record, index) => {
+                        let newawh1 = Math.floor(record.awh);
+                        let newawh2 = Math.floor((record.awh % 1) * 100);
+                        if (isNaN(newawh1) || isNaN(newawh2)) {
+                            newawh1 = 0;
+                            newawh2 = 0;
+                        }
+
+                        let newot1 = Math.floor(record.ot);
+                        let newot2 = Math.floor((record.ot % 1) * 100);
+                        if (isNaN(newot1) || isNaN(newot2)) {
+                            newot1 = 0;
+                            newot2 = 0;
+                        }
+                        let firstIn = record.first_in == "Invalid date" || record.first_in === null || record.first_in === '00:00:00' ? "Didn't clock in" : record.first_in;
+                        let lastOut = record.last_out == "Invalid date" || record.last_out === null || record.last_out === '00:00:00' ? "Didn't clock out" : record.last_out;
+
+                        html += `
+                            <tr>
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
+                                <td>${record.shift_date}</td>
+                                <td>${firstIn}</td>
+                                <td>${lastOut}</td>
+                                <td>${record.status}</td>
+                                <td>${newawh1} hr/s ${newawh2} min/s</td>
+                                <td>${newot1} hr/s ${newot2} min/s</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                html += '</tbody></table>';
+            }
+        }
+    }
+
+    container.innerHTML = html;
+}
+
+
+
+
+
 
 
         function printDivAsPDF(divId) {
@@ -452,7 +588,140 @@
     }
     
 
-        </script>
+
+
+
+
+    document.getElementById('triggerSync').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/trigger-sync', { method: 'POST' });
+          const data = await response.json();
+          alert(data.message);
+        } catch (error) {
+          console.error('Error triggering sync:', error);
+          alert('Failed to trigger data synchronization');
+        }
+      });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Inside your <script> tag in the HTML
+
+    let currentPage = 1;
+    const limit = 100; // Must match the default limit in backend
+    
+    document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchGARReport(currentPage, limit);
+        }
+    });
+    
+    document.getElementById('nextPage').addEventListener('click', () => {
+        currentPage++;
+        fetchGARReport(currentPage, limit);
+    });
+    
+    async function fetchGARReport(page = 1, limit = 100) {
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        loadingSpinner.style.display = 'block';
+        document.getElementById('errorMessage').style.display = 'none';
+        
+        try {
+            const filters = {
+                dateFrom: document.getElementById('dateFrom').value,
+                dateTo: document.getElementById('dateTo').value,
+                empId: document.getElementById('empId').value,
+                empName: document.getElementById('empName').value,
+                department: document.getElementById('department').value,
+                site: document.getElementById('site').value,
+                nationality: document.getElementById('nationality').value
+            };
+    
+            logDebug('Fetching report with filters and pagination', { filters, page, limit });
+    
+            // Only include non-empty filters in the query string
+            const queryParams = new URLSearchParams(
+                Object.fromEntries(
+                    Object.entries(filters).filter(([_, v]) => v !== '')
+                )
+            );
+            queryParams.append('page', page);
+            queryParams.append('limit', limit);
+            const queryString = queryParams.toString();
+    
+            const response = await fetch(`/api/attendance-report${queryString ? `?${queryString}` : ''}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            logDebug('Received report data', data);
+    
+            displayReport(data.report);
+            document.getElementById('printButton').style.display = 'block';
+            document.getElementById('btn-export').style.display = 'block';
+            document.getElementById('paginationControls').style.display = 'block';
+    
+            // Update pagination controls
+            const totalPages = Math.ceil(data.totalRecords / limit);
+            document.getElementById('currentPage').textContent = data.page;
+            document.getElementById('totalPages').textContent = totalPages;
+    
+            // Show or hide pagination controls based on total pages
+            const paginationControls = document.getElementById('paginationControls');
+            if (totalPages > 1) {
+                paginationControls.style.display = 'block';
+            } else {
+                paginationControls.style.display = 'none';
+            }
+    
+            logDebug('Report displayed successfully');
+        } catch (error) {
+            showError('Error fetching report', error);
+            document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
+        } finally {
+            loadingSpinner.style.display = 'none';
+        }
+    }
+    
+    function resetFilters() {
+        logDebug('Resetting all filters');
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        document.getElementById('empId').value = '';
+        document.getElementById('empName').value = '';
+        document.getElementById('department').value = '';
+        document.getElementById('site').value = '';
+        document.getElementById('nationality').value = '';
+        currentPage = 1; // Reset to first page
+    
+        // Fetch report without filters after reset
+        fetchGARReport(currentPage, limit);
+    }
+    
+
+
+
+
+
+    </script>
 
 
 </body>

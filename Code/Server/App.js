@@ -6,6 +6,13 @@ const cors = require('cors');
 const app = express();
 const path = require("path");
 const winston = require('winston');
+const XLSX = require('xlsx');
+const fs = require('fs');
+const chokidar = require('chokidar');
+const { processExcelData, mainDataSync } = require('./dataSync');
+
+const redis = require('redis');
+const { promisify } = require('util');
 
 dotenv.config();
 
@@ -44,18 +51,87 @@ const logger = winston.createLogger({
 });
 
 // Error handling middleware
+// app.use((err, req, res, next) => {
+//     logger.error('Unhandled error:', { 
+//         error: err.message, 
+//         stack: err.stack,
+//         path: req.path,
+//         method: req.method
+//     });
+//     res.status(500).json({ 
+//         error: 'Internal server error',
+//         details: err.message 
+//     });
+// });
+
+
 app.use((err, req, res, next) => {
     logger.error('Unhandled error:', { 
         error: err.message, 
         stack: err.stack,
         path: req.path,
-        method: req.method
+        method: req.method,
+        query: req.query,
+        body: req.body
     });
     res.status(500).json({ 
         error: 'Internal server error',
-        details: err.message 
+        details: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message
     });
 });
+
+
+
+
+
+
+
+const excelFilePath = path.join(
+//    __dirname, 'tEnter.xlsx'
+"C:/Users/Hp/OneDrive/Desktop/tEnter.xlsx"
+);
+const watcher = chokidar.watch(excelFilePath, { persistent: true });
+
+watcher.on('change', async (path) => {
+  console.log(`File ${path} has been changed`);
+  await mainDataSync(db, excelFilePath);
+});
+
+
+
+//comment this part only temporart to make testing faster.
+// Initial sync on startup
+// if (fs.existsSync(excelFilePath)) {
+//   mainDataSync( excelFilePath);
+// }
+
+// Sync every 5 minutes
+// setInterval(() => {
+//   if (fs.existsSync(excelFilePath)) {
+//     mainDataSync( excelFilePath);
+//   }
+// }, 5 * 60 * 1000);
+
+
+
+
+// Add this new endpoint near your other endpoints
+app.post('/api/trigger-sync', async (req, res) => {
+  try {
+    await mainDataSync( excelFilePath);
+    res.json({ message: 'Data synchronization triggered successfully' });
+  } catch (error) {
+    logger.error('Error triggering data sync:', error);
+    res.status(500).json({ error: 'Failed to trigger data synchronization' });
+  }
+});
+
+
+
+
+
+
+
 
 
 
@@ -144,6 +220,50 @@ app.get('/api/filter-options', async (req, res) => {
 });
 
 // Attendance report endpoint
+// app.get('/api/attendance-report', async (req, res) => {
+//     logger.info('Received attendance report request', { query: req.query });
+//     try {
+//         const filters = {
+//             dateFrom: req.query.dateFrom,
+//             dateTo: req.query.dateTo,
+//             empId: req.query.empId,
+//             empName: req.query.empName,
+//             department: req.query.department,
+//             site: req.query.site,
+//             nationality: req.query.nationality
+//         };
+
+//         // Validate date range if provided
+//         if (filters.dateFrom && filters.dateTo) {
+//             if (new Date(filters.dateFrom) > new Date(filters.dateTo)) {
+//                 throw new Error('Invalid date range: Start date cannot be after end date');
+//             }
+//         }
+
+//         logger.debug('Processing report with filters', { filters });
+//         const report = await db.generateAttendanceReport(filters);
+//         logger.info('Successfully generated report', { 
+//             recordCount: Object.keys(report).length 
+//         });
+//         res.json(report);
+//     } catch (error) {
+//         logger.error('Error generating attendance report', { 
+//             error: error.message, 
+//             stack: error.stack 
+//         });
+//         res.status(500).json({ 
+//             error: 'Failed to generate attendance report',
+//             details: error.message 
+//         });
+//     }
+// });
+
+
+
+
+
+
+
 app.get('/api/attendance-report', async (req, res) => {
     logger.info('Received attendance report request', { query: req.query });
     try {
@@ -157,6 +277,11 @@ app.get('/api/attendance-report', async (req, res) => {
             nationality: req.query.nationality
         };
 
+        // Pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100; // Default to 100 records per page
+        const offset = (page - 1) * limit;
+
         // Validate date range if provided
         if (filters.dateFrom && filters.dateTo) {
             if (new Date(filters.dateFrom) > new Date(filters.dateTo)) {
@@ -164,16 +289,17 @@ app.get('/api/attendance-report', async (req, res) => {
             }
         }
 
-        logger.debug('Processing report with filters', { filters });
-        const report = await db.generateAttendanceReport(filters);
+        logger.debug('Processing report with filters and pagination', { filters, page, limit });
+        const { report, totalRecords } = await db.generateAttendanceReport(filters, limit, offset);
         logger.info('Successfully generated report', { 
-            recordCount: Object.keys(report).length 
+            recordCount: report.length,
+            totalRecords
         });
-        res.json(report);
+        res.json({ report, totalRecords, page, limit });
     } catch (error) {
         logger.error('Error generating attendance report', { 
-            error: error.message, 
-            stack: error.stack 
+            error: error.message,
+            stack: error.stack
         });
         res.status(500).json({ 
             error: 'Failed to generate attendance report',
@@ -181,6 +307,19 @@ app.get('/api/attendance-report', async (req, res) => {
         });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
