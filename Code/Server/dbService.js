@@ -736,7 +736,7 @@ async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) 
   let status = 'A';
   if (isWeekend) {
     status = 'W';
-  } else if(clockOutTime==null|| clockOutTime===''|| clockOutTime=="Invalid date" || clockOutTime===undefined || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
+  } else if(clockOutTime===null|| clockOutTime===''|| clockOutTime=="Invalid date" || clockOutTime===undefined || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
     status = 'MS';
 
   }else{
