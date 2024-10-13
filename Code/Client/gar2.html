@@ -507,7 +507,7 @@ function displayReport(data) {
             const { jsPDF } = window.jspdf;
             const divElement = document.getElementById(divId);
         
-            html2canvas(divElement, { scale: 3 }).then(canvas => {
+            html2canvas(divElement, { scale: 1 }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const doc = new jsPDF();
                 const pageWidth = doc.internal.pageSize.getWidth();
