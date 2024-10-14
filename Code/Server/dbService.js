@@ -1,7 +1,12 @@
-const mysql = require('mysql');
+//const mysql = require('mysql');
+const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const moment = require('moment'); 
 const winston = require('winston');
+const NodeCache = require('node-cache');
+const cache = new NodeCache({ stdTTL: 300 }); // Cache expires in 5 minutes
+const util = require('util');
+
 
 let instance = null;
 dotenv.config();
@@ -23,6 +28,8 @@ const logger = winston.createLogger({
       })
   ]
 });
+
+
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -83,6 +90,11 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
+
+// Promisify the pool.query method to use with async/await
+const query = util.promisify(pool.query).bind(pool);
+
+
 class DbService {
 
     static instance;
@@ -91,19 +103,11 @@ class DbService {
     }
 
     constructor() {
-      this.pool = mysql.createPool({
-          host: process.env.DB_HOST,
-          user: process.env.DB_USER,
-          password: process.env.DB_PASSWORD,
-          database: process.env.DB_NAME,
-          port: process.env.DB_PORT,
-          waitForConnections: true,
-          connectionLimit: 10,
-          queueLimit: 0,
-          acquireTimeout: 30000
-      });
-  }
+      this.pool = pool;
+      };
+  
 
+  
     async getEmployee(id) {
         console.log("db is working");
         try {
@@ -196,6 +200,22 @@ try {
 
 
 
+async queryDB(sql, values = []) {
+  try {
+      logger.debug('Executing query', { sql, values });
+      const results = await query(sql, values);
+      logger.debug('Query executed successfully', { rowCount: results.length, timestamp: new Date().toISOString() });
+      return results;
+  } catch (error) {
+      logger.error('Database query error', { 
+          error: error.message,
+          sql,
+          values 
+      });
+      throw error;
+  }
+}
+
 
 
 // dbService.js
@@ -203,7 +223,7 @@ try {
 async generateAttendanceReport(filters = {}, limit = 100, offset = 0) {
   let conn;
   try {
-      conn = await this.getConnection();
+   //   conn = await this.getConnection();
       logger.debug('Building attendance report query with filters', { filters });
 
       let whereConditions = [];
@@ -285,16 +305,16 @@ async generateAttendanceReport(filters = {}, limit = 100, offset = 0) {
 
       // Get total count for pagination
       let countQuery = `
-          SELECT COUNT(*) as total 
-          FROM input_data i
-          JOIN employee_master e ON i.empid = e.EmpID
-          JOIN shift s ON e.ShiftId = s.Shift_id
-          JOIN departments d ON e.depId = d.depId
-          JOIN section sec ON d.section_Id = sec.sectionId
-          JOIN sites st ON sec.site_Id = st.siteId
-          JOIN jobtitle j ON e.jobTitle = j.jobTitleId
-          JOIN grade g ON e.EmployeeGradeID = g.gradeId
-      `;
+      SELECT COUNT(*) as total 
+      FROM input_data i
+      JOIN employee_master e ON i.empid = e.EmpID
+      JOIN shift s ON e.ShiftId = s.Shift_id
+      JOIN departments d ON e.depId = d.depId
+      JOIN section sec ON d.section_Id = sec.sectionId
+      JOIN sites st ON sec.site_Id = st.siteId
+      JOIN jobtitle j ON e.jobTitle = j.jobTitleId
+      JOIN grade g ON e.EmployeeGradeID = g.gradeId
+    `;
 
       if (whereConditions.length > 0) {
           countQuery += ' WHERE ' + whereConditions.join(' AND ');
@@ -348,23 +368,30 @@ async generateAttendanceReport(filters = {}, limit = 100, offset = 0) {
 
 
 
+
+
+
+
+
+
+
 async getFilterOptions() {
   let conn;
   try {
       logger.debug('Fetching filter options');
-      conn = await this.getConnection();
-      
-      const departments = await this.query(
+     // conn = await this.getConnection();
+      logger.debug('Database connection established', { timestamp: new Date().toISOString() });
+      const departments = await this.executeQuery(
            
           'SELECT depId as id, depName as name FROM departments'
       );
       
-      const sites = await this.query(
+      const sites = await this.executeQuery(
           
           'SELECT siteId as id, siteName as name FROM sites'
       );
       
-      const nationalities = await this.query(
+      const nationalities = await this.executeQuery(
           
           'SELECT NationalityID as id, NationalityName as name FROM nationalities'
       );
@@ -405,28 +432,27 @@ async getConnection() {
 
 
 async query(sql, values = []) {
-  return new Promise((resolve, reject) => {
-      if (typeof sql !== 'string' || !sql.trim()) {
-          const error = new Error('SQL query is empty or not a string');
-          logger.error('Database query error', { error: error.message, sql, values });
-          return reject(error);
-      }
+    try {
+        if (typeof sql !== 'string' || !sql.trim()) {
+            const error = new Error('SQL query is empty or not a string');
+            logger.error('Database query error', { error: error.message, sql, values });
+            throw error;
+        }
 
-      logger.debug('Executing query', { sql, values });
+        logger.debug('Executing query', { sql, values });
 
-      pool.query(sql, values, (error, results) => {
-          if (error) {
-              logger.error('Database query error', { error: error.message, sql, values });
-              reject(error);
-          } else {
-              logger.debug('Query executed successfully', { rowCount: results.length });
-              resolve(results);
-          }
-      });
-  });
+        const [results] = await this.pool.execute(sql, values);
+        logger.debug('Query executed successfully', { rowCount: results.length, timestamp: new Date().toISOString() });
+        return results;
+    } catch (error) {
+        logger.error('Database query error', { 
+            error: error.message,
+            sql,
+            values 
+        });
+        throw error;
+    }
 }
-
-
 
 
 
@@ -733,14 +759,15 @@ async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) 
   const dayOfWeek = moment(date).day();
   const isWeekend = (dayOfWeek === 6 || dayOfWeek === 0); 
 
-  let status = 'A';
-  if (isWeekend) {
-    status = 'W';
-  } else if(clockOutTime===null|| clockOutTime===''|| clockOutTime=="Invalid date" || clockOutTime===undefined || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
+  let status;
+  if ( clockOutTime === null || clockOutTime == null) {
     status = 'MS';
-
-  }else{
-    status = clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss')) ? 'MS' : (clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A');
+  } else if (isWeekend) {
+    status = 'W';
+  } else if (clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
+    status = 'MS';
+  } else {
+    status = clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A';
   }
 
   console.log("status is", status);
@@ -779,63 +806,235 @@ async calculateOT(clockOutTime, shiftEnd) {
 }
 
 
+// async insertOrUpdateGAR(report) {
+//   if (!Array.isArray(report)) {
+//       console.error('Report is not an array:', report);
+//       return;
+//   }
+//   try {
+//       const insertOrUpdatePromises = report.map(async (record) => {
+//          // Log the record to inspect emp_id and shift_date
+//          console.log('Processing Record:', record);
+//           const validRecord = {
+//               emp_id: record.emp_id,
+//               emp_fname: record.emp_fname,
+//               emp_lname: record.emp_lname,
+//               shift_date: record.shift_date,
+//               first_in: record.first_in,
+//               last_out: record.last_out,
+//               status: record.status,
+//               leave_id: record.leave_id,
+//               awh: record.awh,
+//               ot: record.ot
+//           };
+//   // Check if emp_id and shift_date are present
+//   if (!validRecord.emp_id || !validRecord.shift_date) {
+//     console.warn('Missing emp_id or shift_date:', validRecord);
+//     return;
+// }
+//           // Check if a record already exists
+//           const existingRecord = await this.query(
+//               'SELECT * FROM general_attendance_report WHERE emp_id = ? AND shift_date = ?',
+//               [validRecord.emp_id, validRecord.shift_date]
+//           );
+
+//           if (existingRecord.length > 0) {
+//               // Record exists, check if it needs updating
+//               const currentRecord = existingRecord[0];
+//               const needsUpdate = Object.keys(validRecord).some(key => 
+//                   key !== 'emp_id' && key !== 'shift_date' && currentRecord[key] !== validRecord[key]
+//               );
+
+//               if (needsUpdate) {
+//                   // Update the existing record
+//                   await this.query(
+//                       'UPDATE general_attendance_report SET ? WHERE emp_id = ? AND shift_date = ?',
+//                       [validRecord, validRecord.emp_id, validRecord.shift_date]
+//                   );
+//                   console.log(`Updated record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
+//               } else {
+//                   console.log(`Duplicate record found for employee ${validRecord.emp_id} on ${validRecord.shift_date}, no changes needed`);
+//               }
+//           } else {
+//               // Insert new record
+//               await this.query('INSERT INTO general_attendance_report SET ?', validRecord);
+//               console.log(`Inserted new record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
+//           }
+//       });
+
+//       await Promise.all(insertOrUpdatePromises);
+//       console.log(`Processed ${report.length} records in GAR table.`);
+//   } catch (error) {
+//       console.error('Error processing data for general_attendance_report table:', error);
+//       throw error;
+//   }
+// }
+
+
+
+
+
+
+// async executeQuery(sql, values = []) {
+//   try {
+//       logger.debug('Executing query', { sql, values });
+//       const results = await this.query(sql, values);
+//       logger.debug('Query executed successfully', { rowCount: results.length, timestamp: new Date().toISOString() });
+//       return results;
+//   } catch (error) {
+//       logger.error('Database query error', { 
+//           error: error.message,
+//           sql,
+//           values 
+//       });
+//       throw error;
+//   }
+// }
+
+
+
+
+
+
+
+async executeQuery(sql, values = [], maxRetries = 3, timeout = 10000) {
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      logger.debug('Executing query', { sql, values });
+      const results = await this.query(sql, values, { timeout });
+      logger.debug('Query executed successfully', { rowCount: results.length, timestamp: new Date().toISOString() });
+      return results;
+    } catch (error) {
+      logger.error('Database query error', {
+        error: error.message,
+        sql,
+        values
+      });
+
+      if (error.code === 'ETIMEDOUT' || error.code === 'ER_LOCK_DEADLOCK') {
+        retries++;
+        logger.warn('Retrying query due to timeout or deadlock', { retries });
+        await new Promise(res => setTimeout(res, 1000)); // Adding a delay before retrying
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error('Max retries reached. Query failed.');
+}
+
+
+
+
+
+
+
+
+
+
+
 async insertOrUpdateGAR(report) {
   if (!Array.isArray(report)) {
       console.error('Report is not an array:', report);
       return;
   }
+
+  const BATCH_SIZE = 500; // Define the batch size
+
+  // Filter out records missing emp_id or shift_date
+  const validRecords = report.filter(record => record.emp_id && record.shift_date);
+
+  if (validRecords.length === 0) {
+      console.warn('No valid records to insert or update in GAR.');
+      return;
+  }
+
   try {
-      const insertOrUpdatePromises = report.map(async (record) => {
-          const validRecord = {
-              emp_id: record.emp_id,
-              emp_fname: record.emp_fname,
-              emp_lname: record.emp_lname,
-              shift_date: record.shift_date,
-              first_in: record.first_in,
-              last_out: record.last_out,
-              status: record.status,
-              leave_id: record.leave_id,
-              awh: record.awh,
-              ot: record.ot
-          };
+      for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
+          const batch = validRecords.slice(i, i + BATCH_SIZE);
+          const values = batch.map(record => [
+              record.emp_id,
+              record.emp_fname,
+              record.emp_lname,
+              record.shift_date,
+              record.first_in,
+              record.last_out,
+              record.status,
+              11,
+              record.awh,
+              record.ot
+          ]);
 
-          // Check if a record already exists
-          const existingRecord = await this.query(
-              'SELECT * FROM general_attendance_report WHERE emp_id = ? AND shift_date = ?',
-              [validRecord.emp_id, validRecord.shift_date]
-          );
+          // Generate placeholders for each record
+          const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+          const flatValues = values.flat(); // Flatten the values array
 
-          if (existingRecord.length > 0) {
-              // Record exists, check if it needs updating
-              const currentRecord = existingRecord[0];
-              const needsUpdate = Object.keys(validRecord).some(key => 
-                  key !== 'emp_id' && key !== 'shift_date' && currentRecord[key] !== validRecord[key]
-              );
+          const sql = `
+              INSERT INTO general_attendance_report 
+                  (emp_id, emp_fname, emp_lname, shift_date, first_in, last_out, status, leave_id, awh, ot)
+              VALUES ${placeholders}
+              ON DUPLICATE KEY UPDATE 
+                  emp_fname = VALUES(emp_fname),
+                  emp_lname = VALUES(emp_lname),
+                  first_in = VALUES(first_in),
+                  last_out = VALUES(last_out),
+                  status = VALUES(status),
+                  leave_id = VALUES(leave_id),
+                  awh = VALUES(awh),
+                  ot = VALUES(ot)
+          `;
 
-              if (needsUpdate) {
-                  // Update the existing record
-                  await this.query(
-                      'UPDATE general_attendance_report SET ? WHERE emp_id = ? AND shift_date = ?',
-                      [validRecord, validRecord.emp_id, validRecord.shift_date]
-                  );
-                  console.log(`Updated record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
-              } else {
-                  console.log(`Duplicate record found for employee ${validRecord.emp_id} on ${validRecord.shift_date}, no changes needed`);
-              }
-          } else {
-              // Insert new record
-              await this.query('INSERT INTO general_attendance_report SET ?', validRecord);
-              console.log(`Inserted new record for employee ${validRecord.emp_id} on ${validRecord.shift_date}`);
-          }
-      });
+          await this.executeQuery(sql, flatValues);
+          logger.debug(`Processed batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} records in GAR table.`, { timestamp: new Date().toISOString() });
+      }
 
-      await Promise.all(insertOrUpdatePromises);
-      console.log(`Processed ${report.length} records in GAR table.`);
+      console.log(`All ${validRecords.length} records have been processed in GAR table.`);
   } catch (error) {
       console.error('Error processing data for general_attendance_report table:', error);
       throw error;
   }
 }
+
+
+
+// Bulk Insert or Update for Input Data with Batching
+async insertOrUpdateInputData(dataArray, chunkSize = 1000) {
+  const totalRows = dataArray.length;
+  let currentIndex = 0;
+
+  console.log(`Total Rows to Insert/Update: ${totalRows}`);
+
+  while (currentIndex < totalRows) {
+      const chunk = dataArray.slice(currentIndex, currentIndex + chunkSize);
+      const placeholders = chunk.map(() => "(?, ?, ?, ?)").join(", ");
+      const sql = `
+          INSERT INTO input_data (empid, date, clock_in, clock_out)
+          VALUES ${placeholders}
+          ON DUPLICATE KEY UPDATE
+          clock_in = VALUES(clock_in),
+          clock_out = VALUES(clock_out)
+      `;
+
+      const flattenedValues = chunk.flat();
+
+      try {
+          await this.executeQuery(sql, flattenedValues);
+          console.log(`Successfully inserted/updated chunk from row ${currentIndex + 1} to ${currentIndex + chunk.length}`);
+      } catch (error) {
+          console.error(`Error inserting/updating chunk from row ${currentIndex + 1} to ${currentIndex + chunk.length}: ${error.message}`);
+          // Optionally, you can decide to continue or halt on errors
+          throw error;
+      }
+
+      currentIndex += chunkSize;
+  }
+
+  console.log('All data inserted/updated successfully.');
+}
+
 
 
 async endPool() {

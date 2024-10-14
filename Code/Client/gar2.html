@@ -231,11 +231,11 @@
         }
 
 
-       
+  /*     
         async function fetchGARReport() {
             const loadingSpinner = document.getElementById('loadingSpinner');
             loadingSpinner.style.display = 'block';
-            
+            logDebug('Fetching report.........................');
             try {
                 const filters = {
                     dateFrom: document.getElementById('dateFrom').value,
@@ -277,6 +277,88 @@
                 loadingSpinner.style.display = 'none';
             }
         }
+*/
+
+
+
+
+
+
+
+
+
+async function fetchGARReport() {
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    loadingSpinner.style.display = 'block';
+    logDebug('Fetching report.........................');
+    try {
+        // Retrieve filter values with null-safe checks
+        const dateFromElement = document.getElementById('dateFrom');
+        const dateToElement = document.getElementById('dateTo');
+        const empIdElement = document.getElementById('empId');
+        const empNameElement = document.getElementById('empName');
+        const departmentElement = document.getElementById('department');
+        const siteElement = document.getElementById('site');
+        const nationalityElement = document.getElementById('nationality');
+
+        // Ensure all elements exist
+        if (!dateFromElement || !dateToElement || !empIdElement || !empNameElement || !departmentElement || !siteElement || !nationalityElement) {
+            throw new Error('One or more filter elements are missing in the DOM.');
+        }
+
+        const filters = {
+            dateFrom: dateFromElement.value || '',
+            dateTo: dateToElement.value || '',
+            empId: empIdElement.value || '',
+            empName: empNameElement.value || '',
+            department: departmentElement.value || '',
+            site: siteElement.value || '',
+            nationality: nationalityElement.value || ''
+        };
+
+        logDebug('Fetching report with filters', filters);
+
+        // Only include non-empty filters in the query string
+        const queryString = new URLSearchParams(
+            Object.fromEntries(
+                Object.entries(filters).filter(([_, v]) => v !== '')
+            )
+        ).toString();
+
+        logDebug('Generated query string', queryString);
+
+        const response = await fetch(`/api/attendance-report${queryString ? `?${queryString}` : ''}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        // Validate the structure of the received data
+        if (!data || typeof data !== 'object') {
+            throw new Error('Received invalid data format from the server.');
+        }
+
+        if (!('recordCount' in data) || !('totalRecords' in data) || !('data' in data)) {
+            throw new Error('Incomplete data received from the server.');
+        }
+
+        logDebug('Received report data', data);
+
+        displayReport(data);
+        document.getElementById('printButton').style.display = 'block';
+        document.getElementById('btn-export').style.display = 'block';
+        document.getElementById('paginationControls').style.display = 'block';
+        logDebug('Report displayed successfully');
+    } catch (error) {
+        showError('Error fetching report', error.message);
+        document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
+        logDebug('Error fetching report details', error);
+    } finally {
+        loadingSpinner.style.display = 'none';
+    }
+}
+
+
 
 
 

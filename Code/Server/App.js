@@ -81,7 +81,7 @@ const watcher = chokidar.watch(excelFilePath, { persistent: true });
 
 watcher.on('change', async (path) => {
   console.log(`File ${path} has been changed`);
-  await mainDataSync(db, excelFilePath);
+  await mainDataSync(excelFilePath);
 });
 
 
@@ -256,11 +256,111 @@ app.get('/api/attendance-report', async (req, res) => {
 
 
 
+// Route handler for attendance report
+// app.get('/api/attendance-report', async (req, res) => {
+//     const { dateFrom, dateTo, empId, empName, department, site, nationality, limit = 100, page = 1 } = req.query;
 
+//     // Construct filters
+//     const filters = {};
+//     if (dateFrom) filters.dateFrom = dateFrom;
+//     if (dateTo) filters.dateTo = dateTo;
+//     if (empId) filters.empId = empId;
+//     if (empName) filters.empName = empName;
+//     if (department) filters.department = department;
+//     if (site) filters.site = site;
+//     if (nationality) filters.nationality = nationality;
 
+//     // Pagination
+//     const limitNum = parseInt(limit, 10);
+//     const pageNum = parseInt(page, 10);
+//     const offset = (pageNum - 1) * limitNum;
 
+//     try {
+//         // Count total records
+//         const countSQL = `
+//             SELECT COUNT(*) as total
+//             FROM general_attendance_report gar
+//             JOIN employee_master em ON gar.emp_id = em.EmpID
+//             JOIN departments d ON em.depId = d.depId
+//             JOIN shift s ON em.ShiftId = s.Shift_id
+//             JOIN section sec ON d.section_Id = sec.sectionId
+//             JOIN sites st ON sec.site_id = st.siteId
+//             JOIN nationalities n ON em.nationalityId = n.nationalityId
+//             WHERE 1=1
+//             ${filters.dateFrom ? 'AND gar.shift_date >= ?' : ''}
+//             ${filters.dateTo ? 'AND gar.shift_date <= ?' : ''}
+//             ${filters.empId ? 'AND gar.emp_id = ?' : ''}
+//             ${filters.empName ? 'AND (em.EmpFName LIKE ? OR em.EmpLName LIKE ?)' : ''}
+//             ${filters.department ? 'AND d.depName = ?' : ''}
+//             ${filters.site ? 'AND st.siteName = ?' : ''}
+//             ${filters.nationality ? 'AND n.NationalityName = ?' : ''}
+//         `;
+//         const countValues = [];
+//         if (filters.dateFrom) countValues.push(filters.dateFrom);
+//         if (filters.dateTo) countValues.push(filters.dateTo);
+//         if (filters.empId) countValues.push(filters.empId);
+//         if (filters.empName) {
+//             countValues.push(`%${filters.empName}%`, `%${filters.empName}%`);
+//         }
+//         if (filters.department) countValues.push(filters.department);
+//         if (filters.site) countValues.push(filters.site);
+//         if (filters.nationality) countValues.push(filters.nationality);
+//         const countResult = await db.queryDB(countSQL, countValues);
+//         const totalRecords = countResult[0]?.total || 0;
 
+//         // Fetch the actual report data
+//         const reportSQL = `
+//             SELECT
+//                 gar.emp_id,
+//                 em.EmpFName,
+//                 em.EmpLName,
+//                 gar.shift_date,
+//                 gar.first_in,
+//                 gar.last_out,
+//                 gar.status,
+//                 gar.leave_id,
+//                 gar.awh,
+//                 gar.ot
+//             FROM general_attendance_report gar
+//             JOIN employee_master em ON gar.emp_id = em.EmpID
+//             JOIN departments d ON em.depId = d.depId
+//             JOIN shift s ON em.ShiftId = s.Shift_id
+//             JOIN section sec ON d.section_Id = sec.sectionId
+//             JOIN sites st ON sec.site_id = st.siteId
+//             JOIN nationalities n ON em.nationalityId = n.nationalityId
+//             WHERE 1=1
+//             ${filters.dateFrom ? 'AND gar.shift_date >= ?' : ''}
+//             ${filters.dateTo ? 'AND gar.shift_date <= ?' : ''}
+//             ${filters.empId ? 'AND gar.emp_id = ?' : ''}
+//             ${filters.empName ? 'AND (em.EmpFName LIKE ? OR em.EmpLName LIKE ?)' : ''}
+//             ${filters.department ? 'AND d.depName = ?' : ''}
+//             ${filters.site ? 'AND st.siteName = ?' : ''}
+//             ${filters.nationality ? 'AND n.NationalityName = ?' : ''}
+//             ORDER BY gar.shift_date DESC
+//             LIMIT ? OFFSET ?
+//         `;
+//         const reportValues = [...countValues, limitNum, offset];
+//         const reportData = await db.queryDB(reportSQL, reportValues);
 
+//         // Construct response
+//         const response = {
+//             recordCount: reportData.length,
+//             totalRecords,
+//             data: reportData
+//         };
+//         res.json(response);
+//         logger.info('Successfully generated report', { recordCount: reportData.length, totalRecords, timestamp: new Date().toISOString() });
+//     } catch (err) {
+//         logger.error('Error generating attendance report', {
+//             error: err.message,
+//             stack: err.stack
+//         });
+//         res.status(500).json({
+//             error: 'Failed to generate attendance report',
+//             details: err.message
+//         });
+//     }
+// });
 
 
 
