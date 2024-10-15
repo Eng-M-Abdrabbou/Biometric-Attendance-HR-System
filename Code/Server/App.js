@@ -30,7 +30,8 @@ const moment = require('moment/moment.js');
 const db = dbService.getDbServiceInstance();
 
 
-
+app.use(express.static(path.join(__dirname, '../../Client')));
+app.use(express.static(path.join(__dirname, '../Client')));
 
 const logger = winston.createLogger({
     level: 'debug',

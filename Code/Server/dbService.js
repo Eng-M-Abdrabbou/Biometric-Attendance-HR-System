@@ -220,7 +220,7 @@ async queryDB(sql, values = []) {
 
 // dbService.js
 
-async generateAttendanceReport(filters = {}, limit = 100, offset = 0) {
+async generateAttendanceReport(filters = {}, limit = 100000, offset = 0) {
   let conn;
   try {
    //   conn = await this.getConnection();
@@ -897,7 +897,7 @@ async calculateOT(clockOutTime, shiftEnd) {
 
 
 
-async executeQuery(sql, values = [], maxRetries = 3, timeout = 10000) {
+async executeQuery(sql, values = [], maxRetries = 3, timeout = 100000) {
   let retries = 0;
 
   while (retries < maxRetries) {
