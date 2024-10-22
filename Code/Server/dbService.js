@@ -760,11 +760,13 @@ async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) 
   const isWeekend = (dayOfWeek === 6 || dayOfWeek === 0); 
 
   let status;
-  if ( clockOutTime === null || clockOutTime == null) {
+  if (clockInTime === null || clockOutTime === null) {
     status = 'MS';
   } else if (isWeekend) {
     status = 'W';
   } else if (clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
+    status = 'MS';
+  } else if (clockInTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
     status = 'MS';
   } else {
     status = clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A';
