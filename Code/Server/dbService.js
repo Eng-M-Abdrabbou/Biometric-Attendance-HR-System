@@ -798,10 +798,7 @@ async calculateOT(clockOutTime, shiftEnd) {
   let newot = Math.floor(ot) + (result * 60) / 100;
   newot = newot.toFixed(2);
   console.log("ot", newot);
-  if(ot>2){
-     let NEWot='2:00';
-    return NEWot;
-  }
+ 
   return newot;
 }
 
