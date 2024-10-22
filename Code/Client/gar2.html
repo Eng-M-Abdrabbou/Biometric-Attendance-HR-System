@@ -441,11 +441,11 @@ function displayReport(data) {
                     <table>
                         <thead>
                             <tr>
+                                 <th>Date</th>
                                 <th>Emp. ID</th>
                                 <th>Emp. Name</th>
                                 <th>Grade</th>
-                                <th>Designation</th>
-                                <th>Date</th>
+                                <th>Designation</th>                               
                                 <th>First In</th>
                                 <th>Last Out</th>
                                 <th>Status</th>
@@ -484,8 +484,8 @@ function displayReport(data) {
                                 <td>${firstIn}</td>
                                 <td>${lastOut}</td>
                                 <td>${record.status}</td>
-                                <td>${newawh1} hr/s ${newawh2} min/s</td>
-                                <td>${newot1} hr/s ${newot2} min/s</td>
+                                <td>${newawh1}:${newawh2}</td>
+                                <td>${newot1}:${newot2}</td>
                             </tr>
                         `;
                     });
