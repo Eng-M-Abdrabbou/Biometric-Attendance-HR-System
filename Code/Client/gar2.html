@@ -476,11 +476,11 @@ function displayReport(data) {
 
                         html += `
                             <tr>
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
                                 <td>${record.shift_date}</td>
+                                ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empId}</td>` : `<td>${empId}</td>`}
+                                ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empData.emp_name}</td>` : `<td>${empData.emp_name}</td>`}
+                                ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empData.grade || 'N/A'}</td>` : `<td>${empData.grade || 'N/A'}</td>`}
+                                ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empData.designation || 'N/A'}</td>` : `<td>${empData.designation || 'N/A'}</td>`}
                                 <td>${firstIn}</td>
                                 <td>${lastOut}</td>
                                 <td>${record.status}</td>
@@ -499,6 +499,11 @@ function displayReport(data) {
     container.innerHTML = html;
 }
 
+// ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
+//                                 ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
+//                                 ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
+//                                 ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
+//                                 <td>${record.shift_date}</td>
 
         function printDivAsPDF(divId) {
             const { jsPDF } = window.jspdf;
@@ -728,7 +733,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
 // Inside your <script> tag in the HTML
 
     let currentPage = 1;
-    const limit = 100000; // Must match the default limit in backend
+    const limit = 30; // Must match the default limit in backend
     
     document.getElementById('prevPage').addEventListener('click', () => {
         if (currentPage > 1) {
@@ -742,7 +747,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
         fetchGARReport(currentPage, limit);
     });
     
-    async function fetchGARReport(page = 1, limit = 100000) {
+    async function fetchGARReport(page = 1, limit = 30) {
         const loadingSpinner = document.getElementById('loadingSpinner');
         loadingSpinner.style.display = 'block';
         document.getElementById('errorMessage').style.display = 'none';

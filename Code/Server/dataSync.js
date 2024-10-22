@@ -314,52 +314,85 @@ function processExcelData(filePath) {
  * @param {Array} employees - Array of employee objects
  * @returns {Promise}
  */
+// async function updateEmployeeMaster(employees) {
+//     const sql = "SELECT EmpID FROM employee_master";
+//     const existingEmployees = await db.executeQuery(sql, []);
+//     const existingIds = new Set(existingEmployees.map(emp => emp.EmpID));
+//     const newEmployees = employees.filter(emp => !existingIds.has(emp.empId));
+
+//     if (newEmployees.length === 0) {
+//         console.log('No new employees to insert');
+//         return;
+//     }
+
+//     // const values = newEmployees.map(emp => {
+//     //     const [firstName, ...lastNameParts] = emp.empName.split(' ');
+//     //     const lastName = lastNameParts.join(' ');
+//     //     // Adjust the fields as per your employee_master table schema
+//     //     return [emp.empId, firstName, lastName, 1, 1, 'ad', 1, 1, 'Email@ftc.com', 1, 1, 1, 1, 1, 1];
+//     // });
+
+//     // const insertSql = `INSERT INTO employee_master 
+//     //     (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accomodationId, depId) 
+//     //     VALUES (?)`;
+
+//     const values = newEmployees.map(emp => {
+//         const [firstName, ...lastNameParts] = emp.empName.split(' ');
+//         const lastName = lastNameParts.join(' ');
+//         return [emp.empId, firstName, lastName, 1, 1, 'ad', 1, 1, 'Email@ftc.com', 1, 1, 1, 1, 1, 1];
+//     });
+    
+//     const sql1 = "INSERT INTO employee_master (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accommodationId, depId) VALUES ?";
+    
+//     db.executeQuery(sql1, [values], function(err) {
+//         if (err) throw err;
+//         console.log("Records inserted!");
+//     });
+    
+
+
+//     // Perform bulk insert
+//     try {
+//         await db.executeQuery(sql1, [values]);
+//         console.log(`Inserted ${newEmployees.length} new employees.`);
+//     } catch (error) {
+//         console.error('Error inserting new employees:', error);
+//         throw error;
+//     }
+// }
+
 async function updateEmployeeMaster(employees) {
     const sql = "SELECT EmpID FROM employee_master";
     const existingEmployees = await db.executeQuery(sql, []);
     const existingIds = new Set(existingEmployees.map(emp => emp.EmpID));
     const newEmployees = employees.filter(emp => !existingIds.has(emp.empId));
-
+    
     if (newEmployees.length === 0) {
         console.log('No new employees to insert');
         return;
     }
-
-    // const values = newEmployees.map(emp => {
-    //     const [firstName, ...lastNameParts] = emp.empName.split(' ');
-    //     const lastName = lastNameParts.join(' ');
-    //     // Adjust the fields as per your employee_master table schema
-    //     return [emp.empId, firstName, lastName, 1, 1, 'ad', 1, 1, 'Email@ftc.com', 1, 1, 1, 1, 1, 1];
-    // });
-
-    // const insertSql = `INSERT INTO employee_master 
-    //     (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accomodationId, depId) 
-    //     VALUES (?)`;
 
     const values = newEmployees.map(emp => {
         const [firstName, ...lastNameParts] = emp.empName.split(' ');
         const lastName = lastNameParts.join(' ');
         return [emp.empId, firstName, lastName, 1, 1, 'ad', 1, 1, 'Email@ftc.com', 1, 1, 1, 1, 1, 1];
     });
-    
-    const sql1 = "INSERT INTO employee_master (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accommodationId, depId) VALUES ?";
-    
-    db.executeQuery(sql1, [values], function(err) {
-        if (err) throw err;
-        console.log("Records inserted!");
-    });
-    
 
+    const placeholders = values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+    const insertSql = `INSERT INTO employee_master (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accomodationId, depId) VALUES ${placeholders}`;
+    const flattenedValues = [].concat(...values);
 
-    // Perform bulk insert
     try {
-        await db.executeQuery(sql1, [values]);
+        await db.executeQuery(insertSql, flattenedValues);
         console.log(`Inserted ${newEmployees.length} new employees.`);
     } catch (error) {
         console.error('Error inserting new employees:', error);
         throw error;
     }
 }
+
+
+
 
 /**
  * Group data by employee and date to prepare for input_data table

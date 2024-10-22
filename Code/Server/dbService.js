@@ -220,7 +220,7 @@ async queryDB(sql, values = []) {
 
 // dbService.js
 
-async generateAttendanceReport(filters = {}, limit = 100000, offset = 0) {
+async generateAttendanceReport(filters = {}, limit = 30, offset = 0) {
   let conn;
   try {
    //   conn = await this.getConnection();
@@ -605,7 +605,7 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
   const status = await this.determineStatus(clockInTime,clockOutTime, shiftStart, lgtMinutes, date);
   const awh = 
   //status === 'A' ? '0:00' : 
-  await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break);
+  await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shiftStart);
   const ot = 
   //status === 'A' ? '0:00' : 
   await this.calculateOT(clockOutTime, shiftEnd);
@@ -753,21 +753,63 @@ console.log("organized", JSON.stringify(organized, null, 2));
 }
 
 
+// async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) {
+//   console.log("trying to determine status", clockInTime, shiftStart, lgtMinutes);
+//   const latestAllowedTime = moment(shiftStart).add(lgtMinutes, 'minutes');
+//   const dayOfWeek = moment(date).day();
+//   const isWeekend = (dayOfWeek === 6); 
+
+//   let status;
+//   if ((clockOutTime === null || clockOutTime === undefined || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) &&
+//       (clockInTime === null || clockInTime === undefined || clockInTime.isSame(moment('00:00:00', 'HH:mm:ss')))) {
+//     status = 'A';
+//     return status;
+//   } else if (clockOutTime === null || clockOutTime === undefined || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss')) ||
+//              clockInTime === null || clockInTime === undefined || clockInTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
+//     status = 'MS';
+//     return status;
+//   } else if (isWeekend) {
+//     status = 'W';
+//     return status;
+//   } else {
+//     // status = clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A';
+//     status =  'P' ;
+//     return status;
+//   }
+
+//   console.log("status is", status);
+//   return status;
+// }
+
+
+
+
+
+
+
 async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) {
   console.log("trying to determine status", clockInTime, shiftStart, lgtMinutes);
+
+  // if (!moment.isMoment(clockInTime) || !moment.isMoment(clockOutTime) || !moment.isMoment(shiftStart) || !moment.isMoment(date)) {
+  //   console.error("Invalid time inputs: not moment objects");
+  //   return 'MS'; // Return MS for invalid inputs
+  // }
+
   const latestAllowedTime = moment(shiftStart).add(lgtMinutes, 'minutes');
   const dayOfWeek = moment(date).day();
-  const isWeekend = (dayOfWeek === 6 || dayOfWeek === 0); 
+  const isWeekend = (dayOfWeek === 6); // 6 is Saturday in moment.js
 
   let status;
-  if ( clockOutTime === null || clockOutTime == null) {
-    status = 'MS';
+  if ((!clockOutTime.isValid() || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) &&
+      (!clockInTime.isValid() || clockInTime.isSame(moment('00:00:00', 'HH:mm:ss')))) {
+    status = 'A'; // Absent
+  } else if (!clockOutTime.isValid() || clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss')) ||
+             !clockInTime.isValid() || clockInTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
+    status = 'MS'; // Missing Swipe
   } else if (isWeekend) {
-    status = 'W';
-  } else if (clockOutTime.isSame(moment('00:00:00', 'HH:mm:ss'))) {
-    status = 'MS';
+    status = 'W'; // Weekend
   } else {
-    status = clockInTime.isSameOrBefore(latestAllowedTime) ? 'P' : 'A';
+    status = 'P'; // Present
   }
 
   console.log("status is", status);
@@ -776,13 +818,46 @@ async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) 
 
 
 
-async calculateAWH(clockInTime, clockOutTime, breakHours) {
-  console.log("trying to calculate awh", clockInTime, clockOutTime, breakHours);
-  const totalHours = moment.duration(clockOutTime.diff(clockInTime)).asHours();
+
+
+
+// async calculateAWH(clockInTime, clockOutTime, breakHours,shift_start) {
+//   console.log("trying to calculate awh", clockInTime, clockOutTime, breakHours);
+//   const totalHours = moment.duration(clockOutTime.diff(clockInTime)).asHours();
+//   const awh = Math.max(totalHours - breakHours, 0).toFixed(2);
+//   console.log("AWH", awh);
+  
+  
+//   let result = awh % 1;
+//   let newawh = Math.floor(awh) + (result * 60) / 100;
+//   newawh = newawh.toFixed(2);
+
+//   return newawh;
+// }
+
+
+
+async calculateAWH(clockInTime, clockOutTime, breakHours, shift_start) {
+  console.log("trying to calculate awh", clockInTime, clockOutTime, breakHours, shift_start);
+
+  const shiftStartTime = moment(shift_start);
+  const clockIn = moment(clockInTime);
+  const clockOut = moment(clockOutTime);
+console.log("shiftStartTime", shiftStartTime);
+console.log("clockIn", clockIn);
+console.log("clockOut", clockOut);
+console.log("clockIn.isBefore(shiftStartTime)", clockIn.isBefore(shiftStartTime));
+  let totalHours;
+
+  if (clockIn.isBefore(shiftStartTime)) {
+    totalHours = moment.duration(clockOut.diff(shiftStartTime)).asHours();
+  } else {
+    totalHours = moment.duration(clockOut.diff(clockIn)).asHours();
+  }
+
   const awh = Math.max(totalHours - breakHours, 0).toFixed(2);
   console.log("AWH", awh);
-  
-  
+
   let result = awh % 1;
   let newawh = Math.floor(awh) + (result * 60) / 100;
   newawh = newawh.toFixed(2);
@@ -790,20 +865,63 @@ async calculateAWH(clockInTime, clockOutTime, breakHours) {
   return newawh;
 }
 
-async calculateOT(clockOutTime, shiftEnd) {
-  console.log("trying to calculate ot", clockOutTime, shiftEnd);
-  const otHours = moment.duration(clockOutTime.diff(shiftEnd)).asHours();
-  const ot = Math.max(otHours, 0).toFixed(2);
-  let result = ot % 1;
-  let newot = Math.floor(ot) + (result * 60) / 100;
-  newot = newot.toFixed(2);
-  console.log("ot", newot);
-  if(ot>2){
-     let NEWot='2:00';
-    return NEWot;
+
+
+// async calculateOT(clockOutTime, shiftEnd) {
+//   console.log("trying to calculate ot", clockOutTime, shiftEnd);
+//   const otHours = moment.duration(clockOutTime.diff(shiftEnd)).asHours();
+//   const ot = Math.max(otHours, 0).toFixed(2);
+//   let ot2 = parseInt(ot, 10);
+//   let result = ot2 % 1;
+//   let newot = Math.floor(ot2) + (result * 60) / 100;
+//   newot = newot.toFixed(2);
+//   newot = parseInt(newot, 10);
+//   console.log("ot", newot);
+//   // if(ot>2){
+//   //    let NEWot=2;
+//   //   return NEWot;
+//   // }
+//   return newot;
+// }
+
+
+async  calculateOT(clockOutTime, shiftEnd) {
+  if (!moment.isMoment(clockOutTime) || !moment.isMoment(shiftEnd)) {
+    console.error("Invalid time inputs: not moment objects");
+    console.log("the error is here 556677",clockOutTime, shiftEnd);
+    return null;
   }
-  return newot;
+
+  console.log("trying to calculate ot", clockOutTime, shiftEnd);
+  
+  const otHours = moment.duration(clockOutTime.diff(shiftEnd)).asHours();
+  console.log("OT hours calculated:", otHours);
+  
+  if (isNaN(otHours)) {
+    console.error("OT hours is NaN, check input values");
+    console.log("the error is here 667788",otHours);
+    return null;
+  }
+  
+  if (otHours < 0) {
+    console.error("Negative OT hours detected");
+    console.log("the error is here 778899",otHours);
+    return 0;
+  }
+
+  const otDecimal = Math.max(otHours, 0).toFixed(2);
+  console.log("OT decimal (2 fixed):", otDecimal);
+
+  const otMinutes = Math.round((parseFloat(otDecimal) % 1) * 60);
+  console.log("OT minutes:", otMinutes);
+  
+  const totalOT = Math.floor(otDecimal) + (otMinutes / 100);
+  console.log("OT in decimal form:", totalOT);
+
+  return totalOT;
 }
+
+
 
 
 // async insertOrUpdateGAR(report) {
