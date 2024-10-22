@@ -457,39 +457,44 @@ function displayReport(data) {
                 `;
 
                 for (const [empId, empData] of Object.entries(depData.employees)) {
-                    empData.attendance.forEach((record, index) => {
-                        let newawh1 = Math.floor(record.awh);
-                        let newawh2 = Math.floor((record.awh % 1) * 100);
-                        if (isNaN(newawh1) || isNaN(newawh2)) {
-                            newawh1 = 0;
-                            newawh2 = 0;
-                        }
+  empData.attendance.forEach((record, index) => {
+    let newawh1 = Math.floor(record.awh);
+    let newawh2 = Math.floor((record.awh % 1) * 100);
+    if (isNaN(newawh1) || isNaN(newawh2)) {
+      newawh1 = 0;
+      newawh2 = 0;
+    }
 
-                        let newot1 = Math.floor(record.ot);
-                        let newot2 = Math.floor((record.ot % 1) * 100);
-                        if (isNaN(newot1) || isNaN(newot2)) {
-                            newot1 = 0;
-                            newot2 = 0;
-                        }
-                        let firstIn = record.first_in == "Invalid date" || record.first_in === null || record.first_in === '00:00:00' ? "Didn't clock in" : record.first_in;
-                        let lastOut = record.last_out == "Invalid date" || record.last_out === null || record.last_out === '00:00:00' ? "Didn't clock out" : record.last_out;
+    let newot1 = Math.floor(record.ot);
+    let newot2 = Math.floor((record.ot % 1) * 100);
+    if (isNaN(newot1) || isNaN(newot2)) {
+      newot1 = 0;
+      newot2 = 0;
+    }
 
-                        html += `
-                            <tr>
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
-                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
-                                <td>${record.shift_date}</td>
-                                <td>${firstIn}</td>
-                                <td>${lastOut}</td>
-                                <td>${record.status}</td>
-                                <td>${newawh1} hr/s ${newawh2} min/s</td>
-                                <td>${newot1} hr/s ${newot2} min/s</td>
-                            </tr>
-                        `;
-                    });
-                }
+    let firstIn = record.first_in == "Invalid date" || record.first_in === null || record.first_in === '00:00:00' ? "Didn't clock in" : record.first_in;
+    let lastOut = record.last_out == "Invalid date" || record.last_out === null || record.last_out === '00:00:00' ? "Didn't clock out" : record.last_out;
+
+    let otDisplay = empData.grade === "Labour" ? `${newot1} hr/s ${newot2} min/s` : empData.grade === "Staff" ? 'Not Eligible' : '';
+ console.log(otDisplay);
+ console.log(empData.grade);
+
+    html += `
+      <tr>
+        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
+        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
+        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
+        ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
+        <td>${record.shift_date}</td>
+        <td>${firstIn}</td>
+        <td>${lastOut}</td>
+        <td>${record.status}</td>
+        <td>${newawh1} hr/s ${newawh2} min/s</td>
+        <td>${otDisplay}</td>
+      </tr>
+    `;
+  });
+}
 
                 html += '</tbody></table>';
             }
