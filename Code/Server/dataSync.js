@@ -361,35 +361,158 @@ function processExcelData(filePath) {
 //     }
 // }
 
-async function updateEmployeeMaster(employees) {
-    const sql = "SELECT EmpID FROM employee_master";
-    const existingEmployees = await db.executeQuery(sql, []);
-    const existingIds = new Set(existingEmployees.map(emp => emp.EmpID));
-    const newEmployees = employees.filter(emp => !existingIds.has(emp.empId));
+// async function updateEmployeeMaster(employees) {
+//     const sql = "SELECT EmpID FROM employee_master";
+//     const existingEmployees = await db.executeQuery(sql, []);
+//     const existingIds = new Set(existingEmployees.map(emp => emp.EmpID));
+//     const newEmployees = employees.filter(emp => !existingIds.has(emp.empId));
     
-    if (newEmployees.length === 0) {
-        console.log('No new employees to insert');
-        return;
+//     if (newEmployees.length === 0) {
+//         console.log('No new employees to insert');
+//         return;
+//     }
+
+//     const values = newEmployees.map(emp => {
+//         const [firstName, ...lastNameParts] = emp.empName.split(' ');
+//         const lastName = lastNameParts.join(' ');
+//         return [emp.empId, firstName, lastName, 1, 1, 'ad', 1, 1, 'Email@ftc.com', 1, 1, 1, 1, 1, 1];
+//     });
+
+//     const placeholders = values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+//     const insertSql = `INSERT INTO employee_master (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accomodationId, depId) VALUES ${placeholders}`;
+//     const flattenedValues = [].concat(...values);
+
+//     try {
+//         await db.executeQuery(insertSql, flattenedValues);
+//         console.log(`Inserted ${newEmployees.length} new employees.`);
+//     } catch (error) {
+//         console.error('Error inserting new employees:', error);
+//         throw error;
+//     }
+// }
+
+
+const xlsx = require('xlsx'); // For reading the Excel file
+const fs = require('fs');
+const path = require('path');
+
+async function updateEmployeeMaster(employees) {
+    // Load the Excel file
+    const filePath = path.resolve("C:/Users/Hp/OneDrive/Desktop/Emp.xlsx");
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet, { header: 2 }); // Skip first 2 rows
+
+    // Check existing employees from the database
+    const checkEmpSql = "SELECT EmpID FROM employee_master";
+    const existingEmployees = await db.executeQuery(checkEmpSql, []);
+    const existingIds = new Set(existingEmployees.map(emp => emp.EmpID));
+
+    // Collect new employees from the Excel file
+    const newEmployees = [];
+    for (const row of data) {
+        if (!row["Display Name"]) continue; // Skip rows where 'Display Name' is undefined
+
+        // Extract relevant fields
+        const empId = row["Employment Details Previous Employment ID"];
+        const displayName = row["Display Name"] || "";
+        const firstName = displayName.split(' ')[0];
+        const lastName = displayName.split(' ').slice(1).join(' ') || firstName;
+        const title = row["Title"];
+        const department = row["Department"];
+        const visaName = row["VISA"];
+        const nationality = row["Nationality"] === "Expat" ? 1 : 2; // 1 for expat, 2 for local
+        const status = row["Employee Status"] === "Active" ? 1 : 0;
+        const ot = row["OT Eligiblity"] === "Eligible" ? 1 : 0;
+
+        if (!existingIds.has(empId)) {
+            newEmployees.push({
+                empId,
+                firstName,
+                lastName,
+                status,
+                title,
+                department,
+                visaName,
+                nationality,
+                ot
+            });
+        } else {
+            // If employee exists, update only different fields
+            const updateFields = [];
+            const updateValues = [];
+            const existingEmployee = existingEmployees.find(emp => emp.EmpID === empId);
+            if (existingEmployee.EmpFName !== firstName) {
+                updateFields.push('EmpFName = ?');
+                updateValues.push(firstName);
+            }
+            if (existingEmployee.EmpLName !== lastName) {
+                updateFields.push('EmpLName = ?');
+                updateValues.push(lastName);
+            }
+            if (existingEmployee.jobTitle !== title) {
+                updateFields.push('jobTitle = ?');
+                updateValues.push(title);
+            }
+            if (existingEmployee.depId !== department) {
+                updateFields.push('depId = ?');
+                updateValues.push(department);
+            }
+            // Add more fields as needed...
+            if (updateFields.length > 0) {
+                const updateSql = `UPDATE employee_master SET ${updateFields.join(', ')} WHERE EmpID = ?`;
+                updateValues.push(empId);
+                await db.executeQuery(updateSql, updateValues);
+            }
+        }
+
+        // Ensure related data (departments, visa, etc.) exists and insert if missing
+        await ensureDepartmentExists(department);
+        await ensureVisaExists(visaName);
+        // Add similar functions for sections, locations, etc.
     }
 
-    const values = newEmployees.map(emp => {
-        const [firstName, ...lastNameParts] = emp.empName.split(' ');
-        const lastName = lastNameParts.join(' ');
-        return [emp.empId, firstName, lastName, 1, 1, 'ad', 1, 1, 'Email@ftc.com', 1, 1, 1, 1, 1, 1];
-    });
-
-    const placeholders = values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
-    const insertSql = `INSERT INTO employee_master (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accomodationId, depId) VALUES ${placeholders}`;
-    const flattenedValues = [].concat(...values);
-
-    try {
-        await db.executeQuery(insertSql, flattenedValues);
-        console.log(`Inserted ${newEmployees.length} new employees.`);
-    } catch (error) {
-        console.error('Error inserting new employees:', error);
-        throw error;
+    // Insert new employees if any
+    if (newEmployees.length > 0) {
+        const values = newEmployees.map(emp => [
+            emp.empId, emp.firstName, emp.lastName, emp.status, 1, 'ad', emp.nationality, 1, 'Email@ftc.com', 1, 1, 1, emp.title, 1, emp.department, emp.visaName, emp.ot
+        ]);
+        const placeholders = values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+        const insertSql = `INSERT INTO employee_master (EmpID, EmpFName, EmpLName, IsLive, EmployeeGradeID, CAddress1, NationalityID, Gender, EmailID, IsAutoPunch, assetId, ShiftId, jobTitle, accomodationId, depId, VisaId, OT) VALUES ${placeholders}`;
+        const flattenedValues = [].concat(...values);
+        try {
+            await db.executeQuery(insertSql, flattenedValues);
+            console.log(`Inserted ${newEmployees.length} new employees.`);
+        } catch (error) {
+            console.error('Error inserting new employees:', error);
+            throw error;
+        }
     }
 }
+
+async function ensureDepartmentExists(department) {
+    const checkDepSql = "SELECT * FROM departments WHERE depName = ?";
+    const existingDepartment = await db.executeQuery(checkDepSql, [department]);
+    if (existingDepartment.length === 0) {
+        const insertDepSql = "INSERT INTO departments (depName, section_Id) VALUES (?, ?)";
+        await db.executeQuery(insertDepSql, [department, 1]); // Assuming section_Id is 1 for now
+    }
+}
+
+async function ensureVisaExists(visaName) {
+    const checkVisaSql = "SELECT * FROM visa WHERE visaType = ?";
+    const existingVisa = await db.executeQuery(checkVisaSql, [visaName]);
+    if (existingVisa.length === 0) {
+        const insertVisaSql = "INSERT INTO visa (visaType) VALUES (?)";
+        await db.executeQuery(insertVisaSql, [visaName]);
+    }
+}
+
+// Call the update function with employees data (Replace 'employees' with your actual data)
+//updateEmployeeMaster(employees).catch(err => console.error(err));
+
+
+
 
 
 
