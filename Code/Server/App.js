@@ -89,9 +89,9 @@ watcher.on('change', async (path) => {
 
 //comment this part only temporart to make testing faster.
 // Initial sync on startup
-if (fs.existsSync(excelFilePath)) {
-  mainDataSync( excelFilePath);
-}
+// if (fs.existsSync(excelFilePath)) {
+//   mainDataSync( excelFilePath);
+// }
 
 // Sync every 5 minutes
 // setInterval(() => {

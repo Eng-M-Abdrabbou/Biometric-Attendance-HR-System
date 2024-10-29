@@ -6,6 +6,7 @@ const winston = require('winston');
 const NodeCache = require('node-cache');
 const cache = new NodeCache({ stdTTL: 300 }); // Cache expires in 5 minutes
 const util = require('util');
+const e = require('express');
 
 
 let instance = null;
@@ -220,153 +221,285 @@ async queryDB(sql, values = []) {
 
 // dbService.js
 
+// async generateAttendanceReport(filters = {}, limit = 30, offset = 0) {
+//   let conn;
+//   try {
+//    //   conn = await this.getConnection();
+//       logger.debug('Building attendance report query with filters', { filters });
+
+//       let whereConditions = [];
+//       let params = [];
+
+//       // Build dynamic WHERE clause based on filters
+//       if (filters.dateFrom && filters.dateTo) {
+//           whereConditions.push('i.date BETWEEN ? AND ?');
+//           params.push(filters.dateFrom, filters.dateTo);
+//       }
+
+//       if (filters.empId) {
+//           whereConditions.push('e.EmpID = ?');
+//           params.push(filters.empId);
+//       }
+
+//       if (filters.empName) {
+//           whereConditions.push('(e.EmpFName LIKE ? OR e.EmpLName LIKE ?)');
+//           params.push(`%${filters.empName}%`, `%${filters.empName}%`);
+//       }
+
+//       if (filters.department) {
+//           whereConditions.push('e.depId = ?');
+//           params.push(filters.department);
+//       }
+
+//       if (filters.site) {
+//           whereConditions.push('sec.site_Id = ?');
+//           params.push(filters.site);
+//       }
+
+//       if (filters.nationality) {
+//           whereConditions.push('e.NationalityID = ?');
+//           params.push(filters.nationality);
+//       }
+
+//       // Construct the main query
+//       let baseQuery = `
+//           SELECT 
+//               i.*,
+//               e.EmpID, e.EmpFName, e.EmpLName, e.IsLive, e.EmployeeGradeID,
+//               e.NationalityID, e.EmailID, e.ShiftId, e.depId, e.jobTitle,
+//               s.Shift_id, s.shift_name, s.shift_type, s.shift_start, s.shift_end,
+//               s.hours_allowed_for_break, s.time_allowed_before_shift,
+//               s.shift_incharge, s.total_working_hours_before, s.lgt_in_minutes,
+//               d.depId, d.depName, d.section_Id,
+//               sec.sectionId, sec.sectionName, sec.site_Id,
+//               st.siteId, st.siteName, j.jobTitleId, j.jobTitleName, g.gradeId, g.gradeName
+//           FROM input_data i
+//           JOIN employee_master e ON i.empid = e.EmpID
+//           JOIN shift s ON e.ShiftId = s.Shift_id
+//           JOIN departments d ON e.depId = d.depId
+//           JOIN section sec ON d.section_Id = sec.sectionId
+//           JOIN sites st ON sec.site_Id = st.siteId
+//           JOIN jobtitle j ON e.jobTitle = j.jobTitleId
+//           JOIN grade g ON e.EmployeeGradeID = g.gradeId
+//       `;
+
+//       if (whereConditions.length > 0) {
+//           baseQuery += ' WHERE ' + whereConditions.join(' AND ');
+//       }
+
+//       // Add ORDER BY for consistent pagination
+//       baseQuery += ' ORDER BY i.date DESC';
+
+//       // Add LIMIT and OFFSET for pagination
+//       baseQuery += ' LIMIT ? OFFSET ?';
+//       params.push(limit, offset);
+
+//       logger.debug('Executing paginated query', { 
+//           query: baseQuery, 
+//           parameters: params 
+//       });
+
+//       const results = await this.query( baseQuery, params);
+//       logger.info('Paginated query executed successfully', { 
+//           rowCount: results.length 
+//       });
+
+//       // Get total count for pagination
+//       let countQuery = `
+//       SELECT COUNT(*) as total 
+//       FROM input_data i
+//       JOIN employee_master e ON i.empid = e.EmpID
+//       JOIN shift s ON e.ShiftId = s.Shift_id
+//       JOIN departments d ON e.depId = d.depId
+//       JOIN section sec ON d.section_Id = sec.sectionId
+//       JOIN sites st ON sec.site_Id = st.siteId
+//       JOIN jobtitle j ON e.jobTitle = j.jobTitleId
+//       JOIN grade g ON e.EmployeeGradeID = g.gradeId
+//     `;
+
+//       if (whereConditions.length > 0) {
+//           countQuery += ' WHERE ' + whereConditions.join(' AND ');
+//       }
+
+//       logger.debug('Executing count query for total records', { 
+//           query: countQuery, 
+//           parameters: params.slice(0, params.length - 2) // Exclude limit and offset
+//       });
+
+//       const countResult = await this.query( countQuery, params.slice(0, params.length - 2));
+//       const totalRecords = countResult[0].total;
+
+//       // Process the results
+//       const processedData = await this.processAttendanceData(results);
+//       logger.debug('Data processing completed', { 
+//           processedRecords: Object.keys(processedData).length 
+//       });
+
+//       // Update GAR table
+//       await this.insertOrUpdateGAR( processedData);
+
+//       // Organize and return the final report
+//       const organizedReport = this.organizeReportData(processedData);
+//       logger.info('Report generation completed', { 
+//           reportSize: Object.keys(organizedReport).length 
+//       });
+
+//       return { report: organizedReport, totalRecords };
+//   } catch (error) {
+//       logger.error('Error generating attendance report', { 
+//           error: error.message,
+//           stack: error.stack
+//       });
+//       throw error;
+//   } finally {
+//       if (conn) {
+//           logger.debug('Releasing database connection');
+//           conn.release();
+//       }
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+// dbService.js
+
 async generateAttendanceReport(filters = {}, limit = 30, offset = 0) {
   let conn;
   try {
-   //   conn = await this.getConnection();
-      logger.debug('Building attendance report query with filters', { filters });
+    // conn = await this.getConnection();
+    logger.debug('Building attendance report query with filters', { filters });
 
-      let whereConditions = [];
-      let params = [];
+    let whereConditions = [];
+    let params = [];
 
-      // Build dynamic WHERE clause based on filters
-      if (filters.dateFrom && filters.dateTo) {
-          whereConditions.push('i.date BETWEEN ? AND ?');
-          params.push(filters.dateFrom, filters.dateTo);
-      }
+    // Build dynamic WHERE clause based on filters
+    if (filters.dateFrom && filters.dateTo) {
+      whereConditions.push('i.date BETWEEN ? AND ?');
+      params.push(filters.dateFrom, filters.dateTo);
+    }
 
-      if (filters.empId) {
-          whereConditions.push('e.EmpID = ?');
-          params.push(filters.empId);
-      }
+    if (filters.empId) {
+      whereConditions.push('e.EmpID = ?');
+      params.push(filters.empId);
+    }
 
-      if (filters.empName) {
-          whereConditions.push('(e.EmpFName LIKE ? OR e.EmpLName LIKE ?)');
-          params.push(`%${filters.empName}%`, `%${filters.empName}%`);
-      }
+    if (filters.empName) {
+      whereConditions.push('e.FullName LIKE ?');
+      params.push(`%${filters.empName}%`);
+    }
 
-      if (filters.department) {
-          whereConditions.push('e.depId = ?');
-          params.push(filters.department);
-      }
+    if (filters.department) {
+      whereConditions.push('e.DepId = ?');
+      params.push(filters.department);
+    }
 
-      if (filters.site) {
-          whereConditions.push('sec.site_Id = ?');
-          params.push(filters.site);
-      }
+    if (filters.site) {
+      whereConditions.push('sec.site_Id = ?');
+      params.push(filters.site);
+    }
 
-      if (filters.nationality) {
-          whereConditions.push('e.NationalityID = ?');
-          params.push(filters.nationality);
-      }
+    if (filters.nationality) {
+      whereConditions.push('e.NationalityID = ?');
+      params.push(filters.nationality);
+    }
 
-      // Construct the main query
-      let baseQuery = `
-          SELECT 
-              i.*,
-              e.EmpID, e.EmpFName, e.EmpLName, e.IsLive, e.EmployeeGradeID,
-              e.NationalityID, e.EmailID, e.ShiftId, e.depId, e.jobTitle,
-              s.Shift_id, s.shift_name, s.shift_type, s.shift_start, s.shift_end,
-              s.hours_allowed_for_break, s.time_allowed_before_shift,
-              s.shift_incharge, s.total_working_hours_before, s.lgt_in_minutes,
-              d.depId, d.depName, d.section_Id,
-              sec.sectionId, sec.sectionName, sec.site_Id,
-              st.siteId, st.siteName, j.jobTitleId, j.jobTitleName, g.gradeId, g.gradeName
-          FROM input_data i
-          JOIN employee_master e ON i.empid = e.EmpID
-          JOIN shift s ON e.ShiftId = s.Shift_id
-          JOIN departments d ON e.depId = d.depId
-          JOIN section sec ON d.section_Id = sec.sectionId
-          JOIN sites st ON sec.site_Id = st.siteId
-          JOIN jobtitle j ON e.jobTitle = j.jobTitleId
-          JOIN grade g ON e.EmployeeGradeID = g.gradeId
-      `;
+    // Construct the main query with updated field names
+    let baseQuery = `
+      SELECT 
+          i.*,
+          e.EmpID, e.FullName, e.EmpStatus, e.EmployeeGradeID, e.NationalityID, 
+          e.EmailID, e.ShiftId, e.DepId, e.DivId, e.SiteId, e.JobTitle, e.OT, e.VisaId, e.EXP_LOC, 
+          e.Accomodation, e.Gender, e.AssetID, e.DateOfJoining,
+          s.Shift_id, s.shift_name, s.shift_type, s.shift_start, s.shift_end,
+          s.hours_allowed_for_break, s.time_allowed_before_shift,
+          s.shift_incharge, s.total_working_hours_before, s.lgt_in_minutes,
+          d.depId, d.depName, sec.sectionId, sec.sectionName,
+          st.siteId, st.siteName, g.gradeId, g.gradeName
+      FROM input_data i
+      JOIN employee_master e ON i.empid = e.EmpID
+      JOIN shift s ON e.ShiftId = s.Shift_id
+      JOIN departments d ON e.DepId = d.depId
+      JOIN section sec ON e.DivId = sec.sectionId
+      JOIN sites st ON e.SiteId = st.siteId
+      JOIN grade g ON e.EmployeeGradeID = g.gradeId
+    `;
 
-      if (whereConditions.length > 0) {
-          baseQuery += ' WHERE ' + whereConditions.join(' AND ');
-      }
+    if (whereConditions.length > 0) {
+      baseQuery += ' WHERE ' + whereConditions.join(' AND ');
+    }
 
-      // Add ORDER BY for consistent pagination
-      baseQuery += ' ORDER BY i.date DESC';
+    // Add ORDER BY for consistent pagination
+    baseQuery += ' ORDER BY i.date DESC';
 
-      // Add LIMIT and OFFSET for pagination
-      baseQuery += ' LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+    // Add LIMIT and OFFSET for pagination
+    baseQuery += ' LIMIT ? OFFSET ?';
+    params.push(limit, offset);
 
-      logger.debug('Executing paginated query', { 
-          query: baseQuery, 
-          parameters: params 
-      });
+    logger.debug('Executing paginated query', { query: baseQuery, parameters: params });
 
-      const results = await this.query( baseQuery, params);
-      logger.info('Paginated query executed successfully', { 
-          rowCount: results.length 
-      });
+    const results = await this.query(baseQuery, params);
+    logger.info('Paginated query executed successfully', { rowCount: results.length });
 
-      // Get total count for pagination
-      let countQuery = `
+    // Get total count for pagination
+    let countQuery = `
       SELECT COUNT(*) as total 
       FROM input_data i
       JOIN employee_master e ON i.empid = e.EmpID
       JOIN shift s ON e.ShiftId = s.Shift_id
-      JOIN departments d ON e.depId = d.depId
-      JOIN section sec ON d.section_Id = sec.sectionId
-      JOIN sites st ON sec.site_Id = st.siteId
-      JOIN jobtitle j ON e.jobTitle = j.jobTitleId
+      JOIN departments d ON e.DepId = d.depId
+      JOIN section sec ON e.DivId = sec.sectionId
+      JOIN sites st ON e.SiteId = st.siteId
       JOIN grade g ON e.EmployeeGradeID = g.gradeId
     `;
 
-      if (whereConditions.length > 0) {
-          countQuery += ' WHERE ' + whereConditions.join(' AND ');
-      }
+    if (whereConditions.length > 0) {
+      countQuery += ' WHERE ' + whereConditions.join(' AND ');
+    }
 
-      logger.debug('Executing count query for total records', { 
-          query: countQuery, 
-          parameters: params.slice(0, params.length - 2) // Exclude limit and offset
-      });
+    logger.debug('Executing count query for total records', { 
+      query: countQuery, 
+      parameters: params.slice(0, params.length - 2) // Exclude limit and offset
+    });
 
-      const countResult = await this.query( countQuery, params.slice(0, params.length - 2));
-      const totalRecords = countResult[0].total;
+    const countResult = await this.query(countQuery, params.slice(0, params.length - 2));
+    const totalRecords = countResult[0].total;
 
-      // Process the results
-      const processedData = await this.processAttendanceData(results);
-      logger.debug('Data processing completed', { 
-          processedRecords: Object.keys(processedData).length 
-      });
+    // Process the results
+    const processedData = await this.processAttendanceData(results);
+    logger.debug('Data processing completed', { 
+      processedRecords: Object.keys(processedData).length 
+    });
 
-      // Update GAR table
-      await this.insertOrUpdateGAR( processedData);
+    // Update GAR table
+    //await this.insertOrUpdateGAR(processedData);
 
-      // Organize and return the final report
-      const organizedReport = this.organizeReportData(processedData);
-      logger.info('Report generation completed', { 
-          reportSize: Object.keys(organizedReport).length 
-      });
+    // Organize and return the final report
+    const organizedReport = this.organizeReportData(processedData);
+    logger.info('Report generation completed', { 
+      reportSize: Object.keys(organizedReport).length 
+    });
 
-      return { report: organizedReport, totalRecords };
+    return { report: organizedReport, totalRecords };
   } catch (error) {
-      logger.error('Error generating attendance report', { 
-          error: error.message,
-          stack: error.stack
-      });
-      throw error;
+    logger.error('Error generating attendance report', { 
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
   } finally {
-      if (conn) {
-          logger.debug('Releasing database connection');
-          conn.release();
-      }
+    if (conn) {
+      logger.debug('Releasing database connection');
+      conn.release();
+    }
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -472,80 +605,212 @@ async query1(sql, values = []) {
   });}
 
 
+// async processAttendanceData(results) {
+//   try {
+//       logger.debug('Starting attendance data processing', {
+//           resultCount: results ? results.length : 0
+//       });
+
+//       // Validate input
+//       if (!results || !Array.isArray(results)) {
+//           logger.error('Invalid input data', { results });
+//           throw new Error('Input data must be an array');
+//       }
+
+//       const report = [];
+      
+//       // Debug log before grouping
+//       logger.debug('Input data before grouping', {
+//           sampleRecord: results[0],
+//           totalRecords: results.length
+//       });
+
+//       const groupedData = this.groupByEmployeeAndDate(results);
+
+//       // Process grouped data
+//       for (const [empId, dates] of Object.entries(groupedData)) {
+//           // Extract employee data from the results
+//           const employeeRecords = results.filter(r => r.EmpID === parseInt(empId));
+//           if (!employeeRecords.length) continue;
+
+//           const employee = {
+//               EmpID: employeeRecords[0].EmpID,
+//               EmpFName: employeeRecords[0].EmpFName,
+//               EmpLName: employeeRecords[0].EmpLName,
+//               ShiftId: employeeRecords[0].ShiftId,
+//               depId: employeeRecords[0].depId,
+//               jobTitle: employeeRecords[0].jobTitle,
+//               EmployeeGradeID: employeeRecords[0].EmployeeGradeID
+//           };
+
+//           // Get related data from the first record
+//           const firstRecord = employeeRecords[0];
+//           const shift = {
+//               Shift_id: firstRecord.Shift_id,
+//               shift_name: firstRecord.shift_name,
+//               shift_start: firstRecord.shift_start,
+//               shift_end: firstRecord.shift_end,
+//              shift_incharge: firstRecord.shift_incharge,
+//              shift_type: firstRecord.shift_type,
+//              hours_allowed_for_break: firstRecord.hours_allowed_for_break,
+//              lgt_in_minutes: firstRecord.lgt_in_minutes,
+//              total_working_hours_before: firstRecord.total_working_hours_before,
+//              time_allowed_before_shift: firstRecord.time_allowed_before_shift
+
+//           };
+
+//           const department = {
+//               depId: firstRecord.depId,
+//               depName: firstRecord.depName,
+//               section_Id: firstRecord.section_Id
+//           };
+
+//           const section = {
+//               sectionId: firstRecord.sectionId,
+//               sectionName: firstRecord.sectionName,
+//               site_Id: firstRecord.site_Id
+//           };
+
+//           const site = {
+//               siteId: firstRecord.siteId,
+//               siteName: firstRecord.siteName
+//           };
+//           const designation = {
+//               jobTitleId: firstRecord.jobTitleId,
+//               jobTitleName: firstRecord.jobTitleName
+//           };
+//           const grade = {
+//               gradeId: firstRecord.gradeId,
+//               gradeName: firstRecord.gradeName
+//           };
+
+//           for (const [date, records] of Object.entries(dates)) {
+//               const attendanceRecord = await this.processEmployeeAttendance(
+//                   employee,
+//                   shift,
+//                   records,
+//                   date,
+//                   department,
+//                   section,
+//                   site,
+//                   designation,
+//                   grade
+//               );
+              
+//               if (attendanceRecord) {
+//                   report.push(attendanceRecord);
+//               }
+//           }
+
+//           console.log(firstRecord);
+// console.log(grade);
+// console.log(designation)
+//       }
+
+//       logger.info('Data processing completed', {
+//           processedRecords: report.length
+//       });
+
+//       return report;
+//   } catch (error) {
+//       logger.error('Error in processAttendanceData', {
+//           error: error.message,
+//           stack: error.stack
+//       });
+//       throw error;
+//   }
+// }
+
+
+
+
+
+
+
+
+
 async processAttendanceData(results) {
   try {
       logger.debug('Starting attendance data processing', {
           resultCount: results ? results.length : 0
       });
 
-      // Validate input
       if (!results || !Array.isArray(results)) {
           logger.error('Invalid input data', { results });
           throw new Error('Input data must be an array');
       }
 
       const report = [];
-      
-      // Debug log before grouping
       logger.debug('Input data before grouping', {
           sampleRecord: results[0],
           totalRecords: results.length
       });
 
       const groupedData = this.groupByEmployeeAndDate(results);
+      
+      // logger.debug('Grouped data', {
+      //     groupedData: JSON.stringify(groupedData, null, 2)
+      // });
 
       // Process grouped data
       for (const [empId, dates] of Object.entries(groupedData)) {
-          // Extract employee data from the results
           const employeeRecords = results.filter(r => r.EmpID === parseInt(empId));
           if (!employeeRecords.length) continue;
 
           const employee = {
               EmpID: employeeRecords[0].EmpID,
-              EmpFName: employeeRecords[0].EmpFName,
-              EmpLName: employeeRecords[0].EmpLName,
+              FullName: employeeRecords[0].FullName,
+              EmpStatus: employeeRecords[0].EmpStatus,
+              EmployeeGradeID: employeeRecords[0].EmployeeGradeID,
+              Address: employeeRecords[0].Address,
+              NationalityID: employeeRecords[0].NationalityID,
+              EXP_LOC: employeeRecords[0].EXP_LOC,
+              Gender: employeeRecords[0].Gender,
+              EmailID: employeeRecords[0].EmailID,
+              IsAutoPunch: employeeRecords[0].IsAutoPunch,
+              AssetId: employeeRecords[0].AssetId,
               ShiftId: employeeRecords[0].ShiftId,
-              depId: employeeRecords[0].depId,
-              jobTitle: employeeRecords[0].jobTitle,
-              EmployeeGradeID: employeeRecords[0].EmployeeGradeID
+              JobTitle: employeeRecords[0].JobTitle,
+              Accommodation: employeeRecords[0].Accommodation,
+              DepId: employeeRecords[0].DepId,
+              DivId: employeeRecords[0].DivId,
+              SiteId: employeeRecords[0].SiteId,
+              VisaId: employeeRecords[0].VisaId,
+              OT: employeeRecords[0].OT,
+              DateOfJoining: employeeRecords[0].DateOfJoining
           };
 
-          // Get related data from the first record
           const firstRecord = employeeRecords[0];
           const shift = {
               Shift_id: firstRecord.Shift_id,
               shift_name: firstRecord.shift_name,
               shift_start: firstRecord.shift_start,
               shift_end: firstRecord.shift_end,
-             shift_incharge: firstRecord.shift_incharge,
-             shift_type: firstRecord.shift_type,
-             hours_allowed_for_break: firstRecord.hours_allowed_for_break,
-             lgt_in_minutes: firstRecord.lgt_in_minutes,
-             total_working_hours_before: firstRecord.total_working_hours_before,
-             time_allowed_before_shift: firstRecord.time_allowed_before_shift
-
+              shift_incharge: firstRecord.shift_incharge,
+              shift_type: firstRecord.shift_type,
+              hours_allowed_for_break: firstRecord.hours_allowed_for_break,
+              lgt_in_minutes: firstRecord.lgt_in_minutes,
+              total_working_hours_before: firstRecord.total_working_hours_before,
+              time_allowed_before_shift: firstRecord.time_allowed_before_shift
           };
 
           const department = {
-              depId: firstRecord.depId,
-              depName: firstRecord.depName,
-              section_Id: firstRecord.section_Id
+              depId: firstRecord.DepId,
+              depName: firstRecord.depName
           };
 
           const section = {
-              sectionId: firstRecord.sectionId,
-              sectionName: firstRecord.sectionName,
-              site_Id: firstRecord.site_Id
-          };
-
+            DivId: firstRecord.DivId,
+            sectionName: firstRecord.sectionName
+        };
           const site = {
-              siteId: firstRecord.siteId,
+              siteId: firstRecord.SiteId,
               siteName: firstRecord.siteName
           };
           const designation = {
-              jobTitleId: firstRecord.jobTitleId,
-              jobTitleName: firstRecord.jobTitleName
-          };
+            designationId : firstRecord.gradeId,
+            designationName: firstRecord.JobTitle
+        };
           const grade = {
               gradeId: firstRecord.gradeId,
               gradeName: firstRecord.gradeName
@@ -563,15 +828,14 @@ async processAttendanceData(results) {
                   designation,
                   grade
               );
-              
+
               if (attendanceRecord) {
                   report.push(attendanceRecord);
               }
           }
 
           console.log(firstRecord);
-console.log(grade);
-console.log(designation)
+          console.log(grade);
       }
 
       logger.info('Data processing completed', {
@@ -592,8 +856,71 @@ console.log(designation)
 
 
 
+// async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
+//   if (!employee || !shift) return null;
+
+//   const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
+//   const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
+//   const lgtMinutes = shift.lgt_in_minutes;
+
+//   const clockInTime = moment.min(...records.map(r => moment(r.clock_in, 'HH:mm:ss')));
+//   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
+
+//   const status = await this.determineStatus(clockInTime,clockOutTime, shiftStart, lgtMinutes, date);
+//   const awh = 
+//   //status === 'A' ? '0:00' : 
+//   await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shiftStart);
+//   const ot = 
+//   //status === 'A' ? '0:00' : 
+//   await this.calculateOT(clockOutTime, shiftEnd);
+// console.log("xxxxxxxxxxxxx",  site.siteId,
+//   site.siteName,
+//   designation.jobTitleId,
+//    designation.jobTitleName,
+//  grade.gradeId,
+//  grade.gradeName );
+
+
+//   return {
+//     emp_id: employee.EmpID,
+//     emp_fname: employee.EmpFName,
+//     emp_lname: employee.EmpLName,
+//     shift_date: moment(date).format('YYYY-MM-DD'),
+//     first_in: clockInTime.format('HH:mm:ss'),
+//     last_out: clockOutTime.format('HH:mm:ss'),
+//     status,
+//     leave_id: 11,  
+//     awh,
+//     ot,
+//     shift_id: shift.Shift_id,
+//     shift_name: shift.shift_name,
+//     shift_type: shift.shift_type,
+//     shift_start: shift.shift_start,
+//     shift_end: shift.shift_end,
+//     hours_allowed_for_break: shift.hours_allowed_for_break,
+//     time_allowed_before_shift: shift.time_allowed_before_shift,
+//     shift_incharge: shift.shift_incharge,
+//     total_working_hours_before: shift.total_working_hours_before,
+//     lgt_in_minutes: shift.lgt_in_minutes,
+//     department_id: department.depId,
+//     department_name: department.depName,
+//     section_id: section.sectionId,
+//     section_name: section.sectionName,
+//     site_id: site.siteId,
+//     site_name: site.siteName,
+//     designation_id: designation.jobTitleId,
+//     designation_name: designation.jobTitleName,
+//     grade_id: grade.gradeId,
+//     grade_name: grade.gradeName
+//   };
+// }
+
+
+
 async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
   if (!employee || !shift) return null;
+  
+  logger.info(`Processing employee ${employee.emp_id} with grade id: ${grade.gradeId} and name: ${grade.gradeName}`);
 
   const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
   const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
@@ -602,30 +929,20 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
   const clockInTime = moment.min(...records.map(r => moment(r.clock_in, 'HH:mm:ss')));
   const clockOutTime = moment.max(...records.map(r => moment(r.clock_out, 'HH:mm:ss')));
 
-  const status = await this.determineStatus(clockInTime,clockOutTime, shiftStart, lgtMinutes, date);
-  const awh = 
-  //status === 'A' ? '0:00' : 
-  await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shiftStart);
-  const ot = 
-  //status === 'A' ? '0:00' : 
-  await this.calculateOT(clockOutTime, shiftEnd);
-console.log("xxxxxxxxxxxxx",  site.siteId,
-  site.siteName,
-  designation.jobTitleId,
-   designation.jobTitleName,
- grade.gradeId,
- grade.gradeName );
-
+  const status = await this.determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date);
+  const awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shiftStart);
+  
+  const ot = (employee.OT === 1 && employee.EmployeeGradeID !== 2) ? await this.calculateOT(clockOutTime, shiftEnd) : 0;
 
   return {
+    sap_id: employee.SAPID,
     emp_id: employee.EmpID,
-    emp_fname: employee.EmpFName,
-    emp_lname: employee.EmpLName,
+    full_name: employee.FullName,
     shift_date: moment(date).format('YYYY-MM-DD'),
     first_in: clockInTime.format('HH:mm:ss'),
     last_out: clockOutTime.format('HH:mm:ss'),
     status,
-    leave_id: 11,  
+    leave_id: 11,
     awh,
     ot,
     shift_id: shift.Shift_id,
@@ -644,12 +961,59 @@ console.log("xxxxxxxxxxxxx",  site.siteId,
     section_name: section.sectionName,
     site_id: site.siteId,
     site_name: site.siteName,
-    designation_id: designation.jobTitleId,
-    designation_name: designation.jobTitleName,
+    designation_id: employee.EmployeeGradeID,
+    designation_name: employee.JobTitle,
     grade_id: grade.gradeId,
     grade_name: grade.gradeName
   };
 }
+
+
+
+
+
+
+// groupByEmployeeAndDate(inputData) {
+//   logger.debug('Starting groupByEmployeeAndDate', {
+//       inputDataLength: inputData.length
+//   });
+
+//   try {
+//       const grouped = inputData.reduce((acc, record) => {
+//           // Ensure required fields exist
+//           if (!record.empid || !record.date) {
+//               logger.warn('Record missing required fields', { record });
+//               return acc;
+//           }
+
+//           // Initialize nested objects if they don't exist
+//           if (!acc[record.empid]) {
+//               acc[record.empid] = {};
+//           }
+//           if (!acc[record.empid][record.date]) {
+//               acc[record.empid][record.date] = [];
+//           }
+
+//           acc[record.empid][record.date].push(record);
+//           return acc;
+//       }, {});
+
+//       logger.debug('Grouping completed', {
+//           employeeCount: Object.keys(grouped).length
+//       });
+
+//       return grouped;
+//   } catch (error) {
+//       logger.error('Error in groupByEmployeeAndDate', {
+//           error: error.message,
+//           inputDataSample: inputData?.[0]
+//       });
+//       throw error;
+//   }
+// }
+
+
+
 
 
 
@@ -662,13 +1026,11 @@ groupByEmployeeAndDate(inputData) {
 
   try {
       const grouped = inputData.reduce((acc, record) => {
-          // Ensure required fields exist
           if (!record.empid || !record.date) {
               logger.warn('Record missing required fields', { record });
               return acc;
           }
 
-          // Initialize nested objects if they don't exist
           if (!acc[record.empid]) {
               acc[record.empid] = {};
           }
@@ -693,6 +1055,73 @@ groupByEmployeeAndDate(inputData) {
       throw error;
   }
 }
+
+
+
+
+
+// organizeReportData(report) {
+//   const organized = {};
+
+//   report.forEach(record => {
+//     if (!organized[record.shift_id]) {
+//       organized[record.shift_id] = {
+//         shift_name: record.shift_name,
+//         shift_type: record.shift_type,
+//         shift_start: record.shift_start,
+//         shift_end: record.shift_end,
+//         hours_allowed_for_break: record.hours_allowed_for_break,
+//         time_allowed_before_shift: record.time_allowed_before_shift,
+//         shift_incharge: record.shift_incharge,
+//         total_working_hours_before: record.total_working_hours_before,
+//         lgt_in_minutes: record.lgt_in_minutes,
+//         sites: {}
+//       };
+//     }
+
+//     if (!organized[record.shift_id].sites[record.site_id]) {
+//       organized[record.shift_id].sites[record.site_id] = {
+//         site_name: record.site_name,
+//         departments: {}
+//       };
+//     }
+
+//     if (!organized[record.shift_id].sites[record.site_id].departments[record.department_id]) {
+//       organized[record.shift_id].sites[record.site_id].departments[record.department_id] = {
+//         department_name: record.department_name,
+//         employees: {}
+//       };
+//     }
+
+//     if (!organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id]) {
+//       organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id] = {
+//         emp_name: `${record.emp_fname} ${record.emp_lname}`,
+//         grade: record.grade_name,
+//         designation: record.designation_name,
+//         attendance: []
+//       };
+//     }
+//     console.log("record", record.emp_id);
+
+
+//     organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id].attendance.push({
+//       shift_date: record.shift_date,
+//       first_in: record.first_in,
+//       last_out: record.last_out,
+//       status: record.status,
+//       awh: record.awh,
+//       ot: record.ot
+//     });
+//   });
+// console.log("organized", JSON.stringify(organized, null, 2));
+//   return organized;
+// }
+
+
+
+
+
+
 
 
 organizeReportData(report) {
@@ -730,14 +1159,12 @@ organizeReportData(report) {
 
     if (!organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id]) {
       organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id] = {
-        emp_name: `${record.emp_fname} ${record.emp_lname}`,
+        emp_name: record.full_name,
         grade: record.grade_name,
         designation: record.designation_name,
         attendance: []
       };
     }
-    console.log("record", record.emp_id);
-
 
     organized[record.shift_id].sites[record.site_id].departments[record.department_id].employees[record.emp_id].attendance.push({
       shift_date: record.shift_date,
@@ -748,9 +1175,13 @@ organizeReportData(report) {
       ot: record.ot
     });
   });
-console.log("organized", JSON.stringify(organized, null, 2));
+
+  console.log("organized", JSON.stringify(organized, null, 2));
   return organized;
 }
+
+
+
 
 
 // async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) {
@@ -1053,7 +1484,7 @@ async executeQuery(sql, values = [], maxRetries = 3, timeout = 100000) {
 
 
 
-
+/*
 async insertOrUpdateGAR(report) {
   if (!Array.isArray(report)) {
       console.error('Report is not an array:', report);
@@ -1116,8 +1547,69 @@ async insertOrUpdateGAR(report) {
   }
 }
 
+*/
+
+async insertOrUpdateGAR(report) {
+  if (!Array.isArray(report)) {
+      console.error('Report is not an array:', report);
+      return;
+  }
+
+  const BATCH_SIZE = 500;
+  const validRecords = report.filter(record => record.emp_id && record.shift_date);
+
+  if (validRecords.length === 0) {
+      console.warn('No valid records to insert or update in GAR.');
+      return;
+  }
+
+  try {
+      for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
+          const batch = validRecords.slice(i, i + BATCH_SIZE);
+          const values = batch.map(record => [
+              record.emp_id,
+              record.FullName,
+              record.shift_date,
+              record.first_in,
+              record.last_out,
+              record.status,
+              11,
+              record.awh,
+              record.ot
+          ]);
+
+          const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+          const flatValues = values.flat();
+
+          const sql = `
+              INSERT INTO general_attendance_report 
+                  (emp_id, FullName, shift_date, first_in, last_out, status, leave_id, awh, ot)
+              VALUES ${placeholders}
+              ON DUPLICATE KEY UPDATE 
+                  FullName = VALUES(FullName),
+                  first_in = VALUES(first_in),
+                  last_out = VALUES(last_out),
+                  status = VALUES(status),
+                  leave_id = VALUES(leave_id),
+                  awh = VALUES(awh),
+                  ot = VALUES(ot)
+          `;
+
+          await this.executeQuery(sql, flatValues);
+          console.log(`Processed batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} records in GAR table.`);
+      }
+
+      console.log(`All ${validRecords.length} records have been processed in GAR table.`);
+  } catch (error) {
+      console.error('Error processing data for general_attendance_report table:', error);
+      throw error;
+  }
+}
 
 
+
+
+/*
 // Bulk Insert or Update for Input Data with Batching
 async insertOrUpdateInputData(dataArray, chunkSize = 1000) {
   const totalRows = dataArray.length;
@@ -1152,7 +1644,43 @@ async insertOrUpdateInputData(dataArray, chunkSize = 1000) {
 
   console.log('All data inserted/updated successfully.');
 }
+*/
 
+
+
+
+async insertOrUpdateInputData(dataArray, chunkSize = 1000) {
+  const totalRows = dataArray.length;
+  let currentIndex = 0;
+
+  console.log(`Total Rows to Insert/Update: ${totalRows}`);
+
+  while (currentIndex < totalRows) {
+      const chunk = dataArray.slice(currentIndex, currentIndex + chunkSize);
+      const placeholders = chunk.map(() => "(?, ?, ?, ?)").join(", ");
+      const sql = `
+          INSERT INTO input_data (empid, date, clock_in, clock_out)
+          VALUES ${placeholders}
+          ON DUPLICATE KEY UPDATE
+          clock_in = VALUES(clock_in),
+          clock_out = VALUES(clock_out)
+      `;
+
+      const flattenedValues = chunk.flat();
+
+      try {
+          await this.executeQuery(sql, flattenedValues);
+          console.log(`Successfully inserted/updated chunk from row ${currentIndex + 1} to ${currentIndex + chunk.length}`);
+      } catch (error) {
+          console.error(`Error inserting/updating chunk from row ${currentIndex + 1} to ${currentIndex + chunk.length}: ${error.message}`);
+          throw error;
+      }
+
+      currentIndex += chunkSize;
+  }
+
+  console.log('All data inserted/updated successfully.');
+}
 
 
 async endPool() {

@@ -1031,6 +1031,157 @@ module.exports = {
 };
 // Export the rest of the functions as they were...
 // Original functions for processing attendance data
+// function processExcelData(filePath) {
+//     const workbook = XLSX.readFile(filePath);
+//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//     const data = XLSX.utils.sheet_to_json(sheet);
+
+//     console.log(`Total Rows in Excel: ${data.length}`);
+//     if (data.length > 0) console.log('Sample Row:', data[0]);
+
+//     return data
+//         .filter(row => row.L_UID && row.C_Name && row.C_Date && row.C_Time && row.L_Mode !== undefined)
+//         .map(row => ({
+//             empId: row.L_UID,
+//             empName: row.C_Name,
+//             date: moment(`${row.C_Date} ${row.C_Time}`, 'YYYYMMDD HHmmss').format('YYYY-MM-DD HH:mm:ss'),
+//             isClockIn: row.L_Mode === 1,
+//             isClockOut: row.L_Mode === 2
+//         }))
+//         .filter(record => record !== null);
+// }
+
+// function groupDataByEmployeeAndDate(data) {
+//     return data.reduce((acc, record) => {
+//         const dateOnly = record.date.split(' ')[0];
+//         const key = `${record.empId}_${dateOnly}`;
+//         if (!acc.has(key)) {
+//             acc.set(key, { empId: record.empId, date: dateOnly, clockIn: null, clockOut: null });
+//         }
+//         const existing = acc.get(key);
+//         if (record.isClockIn && (!existing.clockIn || record.date < existing.clockIn)) {
+//             existing.clockIn = record.date;
+//         }
+//         if (record.isClockOut && (!existing.clockOut || record.date > existing.clockOut)) {
+//             existing.clockOut = record.date;
+//         }
+//         return acc;
+//     }, new Map());
+// }
+
+// async function updateInputData(processedData) {
+//     const groupedData = groupDataByEmployeeAndDate(processedData);
+//     const records = Array.from(groupedData.values());
+//     console.log('Sample Input Data Record:', records[0]);
+
+//     for (let i = 0; i < records.length; i += MAX_CHUNK_SIZE) {
+//         const chunk = records.slice(i, i + MAX_CHUNK_SIZE);
+//         const values = chunk.map(r => [r.empId, r.date, r.clockIn, r.clockOut]);
+//         const placeholders = values.map(() => '(?, ?, ?, ?)').join(', ');
+//         const flatValues = values.flat();
+//         const sql = `INSERT INTO input_data (empid, date, clock_in, clock_out) 
+//                     VALUES ${placeholders} 
+//                     ON DUPLICATE KEY UPDATE 
+//                     clock_in = VALUES(clock_in), 
+//                     clock_out = VALUES(clock_out)`;
+
+//         try {
+//             await db.executeQuery(sql, flatValues);
+//             console.log(`Processed ${chunk.length} attendance records`);
+//         } catch (error) {
+//             console.error(`Error processing attendance records:`, error);
+//             throw error;
+//         }
+//     }
+// }
+
+// async function fetchEmployeeDetails(employeeIds) {
+//     const CHUNK_SIZE = 500;
+//     let results = [];
+
+//     for (let i = 0; i < employeeIds.length; i += CHUNK_SIZE) {
+//         const chunk = employeeIds.slice(i, i + CHUNK_SIZE);
+//         if (chunk.length === 0) continue;
+        
+//         const placeholders = chunk.map(() => '?').join(',');
+//         const sql = `SELECT EmpID, EmpFName, EmpLName FROM employee_master WHERE EmpID IN (${placeholders})`;
+//         const chunkResults = await db.executeQuery(sql, chunk);
+//         results = results.concat(chunkResults);
+//     }
+
+//     return results;
+// }
+
+// async function mainDataSync(attendanceFilePath) {
+//     try {
+//         console.time('Data Sync');
+//         console.log('Starting data synchronization...');
+
+//         // First, update employee master from the new Excel file
+//         console.log('Updating employee master from new Excel file...');
+//         await updateEmployeeMasterFromExcel();
+        
+//         // Then process attendance data
+//         console.log('Processing attendance data...');
+//         const processedData = processExcelData(attendanceFilePath);
+
+//         if (processedData.length === 0) {
+//             console.warn('No valid attendance data found in the Excel file');
+//             return;
+//         }
+
+//         // Extract unique employees
+//         const uniqueEmployeesMap = new Map();
+//         processedData.forEach(record => {
+//             uniqueEmployeesMap.set(record.empId, record.empName);
+//         });
+//         const uniqueEmployees = Array.from(uniqueEmployeesMap, ([empId, empName]) => ({ empId, empName }));
+
+//         console.log(`Processing ${uniqueEmployees.length} unique employees from attendance data`);
+
+//         // Update input_data table
+//         await updateInputData(processedData);
+
+//         // Fetch employee details for GAR
+//         const employeeIds = Array.from(uniqueEmployeesMap.keys());
+//         const garEmployees = await fetchEmployeeDetails(employeeIds);
+//         const empMap = new Map(garEmployees.map(emp => [emp.EmpID, { EmpFName: emp.EmpFName, EmpLName: emp.EmpLName }]));
+
+//         // Prepare and update GAR
+//         const groupedData = groupDataByEmployeeAndDate(processedData);
+//         const garRecords = Array.from(groupedData.values()).map(record => {
+//             const empDetails = empMap.get(record.empId);
+//             return {
+//                 emp_id: record.empId,
+//                 emp_fname: empDetails ? empDetails.EmpFName : 'N/A',
+//                 emp_lname: empDetails ? empDetails.EmpLName : 'N/A',
+//                 shift_date: record.date,
+//                 first_in: record.clockIn || null,
+//                 last_out: record.clockOut || null,
+//                 status: (record.clockIn && record.clockOut) ? 'Present' : 'Absent',
+//                 leave_id: null,
+//                 awh: 0,
+//                 ot: 0
+//             };
+//         });
+
+//         console.log(`Updating GAR with ${garRecords.length} records`);
+//         await db.insertOrUpdateGAR(garRecords);
+
+//         console.log('Data synchronization completed successfully');
+//         console.timeEnd('Data Sync');
+//     } catch (error) {
+//         console.error('Error during data synchronization:', error);
+//         throw error;
+//     }
+// }
+
+// module.exports = {
+//     mainDataSync,
+//     updateEmployeeMasterFromExcel
+// };
+
+
 function processExcelData(filePath) {
     const workbook = XLSX.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -1043,7 +1194,7 @@ function processExcelData(filePath) {
         .filter(row => row.L_UID && row.C_Name && row.C_Date && row.C_Time && row.L_Mode !== undefined)
         .map(row => ({
             empId: row.L_UID,
-            empName: row.C_Name,
+            fullName: row.C_Name,
             date: moment(`${row.C_Date} ${row.C_Time}`, 'YYYYMMDD HHmmss').format('YYYY-MM-DD HH:mm:ss'),
             isClockIn: row.L_Mode === 1,
             isClockOut: row.L_Mode === 2
@@ -1056,7 +1207,7 @@ function groupDataByEmployeeAndDate(data) {
         const dateOnly = record.date.split(' ')[0];
         const key = `${record.empId}_${dateOnly}`;
         if (!acc.has(key)) {
-            acc.set(key, { empId: record.empId, date: dateOnly, clockIn: null, clockOut: null });
+            acc.set(key, { empId: record.empId, fullName: record.fullName, date: dateOnly, clockIn: null, clockOut: null });
         }
         const existing = acc.get(key);
         if (record.isClockIn && (!existing.clockIn || record.date < existing.clockIn)) {
@@ -1104,7 +1255,7 @@ async function fetchEmployeeDetails(employeeIds) {
         if (chunk.length === 0) continue;
         
         const placeholders = chunk.map(() => '?').join(',');
-        const sql = `SELECT EmpID, EmpFName, EmpLName FROM employee_master WHERE EmpID IN (${placeholders})`;
+        const sql = `SELECT EmpID, FullName FROM employee_master WHERE EmpID IN (${placeholders})`;
         const chunkResults = await db.executeQuery(sql, chunk);
         results = results.concat(chunkResults);
     }
@@ -1133,9 +1284,9 @@ async function mainDataSync(attendanceFilePath) {
         // Extract unique employees
         const uniqueEmployeesMap = new Map();
         processedData.forEach(record => {
-            uniqueEmployeesMap.set(record.empId, record.empName);
+            uniqueEmployeesMap.set(record.empId, record.fullName);
         });
-        const uniqueEmployees = Array.from(uniqueEmployeesMap, ([empId, empName]) => ({ empId, empName }));
+        const uniqueEmployees = Array.from(uniqueEmployeesMap, ([empId, fullName]) => ({ empId, fullName }));
 
         console.log(`Processing ${uniqueEmployees.length} unique employees from attendance data`);
 
@@ -1143,30 +1294,30 @@ async function mainDataSync(attendanceFilePath) {
         await updateInputData(processedData);
 
         // Fetch employee details for GAR
-        const employeeIds = Array.from(uniqueEmployeesMap.keys());
-        const garEmployees = await fetchEmployeeDetails(employeeIds);
-        const empMap = new Map(garEmployees.map(emp => [emp.EmpID, { EmpFName: emp.EmpFName, EmpLName: emp.EmpLName }]));
+        // const employeeIds = Array.from(uniqueEmployeesMap.keys());
+    //    const garEmployees = await fetchEmployeeDetails(employeeIds);
+        // const empMap = new Map(garEmployees.map(emp => [emp.EmpID, { FullName: emp.FullName }]));
 
         // Prepare and update GAR
-        const groupedData = groupDataByEmployeeAndDate(processedData);
-        const garRecords = Array.from(groupedData.values()).map(record => {
-            const empDetails = empMap.get(record.empId);
-            return {
-                emp_id: record.empId,
-                emp_fname: empDetails ? empDetails.EmpFName : 'N/A',
-                emp_lname: empDetails ? empDetails.EmpLName : 'N/A',
-                shift_date: record.date,
-                first_in: record.clockIn || null,
-                last_out: record.clockOut || null,
-                status: (record.clockIn && record.clockOut) ? 'Present' : 'Absent',
-                leave_id: null,
-                awh: 0,
-                ot: 0
-            };
-        });
+     //   const groupedData = groupDataByEmployeeAndDate(processedData);
+        // const garRecords = Array.from(groupedData.values()).map(record => {
+        //     const empDetails = empMap.get(record.empId);
+        //     return {
+        //         emp_id: record.empId,
+        //         emp_fname: empDetails ? empDetails.FullName.split(' ')[0] : 'N/A',
+        //         emp_lname: empDetails ? empDetails.FullName.split(' ')[1] : 'N/A',
+        //         shift_date: record.date,
+        //         first_in: record.clockIn || null,
+        //         last_out: record.clockOut || null,
+        //         status: (record.clockIn && record.clockOut) ? 'Present' : 'Absent',
+        //         leave_id: null,
+        //         awh: 0,
+        //         ot: 0
+        //     };
+        // });
 
-        console.log(`Updating GAR with ${garRecords.length} records`);
-        await db.insertOrUpdateGAR(garRecords);
+     //   console.log(`Updating GAR with ${garRecords.length} records`);
+     //   await db.insertOrUpdateGAR(garRecords);
 
         console.log('Data synchronization completed successfully');
         console.timeEnd('Data Sync');
