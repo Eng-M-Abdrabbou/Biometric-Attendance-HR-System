@@ -506,8 +506,8 @@ async generateAttendanceReport(filters = {}, limit = 30, offset = 0) {
 
 
 
-
-async generateAttendanceReport(filters = {}, limit = 30, offset = 0) {
+/*
+async generateAttendanceReport(filters = {}, limit = 100000, offset = 0) {
   let conn;
   try {
     logger.debug('Building attendance report query with filters', { filters });
@@ -822,7 +822,7 @@ async  combineAttendanceData(allEmployees, attendanceRecords, dateRange) {
     throw error;
   }
 }
-
+*/
 
 async getFilterOptions() {
   let conn;
@@ -1044,7 +1044,7 @@ async query1(sql, values = []) {
 
 
 // second version and working
-
+/*
 async processAttendanceData(results) {
   try {
       logger.debug('Starting attendance data processing', {
@@ -1061,6 +1061,8 @@ async processAttendanceData(results) {
           sampleRecord: results[0],
           totalRecords: results.length
       });
+
+
 
       const groupedData = this.groupByEmployeeAndDate(results);
       
@@ -1167,10 +1169,147 @@ async processAttendanceData(results) {
       throw error;
   }
 }
-
+*/
 
 // Updated processEmployeeAttendance to handle Missing Swipe (MS) cases
-async  processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
+// async  processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
+//   try {
+//     if (!employee || !shift) {
+//       logger.warn('Missing required employee or shift data', { employee, shift });
+//       return null;
+//     }
+
+//     logger.debug(`Processing attendance for employee`, {
+//       employeeId: employee.EmpID,
+//       date,
+//       recordsCount: records.length
+//     });
+
+//     // Initialize variables
+//     let status, clockInTime, clockOutTime, awh, ot;
+
+//     // Find actual attendance records (excluding absent records)
+//     const actualRecords = records.filter(r => !r.is_absent);
+    
+//     // Check for partial swipes
+//     const hasClockIn = actualRecords.some(r => r.clock_in);
+//     const hasClockOut = actualRecords.some(r => r.clock_out);
+
+//     if (hasClockIn || hasClockOut) {
+//       // At least one swipe exists
+//       if (!hasClockIn || !hasClockOut) {
+//         // Only one type of swipe exists - Missing Swipe case
+//         status = 'MS';
+//         clockInTime = hasClockIn 
+//           ? moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')))
+//           : moment('00:00:00', 'HH:mm:ss');
+//         clockOutTime = hasClockOut
+//           ? moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')))
+//           : moment('00:00:00', 'HH:mm:ss');
+//         awh = 0; // No AWH for missing swipe
+//         ot = 0;  // No OT for missing swipe
+        
+//         logger.debug('Marked as Missing Swipe', {
+//           employeeId: employee.EmpID,
+//           date,
+//           hasClockIn,
+//           hasClockOut
+//         });
+//       } else {
+//         // Both clock in and out exist - Present case
+//         clockInTime = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
+//         clockOutTime = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
+        
+//         const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
+//         const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
+//         const lgtMinutes = shift.lgt_in_minutes || 0;
+
+//         status = 'P'; // Mark as present since both swipes exist
+//         awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shiftStart);
+//         ot = (employee.OT === 1 && employee.EmployeeGradeID !== 1) ? 
+//           await this.calculateOT(clockOutTime, shiftEnd) : 0;
+        
+//         logger.debug('Marked as Present', {
+//           employeeId: employee.EmpID,
+//           date,
+//           clockIn: clockInTime.format('HH:mm:ss'),
+//           clockOut: clockOutTime.format('HH:mm:ss')
+//         });
+//       }
+//     } else {
+//       // No swipes at all - Absent case
+//       status = 'A';
+//       clockInTime = moment('00:00:00', 'HH:mm:ss');
+//       clockOutTime = moment('00:00:00', 'HH:mm:ss');
+//       awh = 0;
+//       ot = 0;
+      
+//       logger.debug('Marked as Absent', {
+//         employeeId: employee.EmpID,
+//         date,
+//         reason: 'No clock in/out records'
+//       });
+//     }
+
+//     // Create the attendance record
+//     const attendanceRecord = {
+//       sap_id: employee.SAPID,
+//       emp_id: employee.EmpID,
+//       full_name: employee.FullName,
+//       shift_date: moment(date).format('YYYY-MM-DD'),
+//       first_in: clockInTime.format('HH:mm:ss'),
+//       last_out: clockOutTime.format('HH:mm:ss'),
+//       status,
+//       leave_id: status === 'A' ? 11 : null,
+//       awh,
+//       ot,
+//       shift_id: shift.Shift_id,
+//       shift_name: shift.shift_name,
+//       shift_type: shift.shift_type,
+//       shift_start: shift.shift_start,
+//       shift_end: shift.shift_end,
+//       hours_allowed_for_break: shift.hours_allowed_for_break,
+//       time_allowed_before_shift: shift.time_allowed_before_shift,
+//       shift_incharge: shift.shift_incharge,
+//       total_working_hours_before: shift.total_working_hours_before,
+//       lgt_in_minutes: shift.lgt_in_minutes,
+//       department_id: department?.depId,
+//       department_name: department?.depName,
+//       section_id: section?.sectionId,
+//       section_name: section?.sectionName,
+//       site_id: site?.siteId,
+//       site_name: site?.siteName,
+//       designation_id: employee.EmployeeGradeID,
+//       designation_name: employee.JobTitle,
+//       grade_id: grade?.gradeId,
+//       grade_name: grade?.gradeName
+//     };
+
+//     logger.debug('Processed attendance record', {
+//       employeeId: employee.EmpID,
+//       date,
+//       status,
+//       awh,
+//       ot
+//     });
+
+//     return attendanceRecord;
+//   } catch (error) {
+//     logger.error('Error processing employee attendance', {
+//       error: error.message,
+//       stack: error.stack,
+//       employeeId: employee?.EmpID,
+//       date
+//     });
+//     throw error;
+//   }
+// }
+
+
+
+
+/*
+async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
   try {
     if (!employee || !shift) {
       logger.warn('Missing required employee or shift data', { employee, shift });
@@ -1183,30 +1322,23 @@ async  processEmployeeAttendance(employee, shift, records, date, department, sec
       recordsCount: records.length
     });
 
-    // Initialize variables
     let status, clockInTime, clockOutTime, awh, ot;
-
-    // Find actual attendance records (excluding absent records)
     const actualRecords = records.filter(r => !r.is_absent);
-    
-    // Check for partial swipes
     const hasClockIn = actualRecords.some(r => r.clock_in);
     const hasClockOut = actualRecords.some(r => r.clock_out);
 
     if (hasClockIn || hasClockOut) {
-      // At least one swipe exists
       if (!hasClockIn || !hasClockOut) {
-        // Only one type of swipe exists - Missing Swipe case
         status = 'MS';
-        clockInTime = hasClockIn 
+        clockInTime = hasClockIn
           ? moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')))
           : moment('00:00:00', 'HH:mm:ss');
         clockOutTime = hasClockOut
           ? moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')))
           : moment('00:00:00', 'HH:mm:ss');
-        awh = 0; // No AWH for missing swipe
-        ot = 0;  // No OT for missing swipe
-        
+        awh = 0;
+        ot = 0;
+
         logger.debug('Marked as Missing Swipe', {
           employeeId: employee.EmpID,
           date,
@@ -1214,19 +1346,16 @@ async  processEmployeeAttendance(employee, shift, records, date, department, sec
           hasClockOut
         });
       } else {
-        // Both clock in and out exist - Present case
         clockInTime = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
         clockOutTime = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
-        
         const shiftStart = moment(shift.shift_start, 'HH:mm:ss');
         const shiftEnd = moment(shift.shift_end, 'HH:mm:ss');
-        const lgtMinutes = shift.lgt_in_minutes || 0;
-
-        status = 'P'; // Mark as present since both swipes exist
+        status = 'P';
         awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shiftStart);
-        ot = (employee.OT === 1 && employee.EmployeeGradeID !== 2) ? 
-          await this.calculateOT(clockOutTime, shiftEnd) : 0;
-        
+        ot = (employee.OT === 1 && employee.EmployeeGradeID !== 1)
+          ? await this.calculateOT(clockOutTime, shiftEnd)
+          : 0;
+
         logger.debug('Marked as Present', {
           employeeId: employee.EmpID,
           date,
@@ -1235,13 +1364,12 @@ async  processEmployeeAttendance(employee, shift, records, date, department, sec
         });
       }
     } else {
-      // No swipes at all - Absent case
       status = 'A';
       clockInTime = moment('00:00:00', 'HH:mm:ss');
       clockOutTime = moment('00:00:00', 'HH:mm:ss');
       awh = 0;
       ot = 0;
-      
+
       logger.debug('Marked as Absent', {
         employeeId: employee.EmpID,
         date,
@@ -1249,7 +1377,6 @@ async  processEmployeeAttendance(employee, shift, records, date, department, sec
       });
     }
 
-    // Create the attendance record
     const attendanceRecord = {
       sap_id: employee.SAPID,
       emp_id: employee.EmpID,
@@ -1258,7 +1385,7 @@ async  processEmployeeAttendance(employee, shift, records, date, department, sec
       first_in: clockInTime.format('HH:mm:ss'),
       last_out: clockOutTime.format('HH:mm:ss'),
       status,
-      leave_id: status === 'A' ? 11 : null,
+      leave_id: status === 'A' ? 11 : 11,
       awh,
       ot,
       shift_id: shift.Shift_id,
@@ -1302,6 +1429,9 @@ async  processEmployeeAttendance(employee, shift, records, date, department, sec
     throw error;
   }
 }
+*/
+
+
 
 // async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
 //   if (!employee || !shift) return null;
@@ -1508,7 +1638,7 @@ groupByEmployeeAndDate(inputData) {
 
 
 
-
+/*
 groupByEmployeeAndDate(inputData) {
   logger.debug('Starting groupByEmployeeAndDate', {
     inputDataLength: inputData.length
@@ -1561,7 +1691,7 @@ groupByEmployeeAndDate(inputData) {
     throw new Error(`Failed to group attendance data: ${error.message}`);
   }
 }
-
+*/
 
 
 // organizeReportData(report) {
@@ -2194,7 +2324,623 @@ async endPool() {
 
 
 
+
+
+
+
+async generateAttendanceReport(filters = {}, limit = 100000, offset = 0) {
+  try {
+    logger.debug('Building attendance report query with filters', { filters });
+
+    // Set default date range if not specified
+    const today = moment().format('YYYY-MM-DD');
+    filters.dateFrom = filters.dateFrom || today;
+    filters.dateTo = filters.dateTo || today;
+
+    logger.debug('Using date range', { dateFrom: filters.dateFrom, dateTo: filters.dateTo });
+
+    // First, get all active employees from employee_master
+    let employeeMasterQuery = `
+      SELECT DISTINCT 
+        e.SAPID,
+        e.EmpID,
+        e.FullName,
+        e.EmpStatus,
+        e.EmployeeGradeID,
+        e.NationalityID,
+        e.EmailID,
+        e.ShiftId,
+        e.DepId,
+        e.DivId,
+        e.SiteId,
+        e.JobTitle,
+        e.OT,
+        e.VisaId,
+        e.EXP_LOC,
+        e.Accomodation,
+        e.Gender,
+        e.AssetID,
+        e.DateOfJoining,
+        s.Shift_id,
+        s.shift_name,
+        s.shift_type,
+        s.shift_start,
+        s.shift_end,
+        s.hours_allowed_for_break,
+        s.time_allowed_before_shift,
+        s.shift_incharge,
+        s.total_working_hours_before,
+        s.lgt_in_minutes,
+        d.depId,
+        d.depName,
+        sec.sectionId,
+        sec.sectionName,
+        st.siteId,
+        st.siteName,
+        g.gradeId,
+        g.gradeName
+      FROM employee_master e
+      LEFT JOIN shift s ON e.ShiftId = s.Shift_id
+      LEFT JOIN departments d ON e.DepId = d.depId
+      LEFT JOIN section sec ON e.DivId = sec.sectionId
+      LEFT JOIN sites st ON e.SiteId = st.siteId
+      LEFT JOIN grade g ON e.EmployeeGradeID = g.gradeId
+      WHERE 1=1
+    `;
+
+    let whereConditions = [];
+    let params = [];
+
+    // Build dynamic WHERE clause based on filters
+    if (filters.empId) {
+      whereConditions.push('e.EmpID = ?');
+      params.push(filters.empId);
+    }
+
+    if (filters.empName) {
+      whereConditions.push('e.FullName LIKE ?');
+      params.push(`%${filters.empName}%`);
+    }
+
+    if (filters.department) {
+      whereConditions.push('e.DepId = ?');
+      params.push(filters.department);
+    }
+
+    if (filters.site) {
+      whereConditions.push('e.SiteId = ?');
+      params.push(filters.site);
+    }
+
+    if (filters.nationality) {
+      whereConditions.push('e.NationalityID = ?');
+      params.push(filters.nationality);
+    }
+
+    if (whereConditions.length > 0) {
+      employeeMasterQuery += ' AND ' + whereConditions.join(' AND ');
+    }
+
+    logger.debug('Executing employee master query', { 
+      query: employeeMasterQuery, 
+      parameters: params 
+    });
+
+    const allEmployees = await this.query(employeeMasterQuery, params);
+
+    logger.debug('Employee master query results', { 
+      employeeCount: allEmployees.length 
+    });
+
+    // Get attendance records for the date range
+    let attendanceQuery = `
+      SELECT 
+        i.*,
+        e.EmpID,
+        e.FullName,
+        e.EmpStatus,
+        e.EmployeeGradeID,
+        e.NationalityID,
+        e.EmailID,
+        e.ShiftId,
+        e.DepId,
+        e.DivId,
+        e.SiteId,
+        e.JobTitle,
+        e.OT,
+        e.VisaId,
+        e.EXP_LOC,
+        e.Accomodation,
+        e.Gender,
+        e.AssetID,
+        e.DateOfJoining,
+        s.Shift_id,
+        s.shift_name,
+        s.shift_type,
+        s.shift_start,
+        s.shift_end,
+        s.hours_allowed_for_break,
+        s.time_allowed_before_shift,
+        s.shift_incharge,
+        s.total_working_hours_before,
+        s.lgt_in_minutes,
+        d.depId,
+        d.depName,
+        sec.sectionId,
+        sec.sectionName,
+        st.siteId,
+        st.siteName,
+        g.gradeId,
+        g.gradeName
+      FROM input_data i
+      JOIN employee_master e ON i.empid = e.EmpID
+      LEFT JOIN shift s ON e.ShiftId = s.Shift_id
+      LEFT JOIN departments d ON e.DepId = d.depId
+      LEFT JOIN section sec ON e.DivId = sec.sectionId
+      LEFT JOIN sites st ON e.SiteId = st.siteId
+      LEFT JOIN grade g ON e.EmployeeGradeID = g.gradeId
+      WHERE i.date BETWEEN ? AND ?
+    `;
+
+    let attendanceWhereConditions = [];
+    let attendanceParams = [filters.dateFrom, filters.dateTo];
+
+    // Build dynamic WHERE clause based on filters for attendanceQuery
+    if (filters.empId) {
+      attendanceWhereConditions.push('e.EmpID = ?');
+      attendanceParams.push(filters.empId);
+    }
+
+    if (filters.empName) {
+      attendanceWhereConditions.push('e.FullName LIKE ?');
+      attendanceParams.push(`%${filters.empName}%`);
+    }
+
+    if (filters.department) {
+      attendanceWhereConditions.push('e.DepId = ?');
+      attendanceParams.push(filters.department);
+    }
+
+    if (filters.site) {
+      attendanceWhereConditions.push('e.SiteId = ?');
+      attendanceParams.push(filters.site);
+    }
+
+    if (filters.nationality) {
+      attendanceWhereConditions.push('e.NationalityID = ?');
+      attendanceParams.push(filters.nationality);
+    }
+
+    if (attendanceWhereConditions.length > 0) {
+      attendanceQuery += ' AND ' + attendanceWhereConditions.join(' AND ');
+    }
+
+    logger.debug('Executing attendance query', { 
+      query: attendanceQuery, 
+      parameters: attendanceParams 
+    });
+
+    const attendanceRecords = await this.query(attendanceQuery, attendanceParams);
+
+    logger.debug('Attendance query results', { 
+      attendanceCount: attendanceRecords.length 
+    });
+
+    // Generate date range
+    const dateRange = this.generateDateRange(filters.dateFrom, filters.dateTo);
+    
+    logger.debug('Generated date range', { 
+      dateCount: dateRange.length,
+      firstDate: dateRange[0],
+      lastDate: dateRange[dateRange.length - 1]
+    });
+
+    // Combine attendance records with absent records
+    const combinedResults = await this.combineAttendanceData(
+      allEmployees,
+      attendanceRecords,
+      dateRange
+    );
+
+    const totalRecords = combinedResults.length;
+
+    logger.debug('Combined results', { 
+      totalRecords,
+      sampleRecord: combinedResults[0] 
+    });
+
+    // Apply pagination to combined results
+    const paginatedResults = combinedResults.slice(offset, offset + limit);
+
+    // Process the results
+    const processedData = await this.processAttendanceData(paginatedResults);
+
+    // Organize and return the final report
+    const organizedReport = this.organizeReportData(processedData);
+    
+    logger.info('Report generation completed', { 
+      reportSize: Object.keys(organizedReport).length 
+    });
+
+    return { 
+      report: organizedReport, 
+      totalRecords,
+      dateRange: {
+        from: filters.dateFrom,
+        to: filters.dateTo
+      }
+    };
+  } catch (error) {
+    logger.error('Error generating attendance report', { 
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
 }
 
+// Helper function to generate date range
+generateDateRange(startDate, endDate) {
+  try {
+    const start = moment(startDate);
+    const end = moment(endDate);
+    const dates = [];
+
+    while (start.isSameOrBefore(end)) {
+      dates.push(start.format('YYYY-MM-DD'));
+      start.add(1, 'days');
+    }
+
+    logger.debug('Generated date range', {
+      startDate,
+      endDate,
+      numberOfDates: dates.length
+    });
+
+    return dates;
+  } catch (error) {
+    logger.error('Error generating date range', {
+      error: error.message,
+      startDate,
+      endDate
+    });
+    throw error;
+  }
+}
+
+// Helper function to combine attendance data
+async combineAttendanceData(allEmployees, attendanceRecords, dateRange) {
+  try {
+    logger.debug('Starting to combine attendance data', {
+      employeeCount: allEmployees.length,
+      attendanceCount: attendanceRecords.length,
+      dateCount: dateRange.length
+    });
+
+    if (!allEmployees.length) {
+      logger.warn('No employees found in master data');
+      return [];
+    }
+
+    // First, process all existing attendance records
+    const combinedResults = [...attendanceRecords].map(record => ({
+      ...record,
+      is_absent: false  // These are actual attendance records, so they're present
+    }));
+
+    // Create a Set of keys for quick lookup of existing records
+    const existingRecords = new Set(
+      attendanceRecords.map(record => `${record.EmpID}_${moment(record.date).format('YYYY-MM-DD')}`)
+    );
+
+    // Now check for missing records and add absent records only for those
+    for (const employee of allEmployees) {
+      for (const date of dateRange) {
+        const key = `${employee.EmpID}_${date}`;
+        
+        // Only add an absent record if no attendance record exists
+        if (!existingRecords.has(key)) {
+          combinedResults.push({
+            ...employee,
+            date,
+            clock_in: null,
+            clock_out: null,
+            is_absent: true,
+            EmpID: employee.EmpID  // Ensure EmpID is set correctly
+          });
+        }
+      }
+    }
+
+    logger.debug('Data combination completed', {
+      combinedRecordsCount: combinedResults.length,
+      sampleRecord: combinedResults[0],
+      absentCount: combinedResults.filter(r => r.is_absent).length,
+      presentCount: combinedResults.filter(r => !r.is_absent).length
+    });
+
+    return combinedResults;
+  } catch (error) {
+    logger.error('Error combining attendance data', {
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+}
+
+// Helper function to group data by employee and date
+groupByEmployeeAndDate(inputData) {
+  logger.debug('Starting groupByEmployeeAndDate', {
+    inputDataLength: inputData.length
+  });
+
+  try {
+    const grouped = inputData.reduce((acc, record) => {
+      const employeeId = record.EmpID.toString();
+      const date = record.date;
+
+      if (!employeeId) {
+        logger.warn('Record missing employee ID', { record });
+        return acc;
+      }
+
+      if (!date) {
+        logger.warn('Record missing date', { record });
+        return acc;
+      }
+
+      if (!acc[employeeId]) {
+        acc[employeeId] = {};
+      }
+      if (!acc[employeeId][date]) {
+        acc[employeeId][date] = [];
+      }
+
+      acc[employeeId][date].push({
+        ...record,
+        is_absent: !!record.is_absent
+      });
+
+      return acc;
+    }, {});
+
+    logger.debug('Grouping completed', {
+      employeeCount: Object.keys(grouped).length,
+      sampleGroup: Object.entries(grouped)[0]
+    });
+
+    return grouped;
+  } catch (error) {
+    logger.error('Error in groupByEmployeeAndDate', {
+      error: error.message,
+      stack: error.stack,
+      inputDataSample: inputData?.[0]
+    });
+    throw new Error(`Failed to group attendance data: ${error.message}`);
+  }
+}
+
+// Helper function to process attendance data
+async processAttendanceData(results) {
+  try {
+    logger.debug('Starting attendance data processing', {
+      resultCount: results ? results.length : 0
+    });
+
+    if (!results || !Array.isArray(results)) {
+      logger.error('Invalid input data', { results });
+      throw new Error('Input data must be an array');
+    }
+
+    const report = [];
+    logger.debug('Input data before grouping', {
+      sampleRecord: results[0],
+      totalRecords: results.length
+    });
+
+    const groupedData = this.groupByEmployeeAndDate(results);
+    
+    for (const [empId, dates] of Object.entries(groupedData)) {
+      const employeeRecords = results.filter(r => r.EmpID.toString() === empId);
+      if (!employeeRecords.length) continue;
+
+      const employee = {
+        EmpID: employeeRecords[0].EmpID,
+        FullName: employeeRecords[0].FullName,
+        EmpStatus: employeeRecords[0].EmpStatus,
+        EmployeeGradeID: employeeRecords[0].EmployeeGradeID,
+        Address: employeeRecords[0].Address,
+        NationalityID: employeeRecords[0].NationalityID,
+        EXP_LOC: employeeRecords[0].EXP_LOC,
+        Gender: employeeRecords[0].Gender,
+        EmailID: employeeRecords[0].EmailID,
+        IsAutoPunch: employeeRecords[0].IsAutoPunch,
+        AssetId: employeeRecords[0].AssetId,
+        ShiftId: employeeRecords[0].ShiftId,
+        JobTitle: employeeRecords[0].JobTitle,
+        Accommodation: employeeRecords[0].Accommodation,
+        DepId: employeeRecords[0].DepId,
+        DivId: employeeRecords[0].DivId,
+        SiteId: employeeRecords[0].SiteId,
+        VisaId: employeeRecords[0].VisaId,
+        OT: employeeRecords[0].OT,
+        DateOfJoining: employeeRecords[0].DateOfJoining,
+        SAPID: employeeRecords[0].SAPID
+      };
+
+      const firstRecord = employeeRecords[0];
+      const shift = {
+        Shift_id: firstRecord.Shift_id,
+        shift_name: firstRecord.shift_name,
+        shift_start: firstRecord.shift_start,
+        shift_end: firstRecord.shift_end,
+        shift_incharge: firstRecord.shift_incharge,
+        shift_type: firstRecord.shift_type,
+        hours_allowed_for_break: firstRecord.hours_allowed_for_break,
+        lgt_in_minutes: firstRecord.lgt_in_minutes,
+        total_working_hours_before: firstRecord.total_working_hours_before,
+        time_allowed_before_shift: firstRecord.time_allowed_before_shift
+      };
+
+      const department = {
+        depId: firstRecord.DepId,
+        depName: firstRecord.depName
+      };
+
+      const section = {
+        sectionId: firstRecord.sectionId,
+        sectionName: firstRecord.sectionName
+      };
+
+      const site = {
+        siteId: firstRecord.SiteId,
+        siteName: firstRecord.siteName
+      };
+
+      const designation = {
+        designationId: firstRecord.gradeId,
+        designationName: firstRecord.JobTitle
+      };
+
+      const grade = {
+        gradeId: firstRecord.gradeId,
+        gradeName: firstRecord.gradeName
+      };
+
+      for (const [date, records] of Object.entries(dates)) {
+        const attendanceRecord = await this.processEmployeeAttendance(
+          employee,
+          shift,
+          records,
+          date,
+          department,
+          section,
+          site,
+          designation,
+          grade
+        );
+
+        if (attendanceRecord) {
+          report.push(attendanceRecord);
+        }
+      }
+    }
+
+    logger.info('Data processing completed', {
+      processedRecords: report.length
+    });
+
+    return report;
+  } catch (error) {
+    logger.error('Error in processAttendanceData', {
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+}
+
+// Helper function to process individual employee attendance
+async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
+  try {
+    const actualRecords = records.filter(r => !r.is_absent);
+
+    let status, clockInTime, clockOutTime, awh, ot;
+
+    if (actualRecords.length > 0) {
+      const hasClockIn = actualRecords.some(r => r.clock_in);
+      const hasClockOut = actualRecords.some(r => r.clock_out);
+
+      if (!hasClockIn || !hasClockOut) {
+        status = 'MS';
+        clockInTime = hasClockIn
+          ? moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')))
+          : null;
+        clockOutTime = hasClockOut
+          ? moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')))
+          : null;
+        awh = 0;
+        ot = 0;
+      } else {
+        clockInTime = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
+        clockOutTime = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
+        status = 'P';
+        // Calculate AWH and OT
+        awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shift.shift_start);
+        ot = (employee.OT === 1 && employee.EmployeeGradeID !== 1)
+          ? await this.calculateOT(clockOutTime, shift.shift_end)
+          : 0;
+      }
+    } else {
+      status = 'A';
+      clockInTime = null;
+      clockOutTime = null;
+      awh = 0;
+      ot = 0;
+    }
+
+    const attendanceRecord = {
+      sap_id: employee.SAPID,
+      emp_id: employee.EmpID,
+      full_name: employee.FullName,
+      shift_date: moment(date).format('YYYY-MM-DD'),
+      first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
+      last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
+      status,
+      leave_id: status === 'A' ? 11 : null,
+      awh,
+      ot,
+      shift_id: shift.Shift_id,
+      shift_name: shift.shift_name,
+      shift_type: shift.shift_type,
+      shift_start: shift.shift_start,
+      shift_end: shift.shift_end,
+      hours_allowed_for_break: shift.hours_allowed_for_break,
+      time_allowed_before_shift: shift.time_allowed_before_shift,
+      shift_incharge: shift.shift_incharge,
+      total_working_hours_before: shift.total_working_hours_before,
+      lgt_in_minutes: shift.lgt_in_minutes,
+      department_id: department.depId,
+      department_name: department.depName,
+      section_id: section.sectionId,
+      section_name: section.sectionName,
+      site_id: site.siteId,
+      site_name: site.siteName,
+      designation_id: designation.designationId,
+      designation_name: designation.designationName,
+      grade_id: grade.gradeId,
+      grade_name: grade.gradeName
+    };
+
+    logger.debug('Processed attendance record', {
+      employeeId: employee.EmpID,
+      date,
+      status,
+      awh,
+      ot
+    });
+
+    return attendanceRecord;
+  } catch (error) {
+    logger.error('Error processing employee attendance', {
+      error: error.message,
+      stack: error.stack,
+      employeeId: employee?.EmpID,
+      date
+    });
+    throw error;
+  }
+}
+
+
+
+
+
+
+
+
+
+}
 
 module.exports = DbService;

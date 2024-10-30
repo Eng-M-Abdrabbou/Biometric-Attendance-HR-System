@@ -431,7 +431,9 @@ function displayReport(data) {
                 </tr>
             </table>
         `;
-
+    //     function isString(value) {
+    //     return typeof value === 'string';
+    // }
         for (const [siteId, siteData] of Object.entries(shiftData.sites)) {
             html += `<h3 style="color: blue;">&nbsp;&nbsp;Site: ${siteData.site_name}</h3>`;
 
@@ -458,6 +460,9 @@ function displayReport(data) {
 
                 for (const [empId, empData] of Object.entries(depData.employees)) {
                     empData.attendance.forEach((record, index) => {
+                        // if (isString(record.awh)) {
+                        //     return; // skip rows where awh is a string
+                        // }
                         let newawh1 = Math.floor(record.awh);
                         let newawh2 = Math.floor((record.awh % 1) * 100);
                         if (isNaN(newawh1) || isNaN(newawh2)) {
@@ -733,7 +738,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
 // Inside your <script> tag in the HTML
 
     let currentPage = 1;
-    const limit = 30; // Must match the default limit in backend
+    const limit = 100000; // Must match the default limit in backend
     
     document.getElementById('prevPage').addEventListener('click', () => {
         if (currentPage > 1) {
@@ -747,7 +752,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
         fetchGARReport(currentPage, limit);
     });
     
-    async function fetchGARReport(page = 1, limit = 30) {
+    async function fetchGARReport(page = 1, limit = 100000) {
         const loadingSpinner = document.getElementById('loadingSpinner');
         loadingSpinner.style.display = 'block';
         document.getElementById('errorMessage').style.display = 'none';
