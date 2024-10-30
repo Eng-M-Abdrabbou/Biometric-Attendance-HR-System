@@ -1951,6 +1951,7 @@ console.log("clockIn.isBefore(shiftStartTime)", clockIn.isBefore(shiftStartTime)
 
 
 async  calculateOT(clockOutTime, shiftEnd) {
+  logger.info("The Overtime input data are the following" ,clockOutTime, shiftEnd)
   if (!moment.isMoment(clockOutTime) || !moment.isMoment(shiftEnd)) {
     console.error("Invalid time inputs: not moment objects");
     console.log("the error is here 556677",clockOutTime, shiftEnd);
@@ -2844,6 +2845,10 @@ async processAttendanceData(results) {
 // Helper function to process individual employee attendance
 async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
   try {
+
+    
+
+
     const actualRecords = records.filter(r => !r.is_absent);
 
     let status, clockInTime, clockOutTime, awh, ot;
@@ -2868,8 +2873,14 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
         status = 'P';
         // Calculate AWH and OT
         awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shift.shift_start);
+        
+        
+    let    clockInTime1 = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
+  let  clockOutTime1 = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
+    const shiftStart1 = moment(shift.shift_start, 'HH:mm:ss');
+    const shiftEnd1 = moment(shift.shift_end, 'HH:mm:ss');
         ot = (employee.OT === 1 && employee.EmployeeGradeID !== 1)
-          ? await this.calculateOT(clockOutTime, shift.shift_end)
+          ? await this.calculateOT(clockOutTime1, shiftEnd1)
           : 0;
       }
     } else {
@@ -2888,7 +2899,7 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
       first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
       last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
       status,
-      leave_id: status === 'A' ? 11 : null,
+      leave_id: status === 'A' ? 11 : 11,
       awh,
       ot,
       shift_id: shift.Shift_id,
