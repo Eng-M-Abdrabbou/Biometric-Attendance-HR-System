@@ -450,6 +450,8 @@ function displayReport(data) {
                                 <th>Designation</th>                               
                                 <th>First In</th>
                                 <th>Last Out</th>
+                                <th>Shift Start</th>
+                                <th>Shift End</th>
                                 <th>Status</th>
                                 <th>AWH</th>
                                 <th>OT</th>
@@ -465,9 +467,15 @@ function displayReport(data) {
                         // }
                         let newawh1 = Math.floor(record.awh);
                         let newawh2 = Math.floor((record.awh % 1) * 100);
-                        if (isNaN(newawh1) || isNaN(newawh2)) {
+                        if (isNaN(newawh1) || isNaN(newawh2)) {                        
                             newawh1 = 0;
                             newawh2 = 0;
+                        }
+                        if (newawh1 < 10) {
+                            newawh1 = `0${newawh1}`;
+                        }
+                        if (newawh2 < 10) {
+                            newawh2 = `0${newawh2}`;
                         }
 
                         let newot1 = Math.floor(record.ot);
@@ -476,6 +484,13 @@ function displayReport(data) {
                             newot1 = 0;
                             newot2 = 0;
                         }
+if (newot1 < 10) {
+    newot1 = `0${newot1}`;
+}
+if (newot2 < 10) {
+    newot2 = `0${newot2}`;
+}
+
                         let firstIn = record.first_in == "Invalid date" || record.first_in === null || record.first_in === '00:00:00' ? "Didn't clock in" : record.first_in;
                         let lastOut = record.last_out == "Invalid date" || record.last_out === null || record.last_out === '00:00:00' ? "Didn't clock out" : record.last_out;
 
@@ -488,6 +503,8 @@ function displayReport(data) {
                                 ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empData.designation || 'N/A'}</td>` : `<td>${empData.designation || 'N/A'}</td>`}
                                 <td>${firstIn}</td>
                                 <td>${lastOut}</td>
+                                <td>${shiftData.shift_start}</td>
+                                <td>${shiftData.shift_end}</td>
                                 <td>${record.status}</td>
                                 <td>${newawh1}:${newawh2}</td>
                                 <td>${newot1}:${newot2}</td>

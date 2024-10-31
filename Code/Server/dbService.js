@@ -1902,21 +1902,61 @@ async  determineStatus(clockInTime, clockOutTime, shiftStart, lgtMinutes, date) 
 
 
 
+// async calculateAWH(clockInTime, clockOutTime, breakHours, shift_start) {
+//   console.log("trying to calculate awh", clockInTime, clockOutTime, breakHours, shift_start);
+
+//   const shiftStartTime = (shift_start);
+//   const clockIn = (clockInTime);
+//   const clockOut = (clockOutTime);
+// console.log("shiftStartTime", shiftStartTime);
+// console.log("clockIn", clockIn);
+// console.log("clockOut", clockOut);
+// console.log("clockIn.isBefore(shiftStartTime)", clockIn.isBefore(shiftStartTime));
+//   let totalHours;
+
+
+//   if (moment(clockIn).isBefore(moment(shiftStartTime))) {
+//     logger.info("clockIn is before shiftStartTime");
+//     totalHours = moment.duration(moment(clockOut).diff(moment(shiftStartTime))).asHours();
+//   } else{
+//     logger.info("clockIn is not before shiftStartTime");
+//     totalHours = moment.duration(moment(clockOut).diff(moment(clockIn))).asHours();
+//   }
+
+//   const awh = Math.max(totalHours - breakHours, 0).toFixed(2);
+//   console.log("AWH", awh);
+
+//   let result = awh % 1;
+//   let newawh = Math.floor(awh) + (result * 60) / 100;
+//   newawh = newawh.toFixed(2);
+
+//   return newawh;
+// }
+
+
+
+
+
 async calculateAWH(clockInTime, clockOutTime, breakHours, shift_start) {
   console.log("trying to calculate awh", clockInTime, clockOutTime, breakHours, shift_start);
 
-  const shiftStartTime = moment(shift_start);
-  const clockIn = moment(clockInTime);
-  const clockOut = moment(clockOutTime);
-console.log("shiftStartTime", shiftStartTime);
-console.log("clockIn", clockIn);
-console.log("clockOut", clockOut);
-console.log("clockIn.isBefore(shiftStartTime)", clockIn.isBefore(shiftStartTime));
+  // Parse both times with the same format
+  const shiftStartTime = moment(shift_start, "HH:mm:ss");
+  const clockIn = moment(clockInTime, "HH:mm:ss");
+  const clockOut = moment(clockOutTime, "HH:mm:ss");
+
+  console.log("shiftStartTime", shiftStartTime.format());
+  console.log("clockIn", clockIn.format());
+  console.log("clockOut", clockOut.format());
+  console.log("clockIn.isBefore(shiftStartTime)", clockIn.isBefore(shiftStartTime));
+
   let totalHours;
 
   if (clockIn.isBefore(shiftStartTime)) {
+    logger.info("clockIn is before shiftStartTime", clockIn, shiftStartTime);
     totalHours = moment.duration(clockOut.diff(shiftStartTime)).asHours();
   } else {
+    logger.info("clockIn is not before shiftStartTime", clockIn, shiftStartTime);
     totalHours = moment.duration(clockOut.diff(clockIn)).asHours();
   }
 
@@ -1929,6 +1969,8 @@ console.log("clockIn.isBefore(shiftStartTime)", clockIn.isBefore(shiftStartTime)
 
   return newawh;
 }
+
+
 
 
 
@@ -1951,7 +1993,6 @@ console.log("clockIn.isBefore(shiftStartTime)", clockIn.isBefore(shiftStartTime)
 
 
 async  calculateOT(clockOutTime, shiftEnd) {
-  logger.info("The Overtime input data are the following" ,clockOutTime, shiftEnd)
   if (!moment.isMoment(clockOutTime) || !moment.isMoment(shiftEnd)) {
     console.error("Invalid time inputs: not moment objects");
     console.log("the error is here 556677",clockOutTime, shiftEnd);
@@ -2077,10 +2118,6 @@ async  calculateOT(clockOutTime, shiftEnd) {
 
 
 
-
-
-
-
 async executeQuery(sql, values = [], maxRetries = 3, timeout = 100000) {
   let retries = 0;
 
@@ -2189,7 +2226,7 @@ async insertOrUpdateGAR(report) {
       console.error('Report is not an array:', report);
       return;
   }
-
+logger.info('report', report);
   const BATCH_SIZE = 500;
   const validRecords = report.filter(record => record.emp_id && record.shift_date);
 
@@ -2943,13 +2980,6 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
     throw error;
   }
 }
-
-
-
-
-
-
-
 
 
 }
