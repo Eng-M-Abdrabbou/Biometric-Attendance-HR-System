@@ -490,11 +490,40 @@ if (newot1 < 10) {
 if (newot2 < 10) {
     newot2 = `0${newot2}`;
 }
-
+                        
                         let firstIn = record.first_in == "Invalid date" || record.first_in === null || record.first_in === '00:00:00' ? "Didn't clock in" : record.first_in;
                         let lastOut = record.last_out == "Invalid date" || record.last_out === null || record.last_out === '00:00:00' ? "Didn't clock out" : record.last_out;
+if(shiftId === '3'){
 
-                        html += `
+    let firstIn = record.first_in == "Invalid date" || record.first_in === null ? "Didn't clock in" : record.first_in;
+    let lastOut = record.last_out == "Invalid date" || record.last_out === null ? "Didn't clock out" : record.last_out;
+ if(firstIn =='00:00:00'){
+    firstIn = "--------";
+ }
+ if(lastOut == '00:00:00'){
+    lastOut = "--------";
+ }
+    
+    
+    html += `
+                            <tr>
+                                <td>${record.shift_date}</td>
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
+                                <td>${record.shift_date}</td>
+                                <td>${firstIn}</td>
+                                <td>${lastOut}</td>
+                                <td>${shiftData.shift_start}</td>
+                                <td>${shiftData.shift_end}</td>
+                                <td>${record.status}</td>
+                                <td>${newawh1}:${newawh2}</td>
+                                <td>${newot1}:${newot2}</td>
+                            </tr>
+                        `;
+} else {
+    
+    html += `
                             <tr>
                                 <td>${record.shift_date}</td>
                                 ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empId}</td>` : `<td>${empId}</td>`}
@@ -509,7 +538,24 @@ if (newot2 < 10) {
                                 <td>${newawh1}:${newawh2}</td>
                                 <td>${newot1}:${newot2}</td>
                             </tr>
-                        `;
+                        `;}
+// }
+//                         html += `
+//                             <tr>
+//                                 <td>${record.shift_date}</td>
+//                                 ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empId}</td>` : `<td>${empId}</td>`}
+//                                 ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empData.emp_name}</td>` : `<td>${empData.emp_name}</td>`}
+//                                 ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empData.grade || 'N/A'}</td>` : `<td>${empData.grade || 'N/A'}</td>`}
+//                                 ${index === 0 && empData.attendance[1] && empData.attendance[1].shift_date === record.shift_date ? `<td rowspan="${empData.attendance.filter(r => r.shift_date === record.shift_date).length}">${empData.designation || 'N/A'}</td>` : `<td>${empData.designation || 'N/A'}</td>`}
+//                                 <td>${firstIn}</td>
+//                                 <td>${lastOut}</td>
+//                                 <td>${shiftData.shift_start}</td>
+//                                 <td>${shiftData.shift_end}</td>
+//                                 <td>${record.status}</td>
+//                                 <td>${newawh1}:${newawh2}</td>
+//                                 <td>${newot1}:${newot2}</td>
+//                             </tr>
+//                         `;
                     });
                 }
 

@@ -1761,7 +1761,7 @@ groupByEmployeeAndDate(inputData) {
 organizeReportData(report) {
   const organized = {};
 
-  report.forEach(record => {
+  report.flat().forEach(record => {
     if (!organized[record.shift_id]) {
       organized[record.shift_id] = {
         shift_name: record.shift_name,
@@ -1953,10 +1953,8 @@ async calculateAWH(clockInTime, clockOutTime, breakHours, shift_start) {
   let totalHours;
 
   if (clockIn.isBefore(shiftStartTime)) {
-    logger.info("clockIn is before shiftStartTime", clockIn, shiftStartTime);
     totalHours = moment.duration(clockOut.diff(shiftStartTime)).asHours();
   } else {
-    logger.info("clockIn is not before shiftStartTime", clockIn, shiftStartTime);
     totalHours = moment.duration(clockOut.diff(clockIn)).asHours();
   }
 
@@ -1998,7 +1996,7 @@ async  calculateOT(clockOutTime, shiftEnd) {
     console.log("the error is here 556677",clockOutTime, shiftEnd);
     return null;
   }
-
+  
   console.log("trying to calculate ot", clockOutTime, shiftEnd);
   
   const otHours = moment.duration(clockOutTime.diff(shiftEnd)).asHours();
@@ -2879,6 +2877,8 @@ async processAttendanceData(results) {
   }
 }
 
+
+/*
 // Helper function to process individual employee attendance
 async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
   try {
@@ -2980,6 +2980,395 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
     throw error;
   }
 }
+
+*/
+
+async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
+  try {
+    // Handle cross-day shifts (shift_id = 3)
+    if (shift.Shift_id === 3) {
+      return await this.processCrossDayAttendance(
+        employee,
+        shift,
+        records,
+        date,
+        department,
+        section,
+        site,
+        designation,
+        grade
+      );
+    }
+
+    // Existing logic for non-cross-day shifts remains unchanged
+  
+    const actualRecords = records.filter(r => !r.is_absent);
+
+    let status, clockInTime, clockOutTime, awh, ot;
+
+    if (actualRecords.length > 0) {
+      const hasClockIn = actualRecords.some(r => r.clock_in);
+      const hasClockOut = actualRecords.some(r => r.clock_out);
+
+      if (!hasClockIn || !hasClockOut) {
+        status = 'MS';
+        clockInTime = hasClockIn
+          ? moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')))
+          : null;
+        clockOutTime = hasClockOut
+          ? moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')))
+          : null;
+        awh = 0;
+        ot = 0;
+      } else {
+        clockInTime = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
+        clockOutTime = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
+        status = 'P';
+        // Calculate AWH and OT
+        awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shift.shift_start);
+        
+        
+    let    clockInTime1 = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
+  let  clockOutTime1 = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
+    const shiftStart1 = moment(shift.shift_start, 'HH:mm:ss');
+    const shiftEnd1 = moment(shift.shift_end, 'HH:mm:ss');
+        ot = (employee.OT === 1 && employee.EmployeeGradeID !== 1)
+          ? await this.calculateOT(clockOutTime1, shiftEnd1)
+          : 0;
+      }
+    } else {
+      status = 'A';
+      clockInTime = null;
+      clockOutTime = null;
+      awh = 0;
+      ot = 0;
+    }
+
+    const attendanceRecord = {
+      sap_id: employee.SAPID,
+      emp_id: employee.EmpID,
+      full_name: employee.FullName,
+      shift_date: moment(date).format('YYYY-MM-DD'),
+      first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
+      last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
+      status,
+      leave_id: status === 'A' ? 11 : 11,
+      awh,
+      ot,
+      shift_id: shift.Shift_id,
+      shift_name: shift.shift_name,
+      shift_type: shift.shift_type,
+      shift_start: shift.shift_start,
+      shift_end: shift.shift_end,
+      hours_allowed_for_break: shift.hours_allowed_for_break,
+      time_allowed_before_shift: shift.time_allowed_before_shift,
+      shift_incharge: shift.shift_incharge,
+      total_working_hours_before: shift.total_working_hours_before,
+      lgt_in_minutes: shift.lgt_in_minutes,
+      department_id: department.depId,
+      department_name: department.depName,
+      section_id: section.sectionId,
+      section_name: section.sectionName,
+      site_id: site.siteId,
+      site_name: site.siteName,
+      designation_id: designation.designationId,
+      designation_name: designation.designationName,
+      grade_id: grade.gradeId,
+      grade_name: grade.gradeName
+    };
+
+    logger.debug('Processed attendance record', {
+      employeeId: employee.EmpID,
+      date,
+      status,
+      awh,
+      ot
+    });
+
+    return attendanceRecord;
+
+  } catch (error) {
+    logger.error('Error in processEmployeeAttendance', {
+      error: error.message,
+      stack: error.stack,
+      employeeId: employee?.EmpID,
+      date,
+      shiftId: shift?.Shift_id
+    });
+    throw error;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Add these new helper functions to your DbService class
+
+async processCrossDayAttendance(employee, shift, records, date, department, section, site, designation, grade) {
+  try {
+    logger.debug('Processing cross-day attendance', {
+      employeeId: employee.EmpID,
+      date,
+      shiftId: shift.Shift_id
+    });
+
+    const today = moment().format('YYYY-MM-DD');
+    const isToday = moment(date).isSame(today);
+    
+    // If it's today, we can only process today's records
+    if (isToday) {
+      logger.debug('Processing only today\'s records for cross-day shift', { date });
+      
+      // Create a modified version of processEmployeeAttendance that doesn't recurse
+      const actualRecords = records.filter(r => !r.is_absent);
+      let status, clockInTime, clockOutTime, awh, ot;
+
+      if (actualRecords.length > 0) {
+        const hasClockIn = actualRecords.some(r => r.clock_in);
+        const hasClockOut = actualRecords.some(r => r.clock_out);
+
+        if (!hasClockIn || !hasClockOut) {
+          status = 'MS';
+          clockInTime = hasClockIn
+            ? moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')))
+            : null;
+          clockOutTime = hasClockOut
+            ? moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')))
+            : null;
+          awh = 0;
+          ot = 0;
+        } else {
+          clockInTime = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
+          clockOutTime = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
+          status = 'P';
+          awh = await this.calculateAWH(clockInTime, clockOutTime, shift.hours_allowed_for_break, shift.shift_start);
+          ot = (employee.OT === 1 && employee.EmployeeGradeID !== 1)
+            ? await this.calculateOT(clockOutTime, moment(shift.shift_end, 'HH:mm:ss'))
+            : 0;
+        }
+      } else {
+        status = 'A';
+        clockInTime = null;
+        clockOutTime = null;
+        awh = 0;
+        ot = 0;
+      }
+
+      return {
+        sap_id: employee.SAPID,
+        emp_id: employee.EmpID,
+        full_name: employee.FullName,
+        shift_date: moment(date).format('YYYY-MM-DD'),
+        first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
+        last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
+        status,
+        leave_id: status === 'A' ? 11 : 11,
+        awh,
+        ot,
+        shift_id: shift.Shift_id,
+        shift_name: shift.shift_name,
+        shift_type: shift.shift_type,
+        shift_start: shift.shift_start,
+        shift_end: shift.shift_end,
+        hours_allowed_for_break: shift.hours_allowed_for_break,
+        time_allowed_before_shift: shift.time_allowed_before_shift,
+        shift_incharge: shift.shift_incharge,
+        total_working_hours_before: shift.total_working_hours_before,
+        lgt_in_minutes: shift.lgt_in_minutes,
+        department_id: department.depId,
+        department_name: department.depName,
+        section_id: section.sectionId,
+        section_name: section.sectionName,
+        site_id: site.siteId,
+        site_name: site.siteName,
+        designation_id: designation.designationId,
+        designation_name: designation.designationName,
+        grade_id: grade.gradeId,
+        grade_name: grade.gradeName
+      };
+    }
+
+    // For past dates, process both days
+    const nextDay = moment(date).add(1, 'day').format('YYYY-MM-DD');
+    const nextDayRecords = await this.getNextDayRecords(employee.EmpID, nextDay);
+    
+    logger.debug('Retrieved next day records', {
+      currentDate: date,
+      nextDay,
+      recordsCount: nextDayRecords.length
+    });
+
+    // Process records from both days together
+    const allRecords = [...records, ...nextDayRecords];
+    const actualRecords = allRecords.filter(r => !r.is_absent);
+
+    let status, clockInTime, clockOutTime, awh, ot;
+
+    if (actualRecords.length > 0) {
+      const hasClockIn = actualRecords.some(r => r.clock_in);
+      const hasClockOut = actualRecords.some(r => r.clock_out);
+
+      if (!hasClockIn || !hasClockOut) {
+        status = 'MS';
+        clockInTime = hasClockIn
+          ? moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')))
+          : null;
+        clockOutTime = hasClockOut
+          ? moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')))
+          : null;
+        awh = 0;
+        ot = 0;
+      } else {
+        clockInTime = moment.min(...actualRecords.filter(r => r.clock_in).map(r => moment(r.clock_in, 'HH:mm:ss')));
+        clockOutTime = moment.max(...actualRecords.filter(r => r.clock_out).map(r => moment(r.clock_out, 'HH:mm:ss')));
+        status = 'P';
+        
+        // Calculate total duration across both days
+        const totalDuration = moment.duration(clockOutTime.diff(clockInTime));
+        const hoursWorked = totalDuration.asHours();
+        
+        // Calculate AWH and OT
+        awh = Math.max(hoursWorked - shift.hours_allowed_for_break, 0).toFixed(2);
+        const shiftEndTime = moment(shift.shift_end, 'HH:mm:ss');
+        ot = (employee.OT === 1 && employee.EmployeeGradeID !== 1)
+          ? await this.calculateOT(clockOutTime, shiftEndTime)
+          : 0;
+      }
+    } else {
+      status = 'A';
+      clockInTime = null;
+      clockOutTime = null;
+      awh = 0;
+      ot = 0;
+    }
+
+    // Return two records - one for each day
+    return [
+      {
+        sap_id: employee.SAPID,
+        emp_id: employee.EmpID,
+        full_name: employee.FullName,
+        shift_date: moment(date).format('YYYY-MM-DD'),
+        first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
+        last_out: '00:00:00', //clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
+        status,
+        leave_id: status === 'A' ? 11 : 11,
+        awh,
+        ot,
+        shift_id: shift.Shift_id,
+        shift_name: shift.shift_name,
+        shift_type: shift.shift_type,
+        shift_start: shift.shift_start,
+        shift_end: shift.shift_end,
+        hours_allowed_for_break: shift.hours_allowed_for_break,
+        time_allowed_before_shift: shift.time_allowed_before_shift,
+        shift_incharge: shift.shift_incharge,
+        total_working_hours_before: shift.total_working_hours_before,
+        lgt_in_minutes: shift.lgt_in_minutes,
+        department_id: department.depId,
+        department_name: department.depName,
+        section_id: section.sectionId,
+        section_name: section.sectionName,
+        site_id: site.siteId,
+        site_name: site.siteName,
+        designation_id: designation.designationId,
+        designation_name: designation.designationName,
+        grade_id: grade.gradeId,
+        grade_name: grade.gradeName
+      },
+      {
+        // Second day record with same details but different date and zero AWH/OT
+        sap_id: employee.SAPID,
+        emp_id: employee.EmpID,
+        full_name: employee.FullName,
+        shift_date: moment(nextDay).format('YYYY-MM-DD'),
+        first_in: '00:00:00', //clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
+        last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
+        status,
+        leave_id: status === 'A' ? 11 : 11,
+        awh: 0, // AWH shown only in first record
+        ot: 0,  // OT shown only in first record
+        shift_id: shift.Shift_id,
+        shift_name: shift.shift_name,
+        shift_type: shift.shift_type,
+        shift_start: shift.shift_start,
+        shift_end: shift.shift_end,
+        hours_allowed_for_break: shift.hours_allowed_for_break,
+        time_allowed_before_shift: shift.time_allowed_before_shift,
+        shift_incharge: shift.shift_incharge,
+        total_working_hours_before: shift.total_working_hours_before,
+        lgt_in_minutes: shift.lgt_in_minutes,
+        department_id: department.depId,
+        department_name: department.depName,
+        section_id: section.sectionId,
+        section_name: section.sectionName,
+        site_id: site.siteId,
+        site_name: site.siteName,
+        designation_id: designation.designationId,
+        designation_name: designation.designationName,
+        grade_id: grade.gradeId,
+        grade_name: grade.gradeName
+      }
+    ];
+  } catch (error) {
+    logger.error('Error processing cross-day attendance', {
+      error: error.message,
+      stack: error.stack,
+      employeeId: employee?.EmpID,
+      date
+    });
+    throw error;
+  }
+}
+
+
+
+async getNextDayRecords(empId, nextDay) {
+  try {
+    logger.info('Fetching next day records', {
+      empId,
+      nextDay
+    });
+    const query = `
+      SELECT * FROM input_data 
+      WHERE empid = ? AND date = ?
+    `;
+    return await this.executeQuery(query, [empId, nextDay]);
+  } catch (error) {
+    logger.error('Error fetching next day records', {
+      error: error.message,
+      stack: error.stack,
+      empId,
+      nextDay
+    });
+    return [];
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
