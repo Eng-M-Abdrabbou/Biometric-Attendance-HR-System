@@ -220,7 +220,8 @@ app.get('/api/attendance-report', async (req, res) => {
             empName: req.query.empName,
             department: req.query.department,
             site: req.query.site,
-            nationality: req.query.nationality
+            nationality: req.query.nationality,
+            visa: req.query.visa
         };
 
         // Pagination parameters
