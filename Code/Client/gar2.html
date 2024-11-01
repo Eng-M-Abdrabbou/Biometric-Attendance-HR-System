@@ -41,6 +41,225 @@
             padding: 8px 16px;
             cursor: pointer;
         }
+
+
+/* General Container */
+.container {
+    max-width: 1450px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    font-family: Arial, sans-serif;
+}
+
+/* Page Header */
+h1 {
+    color: #333;
+    font-size: 28px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* Company Info */
+#reportDataContainer img {
+    display: block;
+    margin: 0 auto 20px;
+}
+
+#reportDataContainer h1,
+#reportDataContainer p,
+#reportDataContainer h3,
+#reportDataContainer h2 {
+    text-align: center;
+}
+
+#reportDataContainer p {
+    font-size: 14px;
+    color: #555;
+    margin: 4px 0;
+}
+
+/* Filter Form Styling */
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+    display: flex;
+    flex: 1;
+    gap: 12px;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+.filter-item label {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 6px;
+}
+
+.filter-item input[type="date"],
+.filter-item input[type="text"],
+.filter-item select {
+    padding: 8px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.filter-item input[type="text"]::placeholder {
+    color: #aaa;
+}
+
+/* Filter Buttons */
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+    padding-top: 10px;
+}
+
+.filter-buttons button {
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.filter-buttons button:hover {
+    background-color: #0056b3;
+}
+
+#resetFilters {
+    background-color: #6c757d;
+}
+
+#resetFilters:hover {
+    background-color: #5a6268;
+}
+
+#triggerSync {
+    background-color: #28a745;
+}
+
+#triggerSync:hover {
+    background-color: #218838;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: none;
+    text-align: center;
+    font-size: 18px;
+    color: #007bff;
+    padding: 20px;
+}
+
+/* Debug Panel */
+#debugLog {
+    margin: 20px 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+}
+
+#debugLog h3 {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#debugOutput {
+    white-space: pre-wrap;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+/* Error Message */
+.error-message {
+    display: none;
+    color: #d9534f;
+    background-color: #f8d7da;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+.pagination-controls button {
+    padding: 6px 12px;
+    font-size: 14px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.pagination-controls button:hover {
+    background-color: #0056b3;
+}
+
+.pagination-controls input[type="number"] {
+    width: 50px;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Print Buttons */
+#btn-export, #printButton {
+    display: block;
+    margin: 10px 0;
+    padding: 8px;
+    font-size: 14px;
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#btn-export:hover, #printButton:hover {
+    background-color: #d9534f;
+}
+
+/* Additional Styling */
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+
+
     </style>
      <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.2.1/exceljs.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
@@ -65,54 +284,68 @@
         <!-- Error Message Display -->
         <div id="errorMessage" class="error-message" style="display: none;"></div>
 
-        <div class="filter-form">
-            <div class="filter-group">
-                <div class="filter-item">
-                    <label for="dateFrom">Date From:</label>
-                    <input type="date" id="dateFrom" name="dateFrom">
-                </div>
-                <div class="filter-item">
-                    <label for="dateTo">Date To:</label>
-                    <input type="date" id="dateTo" name="dateTo">
-                </div>
-                <div class="filter-item">
-                    <label for="empId">Employee ID:</label>
-                    <input type="text" id="empId" name="empId" placeholder="Enter employee ID">
-                </div>
-                <div class="filter-item">
-                    <label for="empName">Employee Name:</label>
-                    <input type="text" id="empName" name="empName" placeholder="Enter employee name">
+<table>
+    <tr>
+        <td>
+            <div class="filter-form">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="dateFrom">Date From:</label>
+                        <input type="date" id="dateFrom" name="dateFrom">
+                    </div>
+                    <div class="filter-item">
+                        <label for="dateTo">Date To:</label>
+                        <input type="date" id="dateTo" name="dateTo">
+                    </div>
+                    <div class="filter-item">
+                        <label for="empId">Employee ID:</label>
+                        <input type="text" id="empId" name="empId" placeholder="Enter employee ID">
+                    </div>
+                    <div class="filter-item">
+                        <label for="empName">Employee Name:</label>
+                        <input type="text" id="empName" name="empName" placeholder="Enter employee name">
+                    </div>
+                    <div class="filter-item">
+                        <label for="department">Department:</label>
+                        <select id="department" name="department">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="site">Site:</label>
+                        <select id="site" name="site">
+                            <option value="">All Sites</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="nationality">Nationality:</label>
+                        <select id="nationality" name="nationality">
+                            <option value="">All Nationalities</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="visa">Visa:</label>
+                        <select id="visa" name="visa">
+                            <option value="">All Visas</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="filter-group">
-                <div class="filter-item">
-                    <label for="department">Department:</label>
-                    <select id="department" name="department">
-                        <option value="">All Departments</option>
-                    </select>
-                </div>
-                <div class="filter-item">
-                    <label for="site">Site:</label>
-                    <select id="site" name="site">
-                        <option value="">All Sites</option>
-                    </select>
-                </div>
-                <div class="filter-item">
-                    <label for="nationality">Nationality:</label>
-                    <select id="nationality" name="nationality">
-                        <option value="">All Nationalities</option>
-                    </select>
-                </div>
-            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
             <div class="filter-buttons">
                 <button id="fetchReport">Apply Filters</button>
-                <button id="resetFilters">Reset Filters</button>
+                <button id="resetFilters">Reset Filters</button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 <button style="display: none;" id="printButton" onclick="printDivAsPDF('reportDataContainer')">Print Report As PDF</button>
                 <button style="display: none;" id="btn-export">Print Report as XLSX(Excel)</button>
                 <button id="triggerSync">Refresh Data</button>
             </div>
-        </div>
-
+        </td>
+    </tr>
+</table>
+       
         <!-- Loading Spinner -->
         <div id="loadingSpinner" class="loading-spinner">
             Loading... Please wait...
@@ -147,6 +380,7 @@ color: black; font-family: Arial, sans-serif; text-transform: uppercase; ">GENER
 
     <script>
 
+// const moment = require('moment'); 
 
         // Debug logging function
         function logDebug(message, data = null) {
@@ -205,6 +439,7 @@ color: black; font-family: Arial, sans-serif; text-transform: uppercase; ">GENER
                 await populateSelect('department', data.departments);
                 await populateSelect('site', data.sites);
                 await populateSelect('nationality', data.nationalities);
+                await populateSelect('visa', data.visa);
                 
                 logDebug('Filter options loaded successfully');
             } catch (error) {
@@ -242,65 +477,11 @@ color: black; font-family: Arial, sans-serif; text-transform: uppercase; ">GENER
             document.getElementById('department').value = '';
             document.getElementById('site').value = '';
             document.getElementById('nationality').value = '';
+            document.getElementById('visa').value = '';
             
             // Fetch report without filters after reset
             fetchGARReport();
         }
-
-
-  /*     
-        async function fetchGARReport() {
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            loadingSpinner.style.display = 'block';
-            logDebug('Fetching report.........................');
-            try {
-                const filters = {
-                    dateFrom: document.getElementById('dateFrom').value,
-                    dateTo: document.getElementById('dateTo').value,
-                    empId: document.getElementById('empId').value,
-                    empName: document.getElementById('empName').value,
-                    department: document.getElementById('department').value,
-                    site: document.getElementById('site').value,
-                    nationality: document.getElementById('nationality').value
-                };
-
-                logDebug('Fetching report with filters', filters);
-
-                // Only include non-empty filters in the query string
-                const queryString = new URLSearchParams(
-                    Object.fromEntries(
-                        Object.entries(filters).filter(([_, v]) => v !== '')
-                    )
-                ).toString();
-
-                logDebug('Generated query string', queryString);
-
-                const response = await fetch(`/api/attendance-report${queryString ? `?${queryString}` : ''}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                logDebug('Received report data', data);
-
-                displayReport(data);
-                document.getElementById('printButton').style.display = 'block';
-                document.getElementById('btn-export').style.display = 'block';
-                document.getElementById('paginationControls').style.display = 'block';
-                logDebug('Report displayed successfully');
-            } catch (error) {
-                showError('Error fetching report', error);
-                document.getElementById('reportContainer').innerHTML = '<p>Error fetching report. Please try again.</p>';
-            } finally {
-                loadingSpinner.style.display = 'none';
-            }
-        }
-*/
-
-
-
-
-
-
 
 
 
@@ -317,9 +498,10 @@ async function fetchGARReport() {
         const departmentElement = document.getElementById('department');
         const siteElement = document.getElementById('site');
         const nationalityElement = document.getElementById('nationality');
+        const visaElement = document.getElementById('visa');
 
         // Ensure all elements exist
-        if (!dateFromElement || !dateToElement || !empIdElement || !empNameElement || !departmentElement || !siteElement || !nationalityElement) {
+        if (!dateFromElement || !dateToElement || !empIdElement || !empNameElement || !departmentElement || !siteElement || !nationalityElement || !visaElement) {
             throw new Error('One or more filter elements are missing in the DOM.');
         }
 
@@ -330,7 +512,8 @@ async function fetchGARReport() {
             empName: empNameElement.value || '',
             department: departmentElement.value || '',
             site: siteElement.value || '',
-            nationality: nationalityElement.value || ''
+            nationality: nationalityElement.value || '',
+            visa: visaElement.value || ''
         };
 
         logDebug('Fetching report with filters', filters);
@@ -538,7 +721,10 @@ if(shiftId === '3'){
                                 <td>${newawh1}:${newawh2}</td>
                                 <td>${newot1}:${newot2}</td>
                             </tr>
-                        `;}
+                        `;
+                    
+                    
+                    }
 // }
 //                         html += `
 //                             <tr>
@@ -560,12 +746,17 @@ if(shiftId === '3'){
                 }
 
                 html += '</tbody></table>';
+
             }
+          
         }
     }
 
     container.innerHTML = html;
+
+
 }
+
 
 // ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
 //                                 ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
@@ -828,7 +1019,8 @@ document.getElementById('btn-export').addEventListener('click', async () => {
                 empName: document.getElementById('empName').value,
                 department: document.getElementById('department').value,
                 site: document.getElementById('site').value,
-                nationality: document.getElementById('nationality').value
+                nationality: document.getElementById('nationality').value,
+                visa: document.getElementById('visa').value
             };
     
             logDebug('Fetching report with filters and pagination', { filters, page, limit });
@@ -886,6 +1078,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
         document.getElementById('department').value = '';
         document.getElementById('site').value = '';
         document.getElementById('nationality').value = '';
+        document.getElementById('visa').value = '';
         currentPage = 1; // Reset to first page
     
         // Fetch report without filters after reset
