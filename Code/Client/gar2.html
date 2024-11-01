@@ -691,10 +691,10 @@ if(shiftId === '3'){
     html += `
                             <tr>
                                 <td>${record.shift_date}</td>
+                                ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empId}</td>` : ''}
                                 ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.emp_name}</td>` : ''}
                                 ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.grade || 'N/A'}</td>` : ''}
                                 ${index === 0 ? `<td rowspan="${empData.attendance.length}">${empData.designation || 'N/A'}</td>` : ''}
-                                <td>${record.shift_date}</td>
                                 <td>${firstIn}</td>
                                 <td>${lastOut}</td>
                                 <td>${shiftData.shift_start}</td>
