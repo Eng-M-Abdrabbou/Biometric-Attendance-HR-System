@@ -42,7 +42,7 @@
             .then(data => {
               const musterRollData = data;
               const uniqueDates = [...new Set(musterRollData.map(item => item.shift_date))];
-
+console.log(musterRollData);
               musterRollBody.innerHTML = ''; // clear the table body
 
               uniqueDates.forEach(date => {
