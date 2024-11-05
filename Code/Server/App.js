@@ -510,12 +510,10 @@ app.get('/api/data', async (req, res) => {
 
   // talals report 
 // muster report 
-const query = 'SELECT e.EmpID, e.FullName, i.date, i.clock_in, i.clock_out FROM employee_master e JOIN input_data i ON e.EmpID = i.empid';
-
-function fillMusterRollTable(res) {
-  db.query(query)
+function fillMusterRollTable(res, limit = 100000000) {
+  const query = 'SELECT e.EmpID, e.FullName, i.date, i.clock_in, i.clock_out FROM employee_master e JOIN input_data i ON e.EmpID = i.empid LIMIT ?';
+  db.query(query, [limit])
     .then(results => {
-      // Process the results here
       console.log('Data retrieved:', results.length);
       const musterRoll = results.map(row => [
         row.EmpID,
@@ -525,17 +523,14 @@ function fillMusterRollTable(res) {
         row.clock_out
       ]);
 
-      // Check if record already exists in muster_roll table
       const checkQuery = 'SELECT * FROM muster_roll WHERE emp_id = ? AND shift_date = ?';
       const promises = musterRoll.map(record => {
         return db.query(checkQuery, [record[0], record[2]])
           .then(result => {
             if (result.length === 0) {
-              // Record does not exist, insert it
               const insertQuery = 'INSERT INTO muster_roll (emp_id, emp_name, shift_date, clock_in, clock_out) VALUES (?, ?, ?, ?, ?)';
               return db.query(insertQuery, record);
             } else {
-              // Record already exists, do nothing
               return Promise.resolve();
             }
           });
@@ -558,23 +553,54 @@ function fillMusterRollTable(res) {
 }
 
 app.get('/fill-muster-roll-table', (req, res) => {
-  fillMusterRollTable(res);
+  const limit = req.query.limit; // Get the limit value from the query parameter
+  fillMusterRollTable(res, limit);
 });
 
-// api for report 
-
 app.get('/get-muster-roll-data', (req, res) => {
-    const query = 'SELECT * FROM muster_roll';
-    db.query(query)
-      .then(results => {
-        res.json(results);
-      })
-      .catch(error => {
-        console.error('Query error:', error);
-        res.status(500).send('Query error');
-      });
-  });
+  const emp_id = req.query.emp_id;
+  const date = req.query.date;
+  const status = req.query.status;
+  const limit = req.query.limit || 10000000;
 
+  let query = 'SELECT * FROM muster_roll';
+  let params = [];
+
+  if (emp_id) {
+    query += ' WHERE emp_id = ?';
+    params.push(emp_id);
+  }
+
+  if (date) {
+    if (query.includes('WHERE')) {
+      query += ' AND shift_date = ?';
+    } else {
+      query += ' WHERE shift_date = ?';
+    }
+    params.push(date);
+  }
+
+  if (status) {
+    if (query.includes('WHERE')) {
+      query += ' AND status = ?';
+    } else {
+      query += ' WHERE status = ?';
+    }
+    params.push(status);
+  }
+
+  query += ' LIMIT ?';
+  params.push(limit);
+
+  db.query(query, params)
+    .then(results => {
+      res.json(results);
+    })
+    .catch(error => {
+      console.error('Query error:', error);
+      res.status(500).send('Query error');
+    });
+});
 
   // talals report end
   
