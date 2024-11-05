@@ -510,7 +510,7 @@ app.get('/api/data', async (req, res) => {
 
   // talals report 
 // muster report 
-function fillMusterRollTable(res, limit = 100000000) {
+function fillMusterRollTable(res, limit = 500) {
   const query = 'SELECT e.EmpID, e.FullName, i.date, i.clock_in, i.clock_out FROM employee_master e JOIN input_data i ON e.EmpID = i.empid LIMIT ?';
   db.query(query, [limit])
     .then(results => {
@@ -560,16 +560,28 @@ app.get('/fill-muster-roll-table', (req, res) => {
 app.get('/get-muster-roll-data', (req, res) => {
   const emp_id = req.query.emp_id;
   const date = req.query.date;
-  const limit = req.query.limit || 10000000;
+  const limit = req.query.limit;
 
+  // Validate limit
+  if (limit && isNaN(limit) || limit <= 0) {
+    return res.status(400).send('Invalid limit');
+  }
+
+  // Set default limit
+  const defaultLimit = 500;
+  const limitValue = limit ? parseInt(limit) : defaultLimit;
+
+  // Create query
   let query = 'SELECT * FROM muster_roll';
   let params = [];
 
+  // Add WHERE clause for emp_id
   if (emp_id) {
     query += ' WHERE emp_id = ?';
     params.push(emp_id);
   }
 
+  // Add AND clause for date
   if (date) {
     if (query.includes('WHERE')) {
       query += ' AND shift_date = ?';
@@ -579,16 +591,18 @@ app.get('/get-muster-roll-data', (req, res) => {
     params.push(date);
   }
 
+  // Add LIMIT clause
   query += ' LIMIT ?';
-  params.push(limit);
+  params.push(limitValue);
 
+  // Execute query
   db.query(query, params)
     .then(results => {
       res.json(results);
     })
     .catch(error => {
       console.error('Query error:', error);
-      res.status(500).send('Query error');
+      res.status(500).send('Internal Server Error');
     });
 });
 
