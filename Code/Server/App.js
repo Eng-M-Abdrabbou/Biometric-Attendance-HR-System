@@ -561,8 +561,22 @@ app.get('/fill-muster-roll-table', (req, res) => {
   fillMusterRollTable(res);
 });
 
+// api for report 
 
-  // talals report
+app.get('/get-muster-roll-data', (req, res) => {
+    const query = 'SELECT * FROM muster_roll';
+    db.query(query)
+      .then(results => {
+        res.json(results);
+      })
+      .catch(error => {
+        console.error('Query error:', error);
+        res.status(500).send('Query error');
+      });
+  });
+
+
+  // talals report end
   
 
 app.get('/Clocking', (req, res) => {
@@ -581,8 +595,9 @@ app.get('/Admin_CRUD.html', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Admin_CRUD.html'));
 });
 
+
 app.get('/report.html', (req, res) => {
-    res.sendFile(path.join(__dirname,'..','Client','report.html'));
+    res.sendFile(path.join(__dirname,'..','Client','muster_roll.html'));
 });
 
 
