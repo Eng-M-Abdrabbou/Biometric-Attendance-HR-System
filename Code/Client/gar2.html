@@ -828,6 +828,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
         });
     }
 
+    /*
     function formatExcelDate(serial) {
         const utcDays = Math.floor(serial - 25569);
         const utcValue = utcDays * 86400;
@@ -844,6 +845,28 @@ document.getElementById('btn-export').addEventListener('click', async () => {
 
         return new Date(dateInfo.getFullYear(), dateInfo.getMonth(), dateInfo.getDate(), hours, minutes, seconds);
     }
+*/
+
+    function formatExcelDate(serial) {
+    const utcDays = Math.floor(serial - 25569);
+    const utcValue = utcDays * 86400;
+    const dateInfo = new Date(utcValue * 1000);
+    const fractionalDay = serial - Math.floor(serial) + 0.0000001;
+    let totalSeconds = Math.floor(86400 * fractionalDay);
+    const seconds = totalSeconds % 60;
+    totalSeconds -= seconds;
+    const hours = Math.floor(totalSeconds / (60 * 60));
+    const minutes = Math.floor(totalSeconds / 60) % 60;
+
+    const date = new Date(dateInfo.getFullYear(), dateInfo.getMonth(), dateInfo.getDate(), hours, minutes, seconds);
+    
+    // Format date as DD-MM-YYYY
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const year = date.getFullYear();
+    return `${month}-${day}-${year}`;
+}
+
 
     function isSerialDate(value) {
         return typeof value === 'number' && value > 40000; // Some threshold for likely dates
@@ -880,8 +903,10 @@ document.getElementById('btn-export').addEventListener('click', async () => {
                     const cellRef = excelRow.getCell(colIndex + 1);
                     
                     if (isSerialDate(cell)) {
-                        cellRef.value = formatExcelDate(cell).toISOString().split('T')[0];
-                    } else {
+                    //    cellRef.value = formatExcelDate(cell).toISOString().split('T')[0];
+                    cellRef.value = formatExcelDate(cell);
+    
+                } else {
                         cellRef.value = cell;
                     }
 

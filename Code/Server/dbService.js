@@ -321,6 +321,39 @@ async query1(sql, values = []) {
 
 
 
+  
+
+/*
+  async executeQuery(sql, values = [], maxRetries = 3, timeout = 100000) {
+    let retries = 0;
+  
+    while (retries < maxRetries) {
+      try {
+        logger.debug('Executing query', { sql, values });
+        const results = await this.query(sql, values, { timeout });
+        logger.debug('Query executed successfully', { rowCount: results.length, timestamp: new Date().toISOString() });
+        return results;
+      } catch (error) {
+        logger.error('Database query error', {
+          error: error.message,
+          sql,
+          values
+        });
+  
+        if (error.code === 'ETIMEDOUT' || error.code === 'ER_LOCK_DEADLOCK') {
+          retries++;
+          logger.warn('Retrying query due to timeout or deadlock', { retries });
+          await new Promise(res => setTimeout(res, 1000)); // Adding a delay before retrying
+        } else {
+          throw error;
+        }
+      }
+    }
+  
+    throw new Error('Max retries reached. Query failed.');
+  }
+*/
+
 
 
 
@@ -552,8 +585,8 @@ logger.info('report', report);
           const batch = validRecords.slice(i, i + BATCH_SIZE);
           const values = batch.map(record => [
               record.emp_id,
-              record.FullName,
-              record.shift_date,
+              record.full_name,
+              moment(record.shift_date, 'DD-MM-YYYY').format('YYYY-MM-DD'),
               record.first_in,
               record.last_out,
               record.status,
@@ -879,6 +912,8 @@ async generateAttendanceReport(filters = {}, limit = 100000, offset = 0) {
     logger.info('Report generation completed', { 
       reportSize: Object.keys(organizedReport).length 
     });
+
+   let inserted = await this.insertOrUpdateGAR(processedData);
 
     return { 
       report: organizedReport, 
@@ -1236,7 +1271,7 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
       shift_date: moment(date).format('DD-MM-YYYY'),
       first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
       last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
-      status,
+      status: (status === 'A' && (moment(date).day() === 6)) ? 'W' : status,
       leave_id: status === 'A' ? 11 : 11,
       awh,
       ot,

@@ -380,7 +380,7 @@ async function getPrimaryKeys(table) {
           AND t.table_schema=DATABASE()
           AND t.table_name=?;
     `;
-    return await db.query1(query, [table]);
+    return await db.executeQuery(query, [table]);
 }
 
 
@@ -389,14 +389,17 @@ app.get('/tableInfo/:table', async (req, res) => {
     try {
         const TABLE = req.params.table;
         // Validate table name to prevent SQL injection
-        const validTables = ['accommodation', 'asst_master', 'clocking', 'company', 'departments', 'employee_master', 'emp_dep', 'emp_visa', 'general_attendance_report', 'grade', 'holidays', 'input_data', 'jobtitle', 'records', 'section', 'shift', 'sites', 'test_user', 'visa', 'weekend'];
+        const validTables = ['accommodation', 'asst_master', 'company', 'departments', 'employee_master', 'general_attendance_report', 'grade', 'holidays', 'input_data', 'jobtitle', 'nationalities', 'section', 'shift', 'sites', 'test_user', 'visa', 'weekend'];
         if (!validTables.includes(TABLE)) {
             return res.status(400).json({ error: 'Invalid table name' });
         }
         
+// if(TABLE==input_data){
+// }
+
         console.log(`Attempting to fetch data from table: ${TABLE}`);
         const primaryKeys = await getPrimaryKeys(TABLE);
-        const data = await db.query1(`SELECT * FROM ${TABLE}`);
+        const data = await db.executeQuery(`SELECT * FROM ${TABLE}`);
         console.log(`Data fetched from ${TABLE}:`, data);
         
         if (data.length === 0) {
@@ -421,7 +424,7 @@ app.post('/updateTable', async (req, res) => {
         const sql = `UPDATE ${table} SET ${column} = ? WHERE ${whereClause}`;
         console.log('SQL query:', sql);
 
-        const result = await db.query1(sql, [value, ...primaryKeyValues]);
+        const result = await db.executeQuery(sql, [value, ...primaryKeyValues]);
         console.log('Update result:', result);
         res.json({ success: true });
     } catch (error) {
@@ -442,7 +445,7 @@ app.post('/insertRow', async (req, res) => {
         const sql = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
         console.log('SQL query:', sql);
 
-        const result = await db.query1(sql, values);
+        const result = await db.executeQuery(sql, values);
         console.log('Insert result:', result);
         res.json({ success: true });
     } catch (error) {
@@ -462,7 +465,7 @@ app.post('/deleteRow', async (req, res) => {
         const sql = `DELETE FROM ${table} WHERE ${whereClause}`;
         console.log('SQL query:', sql);
 
-        const result = await db.query1(sql, values);
+        const result = await db.executeQuery(sql, values);
         console.log('Delete result:', result);
         res.json({ success: true });
     } catch (error) {
