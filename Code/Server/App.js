@@ -508,6 +508,63 @@ app.get('/api/data', async (req, res) => {
   
 
 
+  // talals report 
+// muster report 
+const query = 'SELECT e.EmpID, e.FullName, i.date, i.clock_in, i.clock_out FROM employee_master e JOIN input_data i ON e.EmpID = i.empid';
+
+function fillMusterRollTable(res) {
+  db.query(query)
+    .then(results => {
+      // Process the results here
+      console.log('Data retrieved:', results.length);
+      const musterRoll = results.map(row => [
+        row.EmpID,
+        row.FullName,
+        row.date,
+        row.clock_in,
+        row.clock_out
+      ]);
+
+      // Check if record already exists in muster_roll table
+      const checkQuery = 'SELECT * FROM muster_roll WHERE emp_id = ? AND shift_date = ?';
+      const promises = musterRoll.map(record => {
+        return db.query(checkQuery, [record[0], record[2]])
+          .then(result => {
+            if (result.length === 0) {
+              // Record does not exist, insert it
+              const insertQuery = 'INSERT INTO muster_roll (emp_id, emp_name, shift_date, clock_in, clock_out) VALUES (?, ?, ?, ?, ?)';
+              return db.query(insertQuery, record);
+            } else {
+              // Record already exists, do nothing
+              return Promise.resolve();
+            }
+          });
+      });
+
+      Promise.all(promises)
+        .then(() => {
+          console.log('Muster roll table updated successfully.');
+          res.send('Muster roll table updated successfully.');
+        })
+        .catch(error => {
+          console.error('Insert query error:', error);
+          res.status(500).send('Insert query error');
+        });
+    })
+    .catch(error => {
+      console.error('Query error:', error);
+      res.status(500).send('Query error');
+    });
+}
+
+app.get('/fill-muster-roll-table', (req, res) => {
+  fillMusterRollTable(res);
+});
+
+
+  // talals report
+  
+
 app.get('/Clocking', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Clocking.html'));
 });
@@ -522,6 +579,10 @@ app.get('/Dashboard', (req, res) => {
 
 app.get('/Admin_CRUD.html', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Admin_CRUD.html'));
+});
+
+app.get('/report.html', (req, res) => {
+    res.sendFile(path.join(__dirname,'..','Client','report.html'));
 });
 
 
