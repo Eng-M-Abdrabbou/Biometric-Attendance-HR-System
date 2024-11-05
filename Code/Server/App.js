@@ -560,7 +560,6 @@ app.get('/fill-muster-roll-table', (req, res) => {
 app.get('/get-muster-roll-data', (req, res) => {
   const emp_id = req.query.emp_id;
   const date = req.query.date;
-  const status = req.query.status;
   const limit = req.query.limit || 10000000;
 
   let query = 'SELECT * FROM muster_roll';
@@ -578,15 +577,6 @@ app.get('/get-muster-roll-data', (req, res) => {
       query += ' WHERE shift_date = ?';
     }
     params.push(date);
-  }
-
-  if (status) {
-    if (query.includes('WHERE')) {
-      query += ' AND status = ?';
-    } else {
-      query += ' WHERE status = ?';
-    }
-    params.push(status);
   }
 
   query += ' LIMIT ?';
