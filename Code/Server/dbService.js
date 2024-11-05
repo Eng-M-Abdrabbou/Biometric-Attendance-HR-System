@@ -1617,8 +1617,8 @@ async calculateAWHCD(clockInTime, clockOutTime, breakHours, shift_start, shift_e
     const shiftEndTime = moment(shift_end, 'HH:mm:ss');
     
     // Adjust clock times to ensure proper calculation across days
-    let adjustedClockIn = moment(clockInTime);
-    let adjustedClockOut = moment(clockOutTime);
+    let adjustedClockIn = moment(clockInTime, 'HH:mm:ss');
+    let adjustedClockOut = moment(clockOutTime, 'HH:mm:ss');
     
     // If shift ends next day and clockOut is before clockIn, add a day to clockOut
     if (shiftEndTime.isBefore(shiftStartTime) && adjustedClockOut.isBefore(adjustedClockIn)) {
