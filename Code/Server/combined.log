@@ -1,0 +1,16 @@
+{"level":"debug","message":"Executing query","sql":"\n        SELECT k.COLUMN_NAME\n        FROM information_schema.table_constraints t\n        JOIN information_schema.key_column_usage k\n        USING(constraint_name,table_schema,table_name)\n        WHERE t.constraint_type='PRIMARY KEY'\n          AND t.table_schema=DATABASE()\n          AND t.table_name=?;\n    ","timestamp":"2024-11-06T05:11:06.695Z","values":["accommodation"]}
+{"level":"debug","message":"Executing query","sql":"\n        SELECT k.COLUMN_NAME\n        FROM information_schema.table_constraints t\n        JOIN information_schema.key_column_usage k\n        USING(constraint_name,table_schema,table_name)\n        WHERE t.constraint_type='PRIMARY KEY'\n          AND t.table_schema=DATABASE()\n          AND t.table_name=?;\n    ","timestamp":"2024-11-06T05:11:06.697Z","values":["accommodation"]}
+{"level":"debug","message":"Query executed successfully","rowCount":1,"timestamp":"2024-11-06T05:11:06.789Z"}
+{"level":"debug","message":"Query executed successfully","rowCount":1,"timestamp":"2024-11-06T05:11:06.790Z"}
+{"level":"debug","message":"Executing query","sql":"SELECT * FROM accommodation","timestamp":"2024-11-06T05:11:06.790Z","values":[]}
+{"level":"debug","message":"Executing query","sql":"SELECT * FROM accommodation","timestamp":"2024-11-06T05:11:06.790Z","values":[]}
+{"level":"debug","message":"Query executed successfully","rowCount":1,"timestamp":"2024-11-06T05:11:06.798Z"}
+{"level":"debug","message":"Query executed successfully","rowCount":1,"timestamp":"2024-11-06T05:11:06.799Z"}
+{"level":"debug","message":"Executing query","sql":"\n        SELECT k.COLUMN_NAME\n        FROM information_schema.table_constraints t\n        JOIN information_schema.key_column_usage k\n        USING(constraint_name,table_schema,table_name)\n        WHERE t.constraint_type='PRIMARY KEY'\n          AND t.table_schema=DATABASE()\n          AND t.table_name=?;\n    ","timestamp":"2024-11-06T05:11:16.235Z","values":["input_data"]}
+{"level":"debug","message":"Executing query","sql":"\n        SELECT k.COLUMN_NAME\n        FROM information_schema.table_constraints t\n        JOIN information_schema.key_column_usage k\n        USING(constraint_name,table_schema,table_name)\n        WHERE t.constraint_type='PRIMARY KEY'\n          AND t.table_schema=DATABASE()\n          AND t.table_name=?;\n    ","timestamp":"2024-11-06T05:11:16.236Z","values":["input_data"]}
+{"level":"debug","message":"Query executed successfully","rowCount":2,"timestamp":"2024-11-06T05:11:16.296Z"}
+{"level":"debug","message":"Query executed successfully","rowCount":2,"timestamp":"2024-11-06T05:11:16.296Z"}
+{"level":"debug","message":"Executing query","sql":"SELECT * FROM input_data","timestamp":"2024-11-06T05:11:16.296Z","values":[]}
+{"level":"debug","message":"Executing query","sql":"SELECT * FROM input_data","timestamp":"2024-11-06T05:11:16.297Z","values":[]}
+{"level":"debug","message":"Query executed successfully","rowCount":40617,"timestamp":"2024-11-06T05:11:16.354Z"}
+{"level":"debug","message":"Query executed successfully","rowCount":40617,"timestamp":"2024-11-06T05:11:16.354Z"}
