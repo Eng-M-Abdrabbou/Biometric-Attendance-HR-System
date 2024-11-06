@@ -553,57 +553,20 @@ function fillMusterRollTable(res, limit = 500) {
 }
 
 app.get('/fill-muster-roll-table', (req, res) => {
-  const limit = req.query.limit; // Get the limit value from the query parameter
+  const limit = req.query.limit || 500;
   fillMusterRollTable(res, limit);
 });
 
-app.get('/get-muster-roll-data', (req, res) => {
-  const emp_id = req.query.emp_id;
-  const date = req.query.date;
-  const limit = req.query.limit;
-
-  // Validate limit
-  if (limit && isNaN(limit) || limit <= 0) {
-    return res.status(400).send('Invalid limit');
+app.get('/fetch-muster-roll', async (req, res) => {
+  try {
+    const limit = req.query.limit || 500;
+    const query = 'SELECT emp_id, emp_name, shift_date, clock_in, clock_out FROM muster_roll LIMIT ?';
+    const results = await db.query(query, [limit]);
+    res.json(results);
+  } catch (err) {
+    console.error('Query error:', err);
+    res.status(500).send('Internal Server Error');
   }
-
-  // Set default limit
-  const defaultLimit = 500;
-  const limitValue = limit ? parseInt(limit) : defaultLimit;
-
-  // Create query
-  let query = 'SELECT * FROM muster_roll';
-  let params = [];
-
-  // Add WHERE clause for emp_id
-  if (emp_id) {
-    query += ' WHERE emp_id = ?';
-    params.push(emp_id);
-  }
-
-  // Add AND clause for date
-  if (date) {
-    if (query.includes('WHERE')) {
-      query += ' AND shift_date = ?';
-    } else {
-      query += ' WHERE shift_date = ?';
-    }
-    params.push(date);
-  }
-
-  // Add LIMIT clause
-  query += ' LIMIT ?';
-  params.push(limitValue);
-
-  // Execute query
-  db.query(query, params)
-    .then(results => {
-      res.json(results);
-    })
-    .catch(error => {
-      console.error('Query error:', error);
-      res.status(500).send('Internal Server Error');
-    });
 });
 
   // talals report end

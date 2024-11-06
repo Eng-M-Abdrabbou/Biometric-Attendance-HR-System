@@ -10,19 +10,18 @@
       border: 1px solid #ddd;
       padding: 10px;
     }
+    #loading-message {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h1>Muster Roll Report</h1>
   <button id="view-report-button">View Report</button>
 
-  <label for="date-filter">Date:</label>
-  <input type="date" id="date-filter">
-
-  <label for="emp_id-filter">Employee ID:</label>
-  <input type="text" id="emp_id-filter">
-
-  <label for="status-filter">Status:</label>
+  <input id="id-filter" type="text" placeholder="ID">
+  <input id="name-filter" type="text" placeholder="Name">
+  <input id="date-filter" type="date" placeholder="Date">
   <select id="status-filter">
     <option value="">All</option>
     <option value="Present">Present</option>
@@ -30,7 +29,7 @@
     <option value="Absent">Absent</option>
   </select>
 
-  <button id="filter-button">Filter</button>
+  <p id="loading-message">Loading report...</p>
 
   <table id="muster-roll-table">
     <thead>
@@ -47,113 +46,58 @@
 
   <script>
     const viewReportButton = document.getElementById('view-report-button');
-    const filterButton = document.getElementById('filter-button');
-    const musterRollTable = document.getElementById('muster-roll-table');
     const musterRollBody = document.getElementById('muster-roll-body');
+    const idFilter = document.getElementById('id-filter');
+    const nameFilter = document.getElementById('name-filter');
     const dateFilter = document.getElementById('date-filter');
-    const emp_idFilter = document.getElementById('emp_id-filter');
     const statusFilter = document.getElementById('status-filter');
+    const loadingMessage = document.getElementById('loading-message');
 
     viewReportButton.addEventListener('click', () => {
+      // First, fill the muster roll table
       fetch('/fill-muster-roll-table')
         .then(response => response.text())
+
         .then(() => {
-          fetch('/get-muster-roll-data')
+          // Then, fetch the data for the report
+          const id = idFilter.value;
+          const name = nameFilter.value;
+          const date = dateFilter.value;
+          const status = statusFilter.value;
+          loadingMessage.style.display = 'block';
+          fetch(`/fetch-muster-roll?id=${id}&name=${name}&date=${date}&status=${status}`)
             .then(response => response.json())
             .then(data => {
-              const musterRollData = data;
-              console.log(musterRollData);
-              musterRollBody.innerHTML = ''; // clear the table body
+              loadingMessage.style.display = 'none';
+              console.log(data);
+              musterRollBody.innerHTML = ''; // Clear the table body
+              data.forEach(item => {
+                let statusText = '';
+                if (item.clock_in && item.clock_out) {
+                  statusText = 'Present';
+                } else if (item.clock_in || item.clock_out) {
+                  statusText = 'MS (Miss Swipe)';
+                } else {
+                  statusText = 'Absent';
+                }
 
-              const uniqueDates = [...new Set(musterRollData.map(item => item.shift_date))];
-
-              uniqueDates.forEach(date => {
-                const dateData = musterRollData.filter(item => item.shift_date === date);
-
-                const dateRow = document.createElement('tr');
-                dateRow.innerHTML = `
-                  <td>${date}</td>
-                  <td colspan="3">**${date}**</td>
-                `;
-                musterRollBody.appendChild(dateRow);
-
-                dateData.forEach(item => {
-                  let status = '';
-                  if (item.clock_in && item.clock_out) {
-                    status = 'Present';
-                  } else if (item.clock_in || item.clock_out) {
-                    status = 'MS (Miss Swipe)';
-                  } else {
-                    status = 'Absent';
-                  }
-
+                if ((id === '' || item.emp_id == id) &&
+                    (name === '' || item.emp_name.includes(name)) &&
+                    (date === '' || item.shift_date === date) &&
+                    (status === '' || statusText === status)) {
                   const row = document.createElement('tr');
                   row.innerHTML = `
                     <td>${item.shift_date}</td>
                     <td>${item.emp_id}</td>
                     <td>${item.emp_name}</td>
-                    <td>${status}</td>
+                    <td>${statusText}</td>
                   `;
                   musterRollBody.appendChild(row);
-                });
+                }
               });
-            })
-            .catch(error => console.error('Error:', error));
-        })
-        .catch(error => console.error('Error:', error));
+            });
+        });
     });
-
-    filterButton.addEventListener('click', updateTable);
-
-   function updateTable() {
-     const date = dateFilter.value;
-     const emp_id = emp_idFilter.value;
-     const status = statusFilter.value;
-     console.log("filters values ", date, emp_id, status);
-   
-     fetch(`/get-muster-roll-data?date=${date}&emp_id=${emp_id}`)
-       .then(response => response.json())
-       .then(data => {
-         const filteredData = data.filter(item => {
-           const dateMatch = date === '' || item.shift_date === date;
-           const empIdMatch = emp_id === '' || item.emp_id === parseInt(emp_id); // Convert emp_id to integer
-   
-           return dateMatch && empIdMatch;
-         });
-   
-         musterRollBody.innerHTML = ''; // clear the table body
-   
-         if (filteredData.length > 0) {
-           filteredData.forEach(item => {
-             let status = '';
-             if (item.clock_in && item.clock_out) {
-               status = 'Present';
-             } else if (item.clock_in || item.clock_out) {
-               status = 'MS (Miss Swipe)';
-             } else {
-               status = 'Absent';
-             }
-   
-             const row = document.createElement('tr');
-             row.innerHTML = `
-               <td>${item.shift_date}</td>
-               <td>${item.emp_id}</td>
-               <td>${item.emp_name}</td>
-               <td>${status}</td>
-             `;
-             musterRollBody.appendChild(row);
-           });
-         } else { // No data found
-           const noDataRow = document.createElement('tr');
-           noDataRow.innerHTML = `
-             <td colspan="4">No data found</td>
-           `;
-           musterRollBody.appendChild(noDataRow);
-         }
-       })
-       .catch(error => console.error('Error:', error));
-   }
-  </script> 
-
+  </script>
 </body>
 </html>
