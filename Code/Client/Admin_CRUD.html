@@ -52,9 +52,91 @@
             background-color: #a1c5ff !important; 
         }
         
+
+
+
+
+
+        .filters {
+            background: #fff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filter-group {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .bulk-edit {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+
     </style>
 </head>
 <body>
+
+
+<!-- Pagination Controls -->
+<div id="pagination-controls" style="display: none;">
+    <label for="rowsPerPage">Rows per page:</label>
+    <select id="rowsPerPage">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="All">All</option>
+    </select>
+
+    <button id="prevPage">Previous</button>
+    <span id="currentPage">Page 1</span>
+    <button id="nextPage">Next</button>
+</div>
+
+    
+<div id="attendance-filters" style="display: none;" class="filters">
+    <div class="filter-group">
+        <label>Date Range:</label>
+        <input type="date" id="startDate">
+        <input type="date" id="endDate">
+    </div>
+    <div class="filter-group">
+        <label>Employee ID:</label>
+        <input type="text" id="empId">
+    </div>
+    <div class="filter-group">
+        <label>Employee Name:</label>
+        <input type="text" id="empName">
+    </div>
+    <div class="filter-group">
+        <label>Status:</label>
+        <input type="text" id="status">
+    </div>
+    <button onclick="applyFilters()">Apply Filters</button>
+</div>
+
+<div id="bulk-edit" style="display: none;" class="bulk-edit">
+    <select id="columnSelect">
+        <option value="">Select Column to Edit</option>
+        <option value="leave_id">Leave ID</option>
+        <option value="status">Status</option>
+        <option value="awh">AWH</option>
+        <option value="ot">OT</option>
+    </select>
+    <input type="text" id="bulkValue" placeholder="New value">
+    <button onclick="performBulkUpdate()">Update All Filtered Rows</button>
+</div>
+
     <select name="table" id="tables">
         <option value="accommodation">accommodation</option>
         <option value="asst_master">asst_master</option>
@@ -84,6 +166,21 @@
 
     <script>
 
+let currentPage = 1;
+let rowsPerPage = 10; // Default rows per page
+
+
+function setDefaultDates() {
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in 'YYYY-MM-DD' format
+    document.getElementById('startDate').value = today;
+    document.getElementById('endDate').value = today;
+}
+
+window.onload = function() {
+    setDefaultDates();
+};
+
+
         // Add event listener for row selection
 document.getElementById('table-info').addEventListener('click', selectRow);
 
@@ -98,6 +195,22 @@ document.getElementById('table-info').addEventListener('click', selectRow);
         document.getElementById('info').style.display = 'block';
         const table = document.getElementById('tables').value;
         currentTable = table;
+
+
+
+
+        if (table === 'general_attendance_report' || table === 'input_data') {
+    document.getElementById('attendance-filters').style.display = 'block';
+    document.getElementById('bulk-edit').style.display = 'block';
+    document.getElementById('pagination-controls').style.display = 'block';
+} else {
+    document.getElementById('attendance-filters').style.display = 'none';
+    document.getElementById('bulk-edit').style.display = 'none';
+    document.getElementById('pagination-controls').style.display = 'none';
+}
+
+
+
         fetch(`/tableInfo/${table}`)
         .then(response => response.json())
         .then(({ primaryKeys, data }) => {
@@ -141,6 +254,13 @@ document.getElementById('table-info').addEventListener('click', selectRow);
                     });
                 });
                 parent.appendChild(table);
+
+
+                if (currentTable === 'general_attendance_report' || currentTable === 'input_data') {
+    currentPage = 1; // Reset to first page
+    applyFilters();
+}
+
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -298,6 +418,221 @@ function selectRow(event) {
 
     // Add event listener for row selection
     document.getElementById('table-info').addEventListener('click', selectRow);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+    function applyFilters() {
+    const filters = {
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        empId: document.getElementById('empId').value,
+        empName: document.getElementById('empName').value,
+        status: document.getElementById('status').value
+    };
+
+    const queryString = new URLSearchParams(filters).toString();
+    fetch(`/filteredAttendance?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateTableContent(data.data);
+            } else {
+                alert('Error applying filters: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error applying filters: ' + error.message);
+        });
+}
+*/
+
+
+
+
+
+
+function applyFilters() {
+    const filters = {
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        empId: document.getElementById('empId').value,
+        empName: document.getElementById('empName').value,
+        status: document.getElementById('status').value,
+        page: currentPage,
+        rowsPerPage: document.getElementById('rowsPerPage').value === 'All' ? 'All' : parseInt(document.getElementById('rowsPerPage').value)
+    };
+
+    const queryString = new URLSearchParams(filters).toString();
+    fetch(`/filteredAttendance?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateTableContent(data.data);
+                updatePaginationControls(data.totalRows);
+            } else {
+                alert('Error applying filters: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error applying filters: ' + error.message);
+        });
+}
+
+
+
+// Event listeners for pagination controls
+document.getElementById('rowsPerPage').addEventListener('change', function() {
+    currentPage = 1; // Reset to first page
+    rowsPerPage = this.value === 'All' ? 'All' : parseInt(this.value);
+    applyFilters();
+});
+
+document.getElementById('prevPage').addEventListener('click', function() {
+    if (currentPage > 1) {
+        currentPage--;
+        applyFilters();
+    }
+});
+
+document.getElementById('nextPage').addEventListener('click', function() {
+    currentPage++;
+    applyFilters();
+});
+
+
+
+
+
+
+
+function updatePaginationControls(totalRows) {
+    const totalPages = rowsPerPage === 'All' ? 1 : Math.ceil(totalRows / rowsPerPage);
+
+    document.getElementById('currentPage').textContent = `Page ${currentPage} of ${totalPages}`;
+
+    // Disable/Enable Prev button
+    if (currentPage <= 1) {
+        document.getElementById('prevPage').disabled = true;
+    } else {
+        document.getElementById('prevPage').disabled = false;
+    }
+
+    // Disable/Enable Next button
+    if (currentPage >= totalPages) {
+        document.getElementById('nextPage').disabled = true;
+    } else {
+        document.getElementById('nextPage').disabled = false;
+    }
+}
+
+
+
+
+
+
+
+
+function updateTableContent(data) {
+    const parent = document.getElementById('table-info');
+    parent.innerHTML = '';
+    
+    if (data.length === 0) {
+        parent.textContent = 'No data available for this table.';
+        return;
+    }
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const tbody = document.createElement('tbody');
+    table.appendChild(thead);
+    table.appendChild(tbody);
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    Object.keys(data[0]).forEach(key => {
+        const th = document.createElement('th');
+        th.textContent = key;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    // Create data rows
+    data.forEach(row => {
+        const tr = document.createElement('tr');
+        Object.entries(row).forEach(([key, value]) => {
+            const td = document.createElement('td');
+            td.textContent = value !== null ? value : '';
+            if (!currentPrimaryKeys.includes(key)) {
+                td.classList.add('editable');
+                td.addEventListener('click', () => editCell(td, key, row, currentPrimaryKeys));
+            }
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+
+    parent.appendChild(table);
+}
+
+function performBulkUpdate() {
+    const column = document.getElementById('columnSelect').value;
+    const value = document.getElementById('bulkValue').value;
+    
+    if (!column || !value) {
+        alert('Please select a column and enter a value');
+        return;
+    }
+
+    const filters = {
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        empId: document.getElementById('empId').value,
+        empName: document.getElementById('empName').value,
+        status: document.getElementById('status').value
+    };
+
+    fetch('/bulkUpdate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ column, value, filters }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Updated ${data.rowsAffected} rows successfully`);
+            applyFilters(); // Refresh the table
+        } else {
+            alert('Update failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Update failed: ' + error.message);
+    });
+}
+
+
 
 
     </script>

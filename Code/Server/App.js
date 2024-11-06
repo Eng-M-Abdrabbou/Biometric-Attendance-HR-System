@@ -478,6 +478,136 @@ app.post('/deleteRow', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+app.get('/filteredAttendance', async (req, res) => {
+    try {
+        const { startDate, endDate, empId, empName, status, page, rowsPerPage } = req.query;
+                let whereConditions = [];
+        let params = [];
+
+        if (startDate && endDate) {
+            whereConditions.push('shift_date BETWEEN ? AND ?');
+            params.push(startDate, endDate);
+        }
+        if (empId) {
+            whereConditions.push('emp_id = ?');
+            params.push(empId);
+        }
+        if (empName) {
+            whereConditions.push('FullName LIKE ?');
+            params.push(`%${empName}%`);
+        }
+        if (status) {
+            whereConditions.push('status = ?');
+            params.push(status);
+        }
+
+        const whereClause = whereConditions.length > 0 
+            ? 'WHERE ' + whereConditions.join(' AND ')
+            : '';
+
+
+
+
+        // Handle pagination
+        let limitClause = '';
+        let limitParams = [];
+
+        if (rowsPerPage && rowsPerPage !== 'All') {
+            const offset = (parseInt(page) - 1) * parseInt(rowsPerPage);
+            limitClause = 'LIMIT ? OFFSET ?';
+            limitParams.push(parseInt(rowsPerPage), offset);
+        }
+
+        // Query to get total number of rows matching the filters (for pagination)
+        const countQuery = `
+            SELECT COUNT(*) AS totalRows FROM general_attendance_report 
+            ${whereClause}
+        `;
+        const countResult = await db.executeQuery(countQuery, params);
+        const totalRows = countResult[0].totalRows;
+
+
+
+
+
+
+        const query = `
+        SELECT * FROM general_attendance_report 
+        ${whereClause}
+        ORDER BY shift_date
+        ${limitClause}
+    `;
+
+    
+
+    const data = await db.executeQuery(query, [...params, ...limitParams]);
+    res.json({ success: true, data, totalRows });
+} catch (error) {
+    console.error('Error fetching filtered data:', error);
+    res.status(500).json({ success: false, error: error.message });
+}
+});
+
+
+
+
+app.post('/bulkUpdate', async (req, res) => {
+    try {
+        const { column, value, filters } = req.body;
+        let whereConditions = [];
+        let params = [value]; // First parameter is the new value
+
+        if (filters.startDate && filters.endDate) {
+            whereConditions.push('shift_date BETWEEN ? AND ?');
+            params.push(filters.startDate, filters.endDate);
+        }
+        if (filters.empId) {
+            whereConditions.push('emp_id = ?');
+            params.push(filters.empId);
+        }
+        if (filters.empName) {
+            whereConditions.push('FullName LIKE ?');
+            params.push(`%${filters.empName}%`);
+        }
+        if (filters.status) {
+            whereConditions.push('status = ?');
+            params.push(filters.status);
+        }
+
+        const whereClause = whereConditions.length > 0 
+            ? 'WHERE ' + whereConditions.join(' AND ')
+            : '';
+
+        const query = `
+            UPDATE general_attendance_report 
+            SET ${column} = ?
+            ${whereClause}`;
+
+        const result = await db.executeQuery(query, params);
+        res.json({ success: true, rowsAffected: result.affectedRows });
+    } catch (error) {
+        console.error('Error performing bulk update:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
+
+
+
+
+
+
+
 app.get('/isClockedin/:id', async (req, res) => {
     console.log("this is the api working");
     const id = req.params.id
