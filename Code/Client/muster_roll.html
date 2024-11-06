@@ -53,50 +53,89 @@
     const statusFilter = document.getElementById('status-filter');
     const loadingMessage = document.getElementById('loading-message');
 
-    viewReportButton.addEventListener('click', () => {
-      // First, fill the muster roll table
+    let reportData = [];
+
+    // Function to filter the report data
+    function filterReportData(id, name, date, status) {
+      return reportData.filter(item => {
+        let statusText = '';
+        if (item.clock_in && item.clock_out) {
+          statusText = 'Present';
+        } else if (item.clock_in || item.clock_out) {
+          statusText = 'MS (Miss Swipe)';
+        } else {
+          statusText = 'Absent';
+        }
+
+        return (id === '' || item.emp_id == id) &&
+          (name === '' || item.emp_name.includes(name)) &&
+          (date === '' || item.shift_date === date) &&
+          (status === '' || statusText === status);
+      });
+    }
+
+    // Function to render the report data
+ // Function to render the report data
+ function renderReport(data) {
+   musterRollBody.innerHTML = ''; // Clear the table body
+ 
+   data.forEach(item => {
+     let statusText = '';
+     if (item.clock_in && item.clock_out) {
+       statusText = 'Present';
+     } else if (item.clock_in || item.clock_out) {
+       statusText = 'MS (Miss Swipe)';
+     } else {
+       statusText = 'Absent';
+     }
+ 
+     const row = document.createElement('tr');
+     row.innerHTML = `
+       <td>${item.shift_date}</td>
+       <td>${item.emp_id}</td>
+       <td>${item.emp_name}</td>
+       <td>${statusText}</td>
+     `;
+     musterRollBody.appendChild(row);
+   });
+ }
+
+    // Function to fetch the report data
+    function fetchReport() {
       fetch('/fill-muster-roll-table')
         .then(response => response.text())
-
         .then(() => {
-          // Then, fetch the data for the report
           const id = idFilter.value;
           const name = nameFilter.value;
           const date = dateFilter.value;
           const status = statusFilter.value;
+
+          console.log(`Fetching report with filters: ID=${id}, Name=${name}, Date=${date}, Status=${status}`);
           loadingMessage.style.display = 'block';
           fetch(`/fetch-muster-roll?id=${id}&name=${name}&date=${date}&status=${status}`)
             .then(response => response.json())
             .then(data => {
+              reportData = data;
               loadingMessage.style.display = 'none';
               console.log(data);
-              musterRollBody.innerHTML = ''; // Clear the table body
-              data.forEach(item => {
-                let statusText = '';
-                if (item.clock_in && item.clock_out) {
-                  statusText = 'Present';
-                } else if (item.clock_in || item.clock_out) {
-                  statusText = 'MS (Miss Swipe)';
-                } else {
-                  statusText = 'Absent';
-                }
-
-                if ((id === '' || item.emp_id == id) &&
-                    (name === '' || item.emp_name.includes(name)) &&
-                    (date === '' || item.shift_date === date) &&
-                    (status === '' || statusText === status)) {
-                  const row = document.createElement('tr');
-                  row.innerHTML = `
-                    <td>${item.shift_date}</td>
-                    <td>${item.emp_id}</td>
-                    <td>${item.emp_name}</td>
-                    <td>${statusText}</td>
-                  `;
-                  musterRollBody.appendChild(row);
-                }
-              });
+              renderReport(filterReportData(id, name, date, status));
             });
         });
+    }
+
+    viewReportButton.addEventListener('click', fetchReport);
+
+    idFilter.addEventListener('input', () => {
+      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
+    });
+    nameFilter.addEventListener('input', () => {
+      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
+    });
+    dateFilter.addEventListener('input', () => {
+      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
+    });
+    statusFilter.addEventListener('change', () => {
+      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
     });
   </script>
 </body>
