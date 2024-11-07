@@ -10,6 +10,7 @@
     .present { color: green; }
     .absent { color: red; }
     .miss-swipe { color: yellow; }
+  
   </style>
 </head>
 <body>
@@ -83,7 +84,9 @@
       uniqueDates.sort().forEach(date => {
         const headerCell = document.createElement('th');
         headerCell.textContent = date;
-        headerCell.classList.add('date-column');
+     headerCell.classList.add('date-column');
+    
+        
         headerRow.appendChild(headerCell);
       });
 
@@ -95,7 +98,7 @@
           ${uniqueDates.map(date => {
             const statusText = employee.shifts[date] || '';
             const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
-            return `<td class="date-column ${statusClass}">${statusText}</td>`;
+            return `<td class="date-column ${statusClass}" style="min-width: 80px;">${statusText}</td>`;
           }).join('')}
         `;
         musterRollBody.appendChild(row);
