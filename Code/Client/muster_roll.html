@@ -19,9 +19,7 @@
   <h1>Muster Roll Report</h1>
   <button id="view-report-button">View Report</button>
 
-  <input id="id-filter" type="text" placeholder="ID">
-  <input id="name-filter" type="text" placeholder="Name">
-  <input id="date-filter" type="date" placeholder="Date">
+  <input id="month-filter" type="month" placeholder="Month">
   <select id="status-filter">
     <option value="">All</option>
     <option value="Present">Present</option>
@@ -34,9 +32,9 @@
   <table id="muster-roll-table">
     <thead>
       <tr>
-        <th>Date</th>
         <th>Employee ID</th>
         <th>Employee Name</th>
+        <th>Shift Date</th>
         <th>Status</th>
       </tr>
     </thead>
@@ -47,16 +45,13 @@
   <script>
     const viewReportButton = document.getElementById('view-report-button');
     const musterRollBody = document.getElementById('muster-roll-body');
-    const idFilter = document.getElementById('id-filter');
-    const nameFilter = document.getElementById('name-filter');
-    const dateFilter = document.getElementById('date-filter');
+    const monthFilter = document.getElementById('month-filter');
     const statusFilter = document.getElementById('status-filter');
     const loadingMessage = document.getElementById('loading-message');
 
     let reportData = [];
 
-    // Function to filter the report data
-    function filterReportData(id, name, date, status) {
+    function filterReportData(month, status) {
       return reportData.filter(item => {
         let statusText = '';
         if (item.clock_in && item.clock_out) {
@@ -67,75 +62,73 @@
           statusText = 'Absent';
         }
 
-        return (id === '' || item.emp_id == id) &&
-          (name === '' || item.emp_name.includes(name)) &&
-          (date === '' || item.shift_date === date) &&
+        return (month === '' || item.shift_date.startsWith(month)) &&
           (status === '' || statusText === status);
       });
     }
 
-    // Function to render the report data
- // Function to render the report data
- function renderReport(data) {
-   musterRollBody.innerHTML = ''; // Clear the table body
- 
-   data.forEach(item => {
-     let statusText = '';
-     if (item.clock_in && item.clock_out) {
-       statusText = 'Present';
-     } else if (item.clock_in || item.clock_out) {
-       statusText = 'MS (Miss Swipe)';
-     } else {
-       statusText = 'Absent';
-     }
- 
-     const row = document.createElement('tr');
-     row.innerHTML = `
-       <td>${item.shift_date}</td>
-       <td>${item.emp_id}</td>
-       <td>${item.emp_name}</td>
-       <td>${statusText}</td>
-     `;
-     musterRollBody.appendChild(row);
-   });
- }
+function renderReport(data) {
+  if (data.length === 0) {
+    musterRollBody.innerHTML = '<tr><td colspan="4">No data found</td></tr>';
+    return;
+  }
 
-    // Function to fetch the report data
-    function fetchReport() {
-      fetch('/fill-muster-roll-table')
-        .then(response => response.text())
-        .then(() => {
-          const id = idFilter.value;
-          const name = nameFilter.value;
-          const date = dateFilter.value;
-          const status = statusFilter.value;
+  musterRollBody.innerHTML = ''; // Clear the table body
 
-          console.log(`Fetching report with filters: ID=${id}, Name=${name}, Date=${date}, Status=${status}`);
-          loadingMessage.style.display = 'block';
-          fetch(`/fetch-muster-roll?id=${id}&name=${name}&date=${date}&status=${status}`)
-            .then(response => response.json())
-            .then(data => {
-              reportData = data;
-              loadingMessage.style.display = 'none';
-              console.log(data);
-              renderReport(filterReportData(id, name, date, status));
-            });
-        });
+  data.forEach(item => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${item.emp_id}</td>
+      <td>${item.emp_name}</td>
+      <td>${item.shift_date}</td>
+      <td>${getStatusText(item)}</td>
+    `;
+    musterRollBody.appendChild(row);
+  });
+}
+
+    function getStatusText(item) {
+      if (item.clock_in && item.clock_out) {
+        return 'Present';
+      } else if (item.clock_in || item.clock_out) {
+        return 'MS (Miss Swipe)';
+      } else {
+        return 'Absent';
+      }
     }
+
+ function fetchReport() {
+   console.log('Fetching report data...');
+   loadingMessage.style.display = 'block';
+   fetch('/fetch-muster-roll')
+     .then(response => {
+       console.log('Received response:', response);
+       if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`);
+       }
+       return response.json();
+     })
+     .then(data => {
+       console.log('Received data:', data);
+       reportData = data;
+       renderReport(reportData);
+       loadingMessage.style.display = 'none';
+     })
+     .catch(error => {
+       console.error('Error fetching report data:', error);
+       loadingMessage.style.display = 'none';
+       musterRollBody.innerHTML = '<tr><td colspan="4">Error fetching data</td></tr>';
+     });
+ }
 
     viewReportButton.addEventListener('click', fetchReport);
 
-    idFilter.addEventListener('input', () => {
-      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
+    monthFilter.addEventListener('input', () => {
+      renderReport(filterReportData(monthFilter.value, statusFilter.value));
     });
-    nameFilter.addEventListener('input', () => {
-      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
-    });
-    dateFilter.addEventListener('input', () => {
-      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
-    });
+
     statusFilter.addEventListener('change', () => {
-      renderReport(filterReportData(idFilter.value, nameFilter.value, dateFilter.value, statusFilter.value));
+      renderReport(filterReportData(monthFilter.value, statusFilter.value));
     });
   </script>
 </body>

@@ -510,7 +510,7 @@ app.get('/api/data', async (req, res) => {
 
   // talals report 
 // muster report 
-function fillMusterRollTable(res, limit = 500) {
+function fillMusterRollTable(res, limit = 5000) {
   const query = 'SELECT e.EmpID, e.FullName, CAST(i.date AS DATE) as date, i.clock_in, i.clock_out FROM employee_master e JOIN input_data i ON e.EmpID = i.empid LIMIT ?';
   db.query(query, [limit])
     .then(results => {
@@ -552,13 +552,13 @@ function fillMusterRollTable(res, limit = 500) {
     });
 }
 app.get('/fill-muster-roll-table', (req, res) => {
-  const limit = req.query.limit || 500;
+  const limit = req.query.limit || 5000;
   fillMusterRollTable(res, limit);
 });
 
 app.get('/fetch-muster-roll', async (req, res) => {
   try {
-    const limit = req.query.limit || 500;
+    const limit = req.query.limit || 5000;
     const query = 'SELECT emp_id, emp_name, DATE_FORMAT(shift_date, "%Y-%m-%d") as shift_date, clock_in, clock_out FROM muster_roll LIMIT ?';
     const results = await db.query(query, [limit]);
     res.json(results);
