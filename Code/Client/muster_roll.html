@@ -10,7 +10,6 @@
     .present { color: green; }
     .absent { color: red; }
     .miss-swipe { color: yellow; }
-  
   </style>
 </head>
 <body>
@@ -20,8 +19,8 @@
   <select id="status-filter">
     <option value="">All</option>
     <option value="Present">Present</option>
-    <option value="Miss Swipe">Miss Swipe</option> <!-- Corrected value -->
-    <option value="Absent">Absent</option> <!-- Corrected casing -->
+    <option value="Miss Swipe">Miss Swipe</option>
+    <option value="Absent">Absent</option>
   </select>
   <input id="name-filter" type="text" placeholder="Employee Name">
   <input id="id-filter" type="text" placeholder="Employee ID">
@@ -48,7 +47,7 @@
     let reportData = [];
 
     function filterReportData(month, status, name, id) {
-      return reportData.filter(item => {
+      const filteredData = reportData.filter(item => {
         let statusText = getStatusText(item);
         let nameMatch = name === '' || item.emp_name.toLowerCase().includes(name.toLowerCase());
         let idMatch = id === '' || item.emp_id === Number(id);
@@ -57,16 +56,21 @@
                nameMatch &&
                idMatch;
       });
-    }
 
-    function renderReport(data) {
-      if (data.length === 0) {
-        musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
-        return;
+      // Generate a comprehensive list of dates in the filtered month
+      const date = new Date(month + '-01');
+      const monthIndex = date.getMonth();
+      const year = date.getFullYear();
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      const allDates = [];
+
+      for (let i = 1; i <= daysInMonth; i++) {
+        const day = (i < 10) ? `0${i}` : i;
+        allDates.push(`${month}-${day}`);
       }
 
       const employeeMap = {};
-      data.forEach(item => {
+      filteredData.forEach(item => {
         if (!employeeMap[item.emp_id]) {
           employeeMap[item.emp_id] = {
             emp_id: item.emp_id,
@@ -77,35 +81,34 @@
         employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
       });
 
-      musterRollBody.innerHTML = '';
-      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
-
-      const uniqueDates = [...new Set(data.map(item => item.shift_date))];
-      uniqueDates.sort().forEach(date => {
-        const headerCell = document.createElement('th');
-        headerCell.textContent = date;
-     headerCell.classList.add('date-column');
-    
-        
-        headerRow.appendChild(headerCell);
-      });
-
+      // Ensure all days are accounted for and mark missing data as "Absent"
       Object.values(employeeMap).forEach(employee => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${employee.emp_id}</td>
-          <td>${employee.emp_name}</td>
-          ${uniqueDates.map(date => {
-            const statusText = employee.shifts[date] || '';
-            const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
-            return `<td class="date-column ${statusClass}" style="min-width: 80px;">${statusText}</td>`;
-          }).join('')}
-        `;
-        musterRollBody.appendChild(row);
+        allDates.forEach(date => {
+          if (!employee.shifts[date]) {
+            employee.shifts[date] = getStatusText({ emp_id: employee.emp_id, shift_date: date });
+          }
+        });
       });
+
+      return Object.values(employeeMap);
     }
 
     function getStatusText(item) {
+      const date = new Date(item.shift_date);
+      const day = date.getDay();
+
+      // Check if it's Saturday or Sunday
+      if (day === 6 || day === 0) {
+        if (item.clock_in && item.clock_out) {
+          return 'Present';
+        } else if (item.clock_in || item.clock_out) {
+          return 'Miss Swipe';
+        } else {
+          return 'W';
+        }
+      }
+
+      // Handle other days
       if (item.clock_in && item.clock_out) {
         return 'Present';
       } else if (item.clock_in || item.clock_out) {
@@ -113,6 +116,38 @@
       } else {
         return 'Absent';
       }
+    }
+
+    function renderReport(data) {
+      if (data.length === 0) {
+        musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
+        return;
+      }
+
+      musterRollBody.innerHTML = '';
+      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+
+      const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
+      uniqueDates.sort().forEach(date => {
+        const headerCell = document.createElement('th');
+        headerCell.textContent = date;
+        headerCell.classList.add('date-column');
+        headerRow.appendChild(headerCell);
+      });
+
+      data.forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${employee.emp_id}</td>
+          <td>${employee.emp_name}</td>
+          ${uniqueDates.map(date => {
+            const statusText = employee.shifts[date] || 'Absent'; // Mark as Absent if data is missing
+            const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
+            return `<td class="date-column ${statusClass}" style="min-width: 80px;">${statusText}</td>`;
+          }).join('')}
+        `;
+        musterRollBody.appendChild(row);
+      });
     }
 
     function fetchReport() {
