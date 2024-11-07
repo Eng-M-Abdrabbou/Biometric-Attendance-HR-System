@@ -3,22 +3,14 @@
 <head>
   <title>Muster Roll Report</title>
   <style>
-    table {
-      border-collapse: collapse;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-    }
-    #loading-message {
-      display: none;
-    }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    #loading-message { display: none; }
   </style>
 </head>
 <body>
   <h1>Muster Roll Report</h1>
   <button id="view-report-button">View Report</button>
-
   <input id="month-filter" type="month" placeholder="Month">
   <select id="status-filter">
     <option value="">All</option>
@@ -26,66 +18,78 @@
     <option value="MS (Miss Swipe)">MS (Miss Swipe)</option>
     <option value="Absent">Absent</option>
   </select>
-
   <p id="loading-message">Loading report...</p>
-
   <table id="muster-roll-table">
     <thead>
-      <tr>
+      <tr id="header-row">
         <th>Employee ID</th>
         <th>Employee Name</th>
-        <th>Shift Date</th>
-        <th>Status</th>
       </tr>
     </thead>
     <tbody id="muster-roll-body">
     </tbody>
   </table>
-
   <script>
     const viewReportButton = document.getElementById('view-report-button');
     const musterRollBody = document.getElementById('muster-roll-body');
     const monthFilter = document.getElementById('month-filter');
     const statusFilter = document.getElementById('status-filter');
     const loadingMessage = document.getElementById('loading-message');
-
+    const headerRow = document.getElementById('header-row');
     let reportData = [];
 
-    function filterReportData(month, status) {
-      return reportData.filter(item => {
-        let statusText = '';
-        if (item.clock_in && item.clock_out) {
-          statusText = 'Present';
-        } else if (item.clock_in || item.clock_out) {
-          statusText = 'MS (Miss Swipe)';
-        } else {
-          statusText = 'Absent';
-        }
+   function filterReportData(month, status) {
+     return reportData.filter(item => {
+       let statusText = '';
+       if (item.clock_in && item.clock_out) {
+         statusText = 'Present';
+       } else if (item.clock_in || item.clock_out) {
+         statusText = 'MS (Miss Swipe)';
+       } else if (!item.clock_in && !item.clock_out) {
+         statusText = 'Absent';
+       }
+       return (month === '' || item.shift_date.startsWith(month)) && (status === '' || statusText === status);
+     });
+   }
 
-        return (month === '' || item.shift_date.startsWith(month)) &&
-          (status === '' || statusText === status);
+    function renderReport(data) {
+      if (data.length === 0) {
+        musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
+        return;
+      }
+
+      const employeeMap = {};
+      data.forEach(item => {
+        if (!employeeMap[item.emp_id]) {
+          employeeMap[item.emp_id] = {
+            emp_id: item.emp_id,
+            emp_name: item.emp_name,
+            shifts: {}
+          };
+        }
+        employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
+      });
+
+      musterRollBody.innerHTML = '';
+      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+      
+      const uniqueDates = [...new Set(data.map(item => item.shift_date))];
+      uniqueDates.sort().forEach(date => {
+        const headerCell = document.createElement('th');
+        headerCell.textContent = date;
+        headerRow.appendChild(headerCell);
+      });
+
+      Object.values(employeeMap).forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${employee.emp_id}</td>
+          <td>${employee.emp_name}</td>
+          ${uniqueDates.map(date => `<td>${employee.shifts[date] || ''}</td>`).join('')}
+        `;
+        musterRollBody.appendChild(row);
       });
     }
-
-function renderReport(data) {
-  if (data.length === 0) {
-    musterRollBody.innerHTML = '<tr><td colspan="4">No data found</td></tr>';
-    return;
-  }
-
-  musterRollBody.innerHTML = ''; // Clear the table body
-
-  data.forEach(item => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${item.emp_id}</td>
-      <td>${item.emp_name}</td>
-      <td>${item.shift_date}</td>
-      <td>${getStatusText(item)}</td>
-    `;
-    musterRollBody.appendChild(row);
-  });
-}
 
     function getStatusText(item) {
       if (item.clock_in && item.clock_out) {
@@ -97,36 +101,34 @@ function renderReport(data) {
       }
     }
 
- function fetchReport() {
-   console.log('Fetching report data...');
-   loadingMessage.style.display = 'block';
-   fetch('/fetch-muster-roll')
-     .then(response => {
-       console.log('Received response:', response);
-       if (!response.ok) {
-         throw new Error(`HTTP error! status: ${response.status}`);
-       }
-       return response.json();
-     })
-     .then(data => {
-       console.log('Received data:', data);
-       reportData = data;
-       renderReport(reportData);
-       loadingMessage.style.display = 'none';
-     })
-     .catch(error => {
-       console.error('Error fetching report data:', error);
-       loadingMessage.style.display = 'none';
-       musterRollBody.innerHTML = '<tr><td colspan="4">Error fetching data</td></tr>';
-     });
- }
+    function fetchReport() {
+      console.log('Fetching report data...');
+      loadingMessage.style.display = 'block';
+      fetch('/fetch-muster-roll')
+        .then(response => {
+          console.log('Received response:', response);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Received data:', data);
+          reportData = data;
+          renderReport(filterReportData(monthFilter.value, statusFilter.value));
+          loadingMessage.style.display = 'none';
+        })
+        .catch(error => {
+          console.error('Error fetching report data:', error);
+          loadingMessage.style.display = 'none';
+          musterRollBody.innerHTML = '<tr><td colspan="3">Error fetching data</td></tr>';
+        });
+    }
 
     viewReportButton.addEventListener('click', fetchReport);
-
     monthFilter.addEventListener('input', () => {
       renderReport(filterReportData(monthFilter.value, statusFilter.value));
     });
-
     statusFilter.addEventListener('change', () => {
       renderReport(filterReportData(monthFilter.value, statusFilter.value));
     });
