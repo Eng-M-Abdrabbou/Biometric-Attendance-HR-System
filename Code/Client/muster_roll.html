@@ -2,6 +2,8 @@
 <html>
 <head>
   <title>Muster Roll Report</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <style>
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
@@ -10,41 +12,79 @@
     .present { color: green; }
     .absent { color: red; }
     .miss-swipe { color: yellow; }
+    .alert-container { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h1>Muster Roll Report</h1>
-  <button id="view-report-button">View Report</button>
-  <input id="month-filter" type="month" placeholder="Month">
-  <select id="status-filter">
-    <option value="">All</option>
-    <option value="Present">Present</option>
-    <option value="Miss Swipe">Miss Swipe</option>
-    <option value="Absent">Absent</option>
-  </select>
-  <input id="name-filter" type="text" placeholder="Employee Name">
-  <input id="id-filter" type="text" placeholder="Employee ID">
-  <p id="loading-message">Loading report...</p>
-  <table id="muster-roll-table">
-    <thead>
-      <tr id="header-row">
-        <th>Employee ID</th>
-        <th>Employee Name</th>
-      </tr>
-    </thead>
-    <tbody id="muster-roll-body">
-    </tbody>
-  </table>
+ <div class="container">
+   <div class="row">
+     <div class="col-12">
+       <h1 class="my-4">Muster Roll Report</h1>
+       <div class="form-group">
+         <button id="view-report-button" class="btn btn-danger mb-3">View Report</button>
+         <button id="clear-filter-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
+           <i class="fas fa-eraser"></i> Clear Filters
+         </button>
+         <input id="month-filter" type="month" class="form-control mb-3" placeholder="Month">
+         <select id="status-filter" class="form-control mb-3">
+           <option value="">All</option>
+           <option value="Present">Present</option>
+           <option value="Miss Swipe">Miss Swipe</option>
+           <option value="Absent">Absent</option>
+         </select>
+         <input id="name-filter" type="text" class="form-control mb-3" placeholder="Employee Name">
+         <input id="id-filter" type="text" class="form-control mb-3" placeholder="Employee ID">
+       </div>
+       <div class="alert-container">
+         <div id="alert-message" class="alert alert-danger" role="alert" style="display: none;">
+           Please select a month to view the report.
+         </div>
+       </div>
+       <p id="loading-message">Loading report...</p>
+       <table id="muster-roll-table" class="table table-striped">
+         <thead>
+           <tr id="header-row">
+             <th>Employee ID</th>
+             <th>Employee Name</th>
+           </tr>
+         </thead>
+         <tbody id="muster-roll-body">
+         </tbody>
+       </table>
+     </div>
+   </div>
+ </div>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script>
-    const viewReportButton = document.getElementById('view-report-button');
-    const musterRollBody = document.getElementById('muster-roll-body');
-    const monthFilter = document.getElementById('month-filter');
-    const statusFilter = document.getElementById('status-filter');
-    const nameFilter = document.getElementById('name-filter');
-    const idFilter = document.getElementById('id-filter');
-    const loadingMessage = document.getElementById('loading-message');
-    const headerRow = document.getElementById('header-row');
-    let reportData = [];
+const viewReportButton = document.getElementById('view-report-button');
+const musterRollBody = document.getElementById('muster-roll-body');
+const monthFilter = document.getElementById('month-filter');
+const statusFilter = document.getElementById('status-filter');
+const nameFilter = document.getElementById('name-filter');
+const idFilter = document.getElementById('id-filter');
+const loadingMessage = document.getElementById('loading-message');
+const headerRow = document.getElementById('header-row');
+const alertMessage = document.getElementById('alert-message');
+const clearFilterButton = document.getElementById('clear-filter-button'); // Add this line
+let reportData = [];
+
+// Add this event listener to clear the filters
+clearFilterButton.addEventListener('click', function() {
+  monthFilter.value = "";
+  statusFilter.value = "";
+  nameFilter.value = "";
+  idFilter.value = "";
+  reportData = []; // Clear the report data
+  musterRollBody.innerHTML = ""; // Clear the table body
+  headerRow.innerHTML = `
+    <th>Employee ID</th>
+    <th>Employee Name</th>
+  `; // Reset the table header row to its original state
+});
 
     function filterReportData(month, status, name, id) {
       const filteredData = reportData.filter(item => {
@@ -57,16 +97,17 @@
                idMatch;
       });
 
-      // Generate a comprehensive list of dates in the filtered month
-      const date = new Date(month + '-01');
-      const monthIndex = date.getMonth();
-      const year = date.getFullYear();
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-      const allDates = [];
+      let allDates = [];
+      if (month) {
+        const date = new Date(month + '-01');
+        const monthIndex = date.getMonth();
+        const year = date.getFullYear();
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
-      for (let i = 1; i <= daysInMonth; i++) {
-        const day = (i < 10) ? `0${i}` : i;
-        allDates.push(`${month}-${day}`);
+        for (let i = 1; i <= daysInMonth; i++) {
+          const day = (i < 10) ? `0${i}` : i;
+          allDates.push(`${month}-${day}`);
+        }
       }
 
       const employeeMap = {};
@@ -81,7 +122,6 @@
         employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
       });
 
-      // Ensure all days are accounted for and mark missing data as "Absent"
       Object.values(employeeMap).forEach(employee => {
         allDates.forEach(date => {
           if (!employee.shifts[date]) {
@@ -97,7 +137,6 @@
       const date = new Date(item.shift_date);
       const day = date.getDay();
 
-      // Check if it's Saturday or Sunday
       if (day === 6 || day === 0) {
         if (item.clock_in && item.clock_out) {
           return 'Present';
@@ -108,7 +147,6 @@
         }
       }
 
-      // Handle other days
       if (item.clock_in && item.clock_out) {
         return 'Present';
       } else if (item.clock_in || item.clock_out) {
@@ -141,16 +179,26 @@
           <td>${employee.emp_id}</td>
           <td>${employee.emp_name}</td>
           ${uniqueDates.map(date => {
-            const statusText = employee.shifts[date] || 'Absent'; // Mark as Absent if data is missing
+            const statusText = employee.shifts[date] || 'Absent';
             const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
-            return `<td class="date-column ${statusClass}" style="min-width: 80px;">${statusText}</td>`;
+            return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
           }).join('')}
         `;
         musterRollBody.appendChild(row);
       });
     }
 
+    function clearReport() {
+      musterRollBody.innerHTML = '';
+      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+    }
+
     function fetchReport() {
+      if (!monthFilter.value) {
+        alertMessage.style.display = 'block';
+        return;
+      }
+      alertMessage.style.display = 'none';
       console.log('Fetching report data...');
       loadingMessage.style.display = 'block';
       fetch('/fetch-muster-roll')
@@ -176,7 +224,11 @@
 
     viewReportButton.addEventListener('click', fetchReport);
     monthFilter.addEventListener('input', () => {
-      renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+      if (!monthFilter.value) {
+        clearReport();
+      } else {
+        renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+      }
     });
     statusFilter.addEventListener('change', () => {
       renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
@@ -187,6 +239,7 @@
     idFilter.addEventListener('input', () => {
       renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
     });
-  </script>
+  </script> 
+
 </body>
 </html>
