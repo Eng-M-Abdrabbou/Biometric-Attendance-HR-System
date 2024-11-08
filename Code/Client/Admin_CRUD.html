@@ -87,22 +87,6 @@
 <body>
 
 
-<!-- Pagination Controls -->
-<div id="pagination-controls" style="display: none;">
-    <label for="rowsPerPage">Rows per page:</label>
-    <select id="rowsPerPage">
-        <option value="10" selected>10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-        <option value="All">All</option>
-    </select>
-
-    <button id="prevPage">Previous</button>
-    <span id="currentPage">Page 1</span>
-    <button id="nextPage">Next</button>
-</div>
-
     
 <div id="attendance-filters" style="display: none;" class="filters">
     <div class="filter-group">
@@ -135,6 +119,22 @@
     </select>
     <input type="text" id="bulkValue" placeholder="New value">
     <button onclick="performBulkUpdate()">Update All Filtered Rows</button>
+</div>
+
+<!-- Pagination Controls -->
+<div id="pagination-controls" style="display: none;">
+    <label for="rowsPerPage">Rows per page:</label>
+    <select id="rowsPerPage">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="All">All</option>
+    </select>
+
+    <button id="prevPage">Previous</button>
+    <span id="currentPage">Page 1</span>
+    <button id="nextPage">Next</button>
 </div>
 
     <select name="table" id="tables">
@@ -199,7 +199,17 @@ document.getElementById('table-info').addEventListener('click', selectRow);
 
 
 
-        if (table === 'general_attendance_report' || table === 'input_data') {
+        if (table === 'general_attendance_report') {
+    { const url = 'http://localhost:8000/gar'; 
+    if (localStorage.getItem('tabOpen') === url) 
+    { alert('Please generate the GAR report first, for the data to be available'); }
+     else { const newTab = window.open(url, '_blank'); 
+     localStorage.setItem('tabOpen', url); 
+     newTab.onload = function() 
+     { newTab.alert('Please generate the GAR report first, for the data to be available');
+      newTab.onbeforeunload = function() { localStorage.removeItem('tabOpen'); }; };}}
+
+      
     document.getElementById('attendance-filters').style.display = 'block';
     document.getElementById('bulk-edit').style.display = 'block';
     document.getElementById('pagination-controls').style.display = 'block';
@@ -256,7 +266,7 @@ document.getElementById('table-info').addEventListener('click', selectRow);
                 parent.appendChild(table);
 
 
-                if (currentTable === 'general_attendance_report' || currentTable === 'input_data') {
+                if (currentTable === 'general_attendance_report') {
     currentPage = 1; // Reset to first page
     applyFilters();
 }
@@ -418,53 +428,6 @@ function selectRow(event) {
 
     // Add event listener for row selection
     document.getElementById('table-info').addEventListener('click', selectRow);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-    function applyFilters() {
-    const filters = {
-        startDate: document.getElementById('startDate').value,
-        endDate: document.getElementById('endDate').value,
-        empId: document.getElementById('empId').value,
-        empName: document.getElementById('empName').value,
-        status: document.getElementById('status').value
-    };
-
-    const queryString = new URLSearchParams(filters).toString();
-    fetch(`/filteredAttendance?${queryString}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateTableContent(data.data);
-            } else {
-                alert('Error applying filters: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error applying filters: ' + error.message);
-        });
-}
-*/
-
-
 
 
 
