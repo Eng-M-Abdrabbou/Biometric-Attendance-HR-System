@@ -78,12 +78,7 @@ clearFilterButton.addEventListener('click', function() {
   statusFilter.value = "";
   nameFilter.value = "";
   idFilter.value = "";
-  reportData = []; // Clear the report data
-  musterRollBody.innerHTML = ""; // Clear the table body
-  headerRow.innerHTML = `
-    <th>Employee ID</th>
-    <th>Employee Name</th>
-  `; // Reset the table header row to its original state
+  renderReport(reportData);
 });
 
     function filterReportData(month, status, name, id) {
