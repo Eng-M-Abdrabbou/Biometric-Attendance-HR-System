@@ -25,6 +25,12 @@
          <button id="clear-filter-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
            <i class="fas fa-eraser"></i> Clear Filters
          </button>
+         <button id="export-excel-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
+           <i class="fas fa-file-excel"></i> Export to Excel
+         </button>
+         <button id="export-pdf-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
+           <i class="fas fa-file-pdf"></i> Export to PDF
+         </button>
          <input id="month-filter" type="month" class="form-control mb-3" placeholder="Month">
          <select id="status-filter" class="form-control mb-3">
            <option value="">All</option>
@@ -54,7 +60,10 @@
      </div>
    </div>
  </div>
-
+<!-- pdf and excel scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
   <!-- Bootstrap JS and dependencies -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
@@ -231,6 +240,53 @@ clearFilterButton.addEventListener('click', function() {
        });
    }
 
+//pdf and excel 
+// Add these event listeners to your JavaScript code
+const exportExcelButton = document.getElementById('export-excel-button');
+const exportPdfButton = document.getElementById('export-pdf-button');
+
+exportExcelButton.addEventListener('click', exportToExcel);
+exportPdfButton.addEventListener('click', exportToPdf);
+
+function exportToExcel() {
+  const table = document.querySelector('#muster-roll-table');
+  const workbook = XLSX.utils.table_to_book(table);
+
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+
+  // Define the width for each column
+  const numOfDaysInMonth = 31; // Adjust this based on the number of days in your month
+  const wscols = [
+    {wch: 15},  // Width for employee_id
+    {wch: 30},  // Width for employee_name
+  ];
+  
+  // Add widths for each day of the month
+  for (let i = 1; i <= numOfDaysInMonth; i++) {
+    wscols.push({wch: 15});
+  }
+
+  ws['!cols'] = wscols;
+
+  XLSX.writeFile(workbook, 'muster_roll.xlsx');
+}
+
+
+function exportToPdf() {
+  console.log('Generating PDF...');
+  html2canvas(document.querySelector('#muster-roll-table'), {
+    scale: 4, // increase the scale to make the image larger
+    onrendered: function(canvas) {
+      const pdf = new jspdf.jsPDF();
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('muster_roll.pdf');
+    }
+  });
+}
+
 
 
     viewReportButton.addEventListener('click', fetchReport);
@@ -240,6 +296,11 @@ clearFilterButton.addEventListener('click', function() {
       } else {
         renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
       }
+
+      viewReportButton.addEventListener('click', function() {
+        fetchReport();
+        viewReportButton.disabled = true;
+      });
     });
     statusFilter.addEventListener('change', () => {
       renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
