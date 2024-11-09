@@ -193,34 +193,50 @@ clearFilterButton.addEventListener('click', function() {
       headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
     }
 
-    function fetchReport() {
-      if (!monthFilter.value) {
-        alertMessage.style.display = 'block';
-        return;
-      }
-      alertMessage.style.display = 'none';
-      console.log('Fetching report data...');
-      loadingMessage.style.display = 'block';
-      fetch('/fetch-muster-roll')
-        .then(response => {
-          console.log('Received response:', response);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log('Received data:', data);
-          reportData = data;
-          renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
-          loadingMessage.style.display = 'none';
-        })
-        .catch(error => {
-          console.error('Error fetching report data:', error);
-          loadingMessage.style.display = 'none';
-          musterRollBody.innerHTML = '<tr><td colspan="3">Error fetching data</td></tr>';
-        });
-    }
+   function fetchReport() {
+     if (!monthFilter.value) {
+       alertMessage.style.display = 'block';
+       return;
+     }
+     alertMessage.style.display = 'none';
+     console.log('Fetching report data...');
+   
+     // Call fillMusterRollTable API before fetching report data
+     fetch('/fill-muster-roll-table')
+       .then(response => {
+         console.log('Muster roll table updated:', response);
+         return response.text();
+       })
+       .then(() => {
+         loadingMessage.style.display = 'block';
+         fetch('/fetch-muster-roll')
+           .then(response => {
+             console.log('Received response:', response);
+             if (!response.ok) {
+               throw new Error(`HTTP error! status: ${response.status}`);
+             }
+             return response.json();
+           })
+           .then(data => {
+             console.log('Received data:', data);
+             reportData = data;
+             renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+             loadingMessage.style.display = 'none';
+           })
+           .catch(error => {
+             console.error('Error fetching report data:', error);
+             loadingMessage.style.display = 'none';
+             musterRollBody.innerHTML = '<tr><td colspan="3">Error fetching data</td></tr>';
+           });
+       })
+       .catch(error => {
+         console.error('Error updating muster roll table:', error);
+         loadingMessage.style.display = 'none';
+         musterRollBody.innerHTML = '<tr><td colspan="3">Error updating muster roll table</td></tr>';
+       });
+   }
+
+
 
     viewReportButton.addEventListener('click', fetchReport);
     monthFilter.addEventListener('input', () => {
