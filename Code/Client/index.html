@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <style>
+        /* Reset and Font */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 30px;
+            overflow-x: hidden;
+        }
+
+        h2 {
+            background-color: #943240;
+            color: white;
+            padding: 20px;
+            margin: -30px -30px 30px -30px;
+            font-size: 24px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            transition: transform 0.4s;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        h2:hover {
+            transform: translateY(-5px);
+        }
+
+        .controls-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: slideIn 0.5s ease-in-out;
+        }
+
+        .controls-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .date-controls, .distribution-controls, .visa-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: 500;
+            color: #666;
+            font-size: 15px;
+        }
+
+        input[type="date"], select {
+            padding: 12px 18px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+            background-color: #f9f9f9;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+
+        input[type="date"]:focus, select:focus {
+            outline: none;
+            border-color: #943240;
+            transform: scale(1.02);
+        }
+
+        button {
+            color: white;
+            background-color: #943240;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
+            animation: fadeInUp 0.6s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #7a2a35;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.4s;
+            animation: zoomIn 0.6s ease-in-out;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-title {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .chart-details {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 15px;
+        }
+
+        .chart-details span {
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }
+
+        .chart-details .color-box {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin-right: 8px;
+            vertical-align: middle;
+            border: 1px solid #ccc;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            animation: fadeIn 0.6s ease-in-out;
+        }
+
+        th, td {
+            padding: 12px 18px;
+            border: 1px solid #ddd;
+            text-align: left;
+            font-size: 15px;
+        }
+
+        th {
+            background-color: #943240;
+            color: white;
+            font-weight: 500;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2>Attendance Summary</h2>
+
+    <div class="controls-container">
+        <div class="controls-group">
+            <div class="date-controls">
+                <label for="date">Date:</label>
+                <input type="date" id="date" required>
+                <button onclick="fetchAndRenderAttendance()">Show Attendance</button>
+                <button onclick="fetchAndDisplayEmployeeAttendance()">Show Employee Attendance Details</button>
+                <button onclick="saveAttendanceRecord()">Save Attendance Record</button>
+            </div>
+        </div>
+        <div class="controls-group">
+            <div class="distribution-controls">
+                <label for="distributionType">Distribution Type:</label>
+                <select id="distributionType">
+                    <option value="nationality">Nationality</option>
+                    <option value="department">Department</option>
+                    <option value="location">Location</option>
+                </select>
+                <button onclick="fetchAndDisplayDistribution()">Show Distribution</button>
+            </div>
+        </div>
+        <div class="controls-group">
+            <div class="visa-controls">
+                <label for="visaCategory">Visa Category:</label>
+                <select id="visaCategory">
+                    <option value="1">FM-FTC LLC</option>
+                    <option value="2">F1-FPT LLC</option>
+                    <option value="3">FB-FTC Branch LLC</option>
+                    <option value="4">DU-Idle Pay Group</option>
+                    <option value="5">FD-Federal Dubai</option>
+                </select>
+                <button onclick="fetchAndDisplayVisaDistribution()">Show Visa Distribution</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-container">
+            <h3 class="chart-title">Attendance Distribution</h3>
+            <canvas id="attendanceChart"></canvas>
+            <div id="attendanceChartDetails" class="chart-details"></div>
+        </div>
+        <div class="chart-container">
+            <h3 class="chart-title" id="distributionChartTitle">Distribution Chart</h3>
+            <canvas id="distributionChart"></canvas>
+            <div id="distributionChartDetails" class="chart-details"></div>
+        </div>
+        <div class="chart-container">
+            <h3 class="chart-title" id="visaChartTitle">Visa Category Distribution</h3>
+            <canvas id="visaChart"></canvas>
+            <div id="visaChartDetails" class="chart-details"></div>
+        </div>
+    </div>
+
+    <div id="employeeAttendanceDetails"></div>
+    <script>
+        let attendanceChart;
+        let distributionChart;
+        let visaChart;
+
+        async function fetchAttendanceData(date) {
+            const response = await fetch(`/api/attendance?date=${date}`);
+            const data = await response.json();
+            return data;
+        }
+
+        async function fetchAndRenderAttendance() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const { present, absent, Ms } = await fetchAttendanceData(date);
+
+            const labels = ['Present', 'Absent', 'Ms'];
+            const dataValues = [present, absent, Ms];
+            const colors = ['#4CAF50', '#FF5733', '#FFC300'];
+
+            if (!attendanceChart) {
+                const ctx = document.getElementById('attendanceChart').getContext('2d');
+                attendanceChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            } else {
+                attendanceChart.data.datasets[0].data = dataValues;
+                attendanceChart.update();
+            }
+
+            updateChartDetails('attendanceChart', labels, dataValues, colors);
+        }
+
+        async function fetchAndDisplayDistribution() {
+            const date = document.getElementById('date').value;
+            const distributionType = document.getElementById('distributionType').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const response = await fetch(`/api/attendance-distribution?date=${date}&type=${distributionType}`);
+            const data = await response.json();
+            const labels = data.map(item => item.label);
+            const counts = data.map(item => item.count);
+            const colors = generateColors(counts.length);
+
+            document.getElementById('distributionChartTitle').innerText = `${distributionType.charAt(0).toUpperCase() + distributionType.slice(1)} Distribution`;
+
+            if (!distributionChart) {
+                const ctx = document.getElementById('distributionChart').getContext('2d');
+                distributionChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            } else {
+                distributionChart.data.labels = labels;
+                distributionChart.data.datasets[0].data = counts;
+                distributionChart.data.datasets[0].backgroundColor = colors;
+                distributionChart.update();
+            }
+
+            updateChartDetails('distributionChart', labels, counts, colors);
+        }
+
+        function generateColors(count) {
+            const baseColors = ['#943240', '#4CAF50', '#FFC300', '#FF5733', '#8E44AD', '#3498DB', '#1ABC9C', '#F39C12', '#e74c3c', '#2ecc71', '#e67e22'];
+            const colors = [];
+
+            for (let i = 0; i < count; i++) {
+                colors.push(baseColors[i % baseColors.length]);
+            }
+
+            return colors;
+        }
+
+        async function fetchAndDisplayVisaDistribution() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const response = await fetch(`/api/visa-distribution?date=${date}`);
+            const data = await response.json();
+            const labels = data.map(item => item.visaType);
+            const counts = data.map(item => item.count);
+            const colors = generateColors(counts.length);
+
+            if (!visaChart) {
+                const ctx = document.getElementById('visaChart').getContext('2d');
+                visaChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            } else {
+                visaChart.data.labels = labels;
+                visaChart.data.datasets[0].data = counts;
+                visaChart.data.datasets[0].backgroundColor = colors;
+                visaChart.update();
+            }
+
+            updateChartDetails('visaChart', labels, counts, colors);
+        }
+
+        async function fetchAndDisplayEmployeeAttendance() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const response = await fetch(`/api/employee-attendance?date=${date}`);
+            const data = await response.json();
+
+            const employeeAttendanceDetails = document.getElementById('employeeAttendanceDetails');
+            employeeAttendanceDetails.innerHTML = '';
+
+            if (data.length === 0) {
+                employeeAttendanceDetails.innerHTML = 'No employee attendance details found for this date.';
+                return;
+            }
+
+            const table = document.createElement('table');
+            const header = table.insertRow();
+            header.insertCell().innerText = 'EmpID';
+            header.insertCell().innerText = 'FullName';
+            header.insertCell().innerText = 'EmailID';
+            header.insertCell().innerText = 'Attendance Status';
+
+            data.forEach(employee => {
+                const row = table.insertRow();
+                row.insertCell().innerText = employee.EmpID;
+                row.insertCell().innerText = employee.FullName;
+                row.insertCell().innerText = employee.EmailID;
+                row.insertCell().innerText = employee.attendanceStatus;
+            });
+
+            employeeAttendanceDetails.appendChild(table);
+        }
+
+        function saveAttendanceRecord() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            fetch(`/api/employee-attendance?date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    const worksheet = XLSX.utils.json_to_sheet(data);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+                    XLSX.writeFile(workbook, `Attendance_${date}.xlsx`);
+                })
+                .catch(error => {
+                    console.error('Error fetching attendance data:', error);
+                });
+        }
+
+        function updateChartDetails(chartId, labels, data, colors) {
+            const detailsContainer = document.getElementById(chartId + 'Details');
+            detailsContainer.innerHTML = '';
+            labels.forEach((label, index) => {
+                const span = document.createElement('span');
+
+                const colorBox = document.createElement('span');
+                colorBox.className = 'color-box';
+                colorBox.style.backgroundColor = colors[index];
+
+                span.appendChild(colorBox);
+                span.appendChild(document.createTextNode(`${label}: ${data[index]}`));
+
+                detailsContainer.appendChild(span);
+            });
+        }
+    </script>
+    <div id="employeeList"></div>
+</body>
+</html>

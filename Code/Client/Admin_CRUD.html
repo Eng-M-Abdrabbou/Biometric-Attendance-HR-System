@@ -121,21 +121,6 @@
     <button onclick="performBulkUpdate()">Update All Filtered Rows</button>
 </div>
 
-<!-- Pagination Controls -->
-<div id="pagination-controls" style="display: none;">
-    <label for="rowsPerPage">Rows per page:</label>
-    <select id="rowsPerPage">
-        <option value="10" selected>10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-        <option value="All">All</option>
-    </select>
-
-    <button id="prevPage">Previous</button>
-    <span id="currentPage">Page 1</span>
-    <button id="nextPage">Next</button>
-</div>
 
     <select name="table" id="tables">
         <option value="accommodation">accommodation</option>
@@ -162,6 +147,26 @@
         <button id="addRow">Add New Row</button>
         <button id="deleteRow">Delete Selected Row</button>
     </div>
+
+
+    <!-- Pagination Controls -->
+<div id="pagination-controls" style="display: none;">
+    <label for="rowsPerPage">Rows per page:</label>
+    <select id="rowsPerPage">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="All">All</option>
+    </select>
+
+    <button id="prevPage">Previous</button>
+    <span id="currentPage">Page 1</span>
+    <button id="nextPage">Next</button>
+</div>
+
+
+
     <div id="table-info"></div>
 
     <script>
@@ -209,7 +214,7 @@ document.getElementById('table-info').addEventListener('click', selectRow);
      { newTab.alert('Please generate the GAR report first, for the data to be available');
       newTab.onbeforeunload = function() { localStorage.removeItem('tabOpen'); }; };}}
 
-      
+
     document.getElementById('attendance-filters').style.display = 'block';
     document.getElementById('bulk-edit').style.display = 'block';
     document.getElementById('pagination-controls').style.display = 'block';

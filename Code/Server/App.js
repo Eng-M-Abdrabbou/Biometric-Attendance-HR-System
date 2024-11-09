@@ -641,6 +641,359 @@ app.get('/api/data', async (req, res) => {
   
 
 
+
+
+
+
+
+
+
+
+
+
+  const nationalityMap = {
+    1: 'India',
+    2: 'Turkey',
+    3: 'United Arab Emirates',
+    4: 'Nepal',
+    5: 'Egypt',
+    6: 'Bangladesh',
+    7: 'Pakistan',
+    8: 'Canada',
+    9: 'Jordan',
+    10: 'Oman',
+    11: 'United Kingdom'
+};
+
+const departmentMap = {
+    1: 'Engineering',
+    2: 'Finance',
+    3: 'HR & Admin',
+    4: 'Information Technology',
+    5: 'Management',
+    6: 'Operations',
+    7: 'QHSSE',
+    8: 'Sales & Marketing',
+    9: 'Supply Chain'
+};
+
+const siteMap = {
+    1: 'ICAD 2',
+    2: 'ICAD 1',
+    3: 'M46'
+};
+// Function to calculate overall attendance
+function calculateAttendance(data) {
+    let present = 0;
+    let absent = 0;
+    let Ms = 0;
+
+    data.forEach(record => {
+        const { clock_in, clock_out } = record;
+
+        if (clock_in && clock_out) {
+            present += 1;
+        } else if (clock_in || clock_out) {
+            Ms += 1;
+        }
+    });
+
+    // Assuming total number of employees is 456
+    absent = 456 - present - Ms;
+
+    return { present, absent, Ms };
+}
+
+/*
+// Endpoint to fetch overall attendance
+app.get('/api/attendance', (req, res) => {
+    const { date } = req.query;
+
+    if (!date) {
+        return res.status(400).json({ error: 'Please provide a date parameter' });
+    }
+
+    const query = `
+        SELECT empid, date, clock_in, clock_out
+        FROM input_data
+        WHERE date = ?
+    `;
+
+    db.executeQuery(query, [date], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        const attendance = calculateAttendance(results);
+        res.json(attendance);
+    });
+});
+*/
+
+
+
+
+app.get('/api/attendance', async (req, res) => {
+    const { date } = req.query;
+  
+    if (!date) {
+      return res.status(400).json({ error: 'Please provide a date parameter' });
+    }
+  
+    const query = `
+      SELECT empid, date, clock_in, clock_out
+      FROM input_data
+      WHERE date = ?
+    `;
+  
+    try {
+      const results = await db.executeQuery(query, [date]);
+      const attendance = calculateAttendance(results);
+      res.json(attendance);
+    } catch (err) {
+      console.error('Error executing query:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+
+
+
+/*
+// Endpoint to fetch attendance distribution
+app.get('/api/attendance-distribution', (req, res) => {
+    const { date, type } = req.query;
+
+    if (!date || !type) {
+        return res.status(400).json({ error: 'Please provide date and type parameters' });
+    }
+
+    let groupField = '';
+    let nameMap = {};
+
+    if (type === 'nationality') {
+        groupField = 'e.NationalityID';
+        nameMap = nationalityMap;
+    } else if (type === 'department') {
+        groupField = 'e.DepId';
+        nameMap = departmentMap;
+    } else if (type === 'location') {
+        groupField = 'e.SiteId';
+        nameMap = siteMap;
+    } else {
+        res.status(400).json({ error: 'Invalid type parameter' });
+        return;
+    }
+
+    const query = `
+        SELECT ${groupField} AS groupId, COUNT(DISTINCT e.EmpID) AS employeeCount
+        FROM employee_master e
+        JOIN input_data i ON e.EmpID = i.empid
+        WHERE i.date = ?
+        GROUP BY ${groupField}
+    `;
+
+    db.executeQuery(query, [date], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        const data = results.map(record => ({
+            id: record.groupId,
+            label: nameMap[record.groupId] || `Unknown (${record.groupId})`,
+            count: record.employeeCount
+        }));
+
+        res.json(data);
+    });
+});
+*/
+
+
+app.get('/api/attendance-distribution', (req, res) => {
+    const { date, type } = req.query;
+
+    if (!date || !type) {
+        return res.status(400).json({ error: 'Please provide date and type parameters' });
+    }
+
+    let groupField = '';
+    let nameMap = {};
+
+    if (type === 'nationality') {
+        groupField = 'e.NationalityID';
+        nameMap = nationalityMap;
+    } else if (type === 'department') {
+        groupField = 'e.DepId';
+        nameMap = departmentMap;
+    } else if (type === 'location') {
+        groupField = 'e.SiteId';
+        nameMap = siteMap;
+    } else {
+        return res.status(400).json({ error: 'Invalid type parameter' });
+    }
+
+    const query = `
+        SELECT ${groupField} AS groupId, COUNT(DISTINCT e.EmpID) AS employeeCount
+        FROM employee_master e
+        JOIN input_data i ON e.EmpID = i.empid
+        WHERE i.date = ?
+        GROUP BY ${groupField}
+    `;
+
+    db.executeQuery(query, [date])
+        .then(results => {
+            const data = results.map(record => ({
+                id: record.groupId,
+                label: nameMap[record.groupId] || `Unknown (${record.groupId})`,
+                count: record.employeeCount
+            }));
+            res.json(data);
+        })
+        .catch(err => {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: err.message });
+        });
+});
+
+
+/*
+/// Endpoint to fetch visa distribution
+app.get('/api/visa-distribution', (req, res) => {
+    const { date } = req.query;
+
+    if (!date) {
+        return res.status(400).json({ error: 'Please provide a date parameter' });
+    }
+
+    const query = `
+        SELECT v.visaType, COUNT(*) AS count
+        FROM employee_master e
+        JOIN visa v ON e.VisaId = v.visaId
+        JOIN input_data i ON e.EmpID = i.empid
+        WHERE i.date = ? AND i.clock_in IS NOT NULL AND i.clock_out IS NOT NULL
+        GROUP BY v.visaType
+    `;
+
+    db.executeQuery(query, [date], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        res.json(results);
+    });
+});
+// Endpoint to fetch employee attendance details
+app.get('/api/employee-attendance', (req, res) => {
+    const { date } = req.query;
+
+    if (!date) {
+        return res.status(400).json({ error: 'Please provide a date parameter' });
+    }
+
+    const query = `
+        SELECT e.EmpID, e.FullName, e.EmailID, v.visaType,
+               CASE 
+                   WHEN i.clock_in IS NOT NULL AND i.clock_out IS NOT NULL THEN 'Present'
+                   WHEN i.clock_in IS NULL AND i.clock_out IS NULL THEN 'Absent'
+                   ELSE 'Ms'
+               END AS attendanceStatus
+        FROM employee_master e
+        JOIN visa v ON e.VisaId = v.visaId
+        LEFT JOIN input_data i ON e.EmpID = i.empid AND i.date = ?
+    `;
+
+    db.executeQuery(query, [date], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        res.json(results);
+    });
+});
+*/
+
+
+
+
+
+
+app.get('/api/visa-distribution', (req, res) => {
+    const { date } = req.query;
+
+    if (!date) {
+        return res.status(400).json({ error: 'Please provide a date parameter' });
+    }
+
+    const query = `
+        SELECT v.visaType, COUNT(*) AS count
+        FROM employee_master e
+        JOIN visa v ON e.VisaId = v.visaId
+        JOIN input_data i ON e.EmpID = i.empid
+        WHERE i.date = ? AND i.clock_in IS NOT NULL AND i.clock_out IS NOT NULL
+        GROUP BY v.visaType
+    `;
+
+    db.executeQuery(query, [date])
+        .then(results => {
+            res.json(results);
+        })
+        .catch(err => {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: err.message });
+        });
+});
+
+
+
+
+
+app.get('/api/employee-attendance', (req, res) => {
+    const { date } = req.query;
+
+    if (!date) {
+        return res.status(400).json({ error: 'Please provide a date parameter' });
+    }
+
+    const query = `
+        SELECT e.EmpID, e.FullName, e.EmailID, v.visaType,
+               CASE 
+                   WHEN i.clock_in IS NOT NULL AND i.clock_out IS NOT NULL THEN 'Present'
+                   WHEN i.clock_in IS NULL AND i.clock_out IS NULL THEN 'Absent'
+                   ELSE 'Ms'
+               END AS attendanceStatus
+        FROM employee_master e
+        JOIN visa v ON e.VisaId = v.visaId
+        LEFT JOIN input_data i ON e.EmpID = i.empid AND i.date = ?
+    `;
+
+    db.executeQuery(query, [date])
+        .then(results => {
+            res.json(results);
+        })
+        .catch(err => {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: err.message });
+        });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.get('/Clocking', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Clocking.html'));
 });
