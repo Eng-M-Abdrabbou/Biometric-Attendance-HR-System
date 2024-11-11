@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Muster Roll Report</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th.date-column, td.date-column { width: 150px; }
+    #loading-message { display: none; }
+    .present { color: green; }
+    .absent { color: red; }
+    .miss-swipe { color: yellow; }
+    .alert-container { margin-top: 20px; }
+  </style>
+</head>
+<body>
+ <div class="container">
+   <div class="row">
+     <div class="col-12">
+       <h1 class="my-4">Muster Roll Report</h1>
+       <div class="form-group">
+         <button id="view-report-button" class="btn btn-danger mb-3">View Report</button>
+         <button id="clear-filter-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
+           <i class="fas fa-eraser"></i> Clear Filters
+         </button>
+         <button id="export-excel-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
+           <i class="fas fa-file-excel"></i> Export to Excel
+         </button>
+         <button id="export-pdf-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
+           <i class="fas fa-file-pdf"></i> Export to PDF
+         </button>
+         <input id="month-filter" type="month" class="form-control mb-3" placeholder="Month">
+         <select id="status-filter" class="form-control mb-3">
+           <option value="">All</option>
+           <option value="Present">Present</option>
+           <option value="Miss Swipe">Miss Swipe</option>
+           <option value="Absent">Absent</option>
+         </select>
+         <input id="name-filter" type="text" class="form-control mb-3" placeholder="Employee Name">
+         <input id="id-filter" type="text" class="form-control mb-3" placeholder="Employee ID">
+       </div>
+       <div class="alert-container">
+         <div id="alert-message" class="alert alert-danger" role="alert" style="display: none;">
+           Please select a month to view the report.
+         </div>
+       </div>
+       <p id="loading-message">Loading report...</p>
+       <table id="muster-roll-table" class="table table-striped">
+         <thead>
+           <tr id="header-row">
+             <th>Employee ID</th>
+             <th>Employee Name</th>
+           </tr>
+         </thead>
+         <tbody id="muster-roll-body">
+         </tbody>
+       </table>
+     </div>
+   </div>
+ </div>
+<!-- pdf and excel scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+const viewReportButton = document.getElementById('view-report-button');
+const musterRollBody = document.getElementById('muster-roll-body');
+const monthFilter = document.getElementById('month-filter');
+const statusFilter = document.getElementById('status-filter');
+const nameFilter = document.getElementById('name-filter');
+const idFilter = document.getElementById('id-filter');
+const loadingMessage = document.getElementById('loading-message');
+const headerRow = document.getElementById('header-row');
+const alertMessage = document.getElementById('alert-message');
+const clearFilterButton = document.getElementById('clear-filter-button'); // Add this line
+let reportData = [];
+
+// Add this event listener to clear the filters
+clearFilterButton.addEventListener('click', function() {
+  monthFilter.value = "";
+  statusFilter.value = "";
+  nameFilter.value = "";
+  idFilter.value = "";
+  renderReport(reportData);
+});
+
+    function filterReportData(month, status, name, id) {
+      const filteredData = reportData.filter(item => {
+        let statusText = getStatusText(item);
+        let nameMatch = name === '' || item.emp_name.toLowerCase().includes(name.toLowerCase());
+        let idMatch = id === '' || item.emp_id === Number(id);
+        return (month === '' || item.shift_date.startsWith(month)) &&
+               (status === '' || statusText === status) &&
+               nameMatch &&
+               idMatch;
+      });
+
+      let allDates = [];
+      if (month) {
+        const date = new Date(month + '-01');
+        const monthIndex = date.getMonth();
+        const year = date.getFullYear();
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+        for (let i = 1; i <= daysInMonth; i++) {
+          const day = (i < 10) ? `0${i}` : i;
+          allDates.push(`${month}-${day}`);
+        }
+      }
+
+      const employeeMap = {};
+      filteredData.forEach(item => {
+        if (!employeeMap[item.emp_id]) {
+          employeeMap[item.emp_id] = {
+            emp_id: item.emp_id,
+            emp_name: item.emp_name,
+            shifts: {}
+          };
+        }
+        employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
+      });
+
+      Object.values(employeeMap).forEach(employee => {
+        allDates.forEach(date => {
+          if (!employee.shifts[date]) {
+            employee.shifts[date] = getStatusText({ emp_id: employee.emp_id, shift_date: date });
+          }
+        });
+      });
+
+      return Object.values(employeeMap);
+    }
+
+    function getStatusText(item) {
+      const date = new Date(item.shift_date);
+      const day = date.getDay();
+
+      if (day === 6 || day === 0) {
+        if (item.clock_in && item.clock_out) {
+          return 'Present';
+        } else if (item.clock_in || item.clock_out) {
+          return 'Miss Swipe';
+        } else {
+          return 'W';
+        }
+      }
+
+      if (item.clock_in && item.clock_out) {
+        return 'Present';
+      } else if (item.clock_in || item.clock_out) {
+        return 'Miss Swipe';
+      } else {
+        return 'Absent';
+      }
+    }
+
+    function renderReport(data) {
+      if (data.length === 0) {
+        musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
+        return;
+      }
+
+      musterRollBody.innerHTML = '';
+      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+
+      const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
+      uniqueDates.sort().forEach(date => {
+        const headerCell = document.createElement('th');
+        headerCell.textContent = date;
+        headerCell.classList.add('date-column');
+        headerRow.appendChild(headerCell);
+      });
+
+      data.forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${employee.emp_id}</td>
+          <td>${employee.emp_name}</td>
+          ${uniqueDates.map(date => {
+            const statusText = employee.shifts[date] || 'Absent';
+            const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
+            return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
+          }).join('')}
+        `;
+        musterRollBody.appendChild(row);
+      });
+    }
+
+    function clearReport() {
+      musterRollBody.innerHTML = '';
+      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+    }
+
+   function fetchReport() {
+     if (!monthFilter.value) {
+       alertMessage.style.display = 'block';
+       return;
+     }
+     alertMessage.style.display = 'none';
+     console.log('Fetching report data...');
+   
+     // Call fillMusterRollTable API before fetching report data
+     fetch('/fill-muster-roll-table')
+       .then(response => {
+         console.log('Muster roll table updated:', response);
+         return response.text();
+       })
+       .then(() => {
+         loadingMessage.style.display = 'block';
+         fetch('/fetch-muster-roll')
+           .then(response => {
+             console.log('Received response:', response);
+             if (!response.ok) {
+               throw new Error(`HTTP error! status: ${response.status}`);
+             }
+             return response.json();
+           })
+           .then(data => {
+             console.log('Received data:', data);
+             reportData = data;
+             renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+             loadingMessage.style.display = 'none';
+           })
+           .catch(error => {
+             console.error('Error fetching report data:', error);
+             loadingMessage.style.display = 'none';
+             musterRollBody.innerHTML = '<tr><td colspan="3">Error fetching data</td></tr>';
+           });
+       })
+       .catch(error => {
+         console.error('Error updating muster roll table:', error);
+         loadingMessage.style.display = 'none';
+         musterRollBody.innerHTML = '<tr><td colspan="3">Error updating muster roll table</td></tr>';
+       });
+   }
+
+//pdf and excel 
+// Add these event listeners to your JavaScript code
+const exportExcelButton = document.getElementById('export-excel-button');
+const exportPdfButton = document.getElementById('export-pdf-button');
+
+exportExcelButton.addEventListener('click', exportToExcel);
+exportPdfButton.addEventListener('click', exportToPdf);
+
+function exportToExcel() {
+  const table = document.querySelector('#muster-roll-table');
+  const workbook = XLSX.utils.table_to_book(table);
+
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+
+  // Define the width for each column
+  const numOfDaysInMonth = 31; // Adjust this based on the number of days in your month
+  const wscols = [
+    {wch: 15},  // Width for employee_id
+    {wch: 30},  // Width for employee_name
+  ];
+  
+  // Add widths for each day of the month
+  for (let i = 1; i <= numOfDaysInMonth; i++) {
+    wscols.push({wch: 15});
+  }
+
+  ws['!cols'] = wscols;
+
+  XLSX.writeFile(workbook, 'muster_roll.xlsx');
+}
+
+
+function exportToPdf() {
+  console.log('Generating PDF...');
+  html2canvas(document.querySelector('#muster-roll-table'), {
+    scale: 4, // increase the scale to make the image larger
+    onrendered: function(canvas) {
+      const pdf = new jspdf.jsPDF();
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('muster_roll.pdf');
+    }
+  });
+}
+
+
+
+    viewReportButton.addEventListener('click', fetchReport);
+    monthFilter.addEventListener('input', () => {
+      if (!monthFilter.value) {
+        clearReport();
+      } else {
+        renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+      }
+
+      viewReportButton.addEventListener('click', function() {
+        fetchReport();
+        viewReportButton.disabled = true;
+      });
+    });
+    statusFilter.addEventListener('change', () => {
+      renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+    });
+    nameFilter.addEventListener('input', () => {
+      renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+    });
+    idFilter.addEventListener('input', () => {
+      renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+    });
+  </script> 
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+   <!-- <!DOCTYPE html>
    <html lang="en">
    <head>
     <meta charset="UTF-8">
@@ -53,4 +53,239 @@ console.log("1");
    </html>
    
    
+ -->
 
+
+ <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric Attendance System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f4f6f9 0%, #e9ecef 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background: linear-gradient(to right, #A42237, #c62d45);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar .logo {
+            height: 50px;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .navbar .title {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .login-card .logo {
+            width: 120px;
+            margin-bottom: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-card h2 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .label {
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input {
+            padding: 12px 15px;
+            font-size: 15px;
+            width: 100%;
+            border-radius: 10px;
+            border: 2px solid #e1e1e1;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .input:focus {
+            border-color: #A42237;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(164, 34, 55, 0.1);
+            background: #fff;
+        }
+
+        .submit-button {
+            padding: 12px 30px;
+            font-size: 16px;
+            color: #fff;
+            background: linear-gradient(to right, #A42237, #c62d45);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .submit-button:hover {
+            background: linear-gradient(to right, #c62d45, #A42237);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(164, 34, 55, 0.2);
+        }
+
+        .forgot-password {
+            display: block;
+            margin-top: 10px;
+            color: #A42237;
+            text-decoration: none;
+            font-size: 14px;
+            text-align: right;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: #c62d45;
+            text-decoration: underline;
+        }
+
+        footer {
+            background: linear-gradient(to right, #A42237, #c62d45);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 14px;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes inputFocus {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .input:focus {
+            animation: inputFocus 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <img src="/Users/saqibmansoor/Downloads/image001.png" alt="Company Logo" class="logo" style="width: 150px; height: auto;">
+        <div class="title" style="font-size: 24px;">Biometric Attendance System</div>
+    </nav>
+
+    <div class="container">
+        <div class="login-card">
+            <img src="/Users/saqibmansoor/Desktop/ss/Screenshot 2024-10-30 at 7.39.09â€¯AM.png" alt="Company Logo" class="logo">
+            <h2>Welcome Back</h2>
+            <form id="adminLoginForm" method="POST" style="display: flex; flex-direction: column;">
+                <div class="form-group">
+                    <label for="email" class="label">Email Address</label>
+                    <input type="email" id="adminEmail" name="email" required class="input" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="password" class="label">Password</label>
+                    <input type="password" id="adminPassword" name="password" required class="input" placeholder="Enter your password">
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
+                <button type="submit" class="submit-button">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Federal Electric. All Rights Reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const inputEmail = document.getElementById('adminEmail').value;
+            const inputPassword = document.getElementById('adminPassword').value;
+
+            try {
+                const response = await fetch('/api/admin-credentials');
+                const data = await response.json();
+                const { email, password } = data;
+
+                if (inputEmail === email && inputPassword === password) {
+                    console.log('success');
+                    window.location.href = "Admin_CRUD.html";
+                } else {
+                    console.log('Invalid credentials');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+
+</html>
