@@ -83,6 +83,312 @@
 
 
     </style>
+
+
+
+
+<style>
+    .container { padding: 20px; }
+    .filter-form { 
+        margin-bottom: 20px; 
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    .filter-group {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    .filter-item {
+        flex: 1;
+        min-width: 200px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        border: 1px solid #000000;
+        padding: 8px;
+        text-align: left;
+    }
+    th { background-color: #9D3E4E; }
+    .filter-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    button {
+        padding: 8px 16px;
+        cursor: pointer;
+    }
+
+
+/* General Container */
+.container {
+max-width: 1450px;
+margin: 20px auto;
+padding: 20px;
+background-color: #f5f5f5;
+border-radius: 8px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+font-family: Arial, sans-serif;
+}
+
+/* Page Header */
+h1 {
+color: #333;
+font-size: 28px;
+text-align: center;
+font-weight: bold;
+margin-bottom: 20px;
+}
+
+/* Company Info */
+#reportDataContainer img {
+display: block;
+margin: 0 auto 20px;
+}
+
+#reportDataContainer h1,
+#reportDataContainer p,
+#reportDataContainer h3,
+#reportDataContainer h2 {
+text-align: center;
+}
+
+#reportDataContainer p {
+font-size: 14px;
+color: #555;
+margin: 4px 0;
+}
+
+/* Filter Form Styling */
+.filter-form {
+display: flex;
+flex-wrap: wrap;
+gap: 16px;
+margin-bottom: 20px;
+background-color: #fff;
+padding: 15px;
+border-radius: 6px;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+display: flex;
+flex: 1;
+gap: 12px;
+}
+
+.filter-item {
+display: flex;
+flex-direction: column;
+min-width: 200px;
+}
+
+.filter-item label {
+font-size: 14px;
+color: #333;
+margin-bottom: 6px;
+}
+
+.filter-item input[type="date"],
+.filter-item input[type="text"],
+.filter-item select {
+padding: 8px;
+font-size: 14px;
+border-radius: 4px;
+border: 1px solid #ddd;
+}
+
+.filter-item input[type="text"]::placeholder {
+color: #aaa;
+}
+
+/* Filter Buttons */
+.filter-buttons {
+display: flex;
+gap: 10px;
+justify-content: flex-start;
+padding-top: 10px;
+}
+
+.filter-buttons button {
+padding: 8px 16px;
+font-size: 14px;
+color: #fff;
+background-color: #007bff;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.3s;
+}
+
+button{
+padding: 8px 16px;
+font-size: 14px;
+color: #fff;
+background-color: #007bff;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.3s;
+
+}
+
+.filter-buttons button:hover {
+background-color: #0056b3;
+}
+
+#resetFilters {
+background-color: #6c757d;
+}
+
+#resetFilters:hover {
+background-color: #5a6268;
+}
+
+#triggerSync {
+background-color: #28a745;
+}
+
+#triggerSync:hover {
+background-color: #218838;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+display: none;
+text-align: center;
+font-size: 18px;
+color: #007bff;
+padding: 20px;
+}
+
+/* Debug Panel */
+#debugLog {
+margin: 20px 0;
+padding: 10px;
+background-color: #f8f9fa;
+border: 1px solid #ddd;
+border-radius: 4px;
+color: #333;
+}
+
+#debugLog h3 {
+font-size: 16px;
+font-weight: bold;
+}
+
+#debugOutput {
+white-space: pre-wrap;
+font-family: monospace;
+font-size: 14px;
+}
+
+/* Error Message */
+.error-message {
+display: none;
+color: #d9534f;
+background-color: #f8d7da;
+padding: 10px;
+border-radius: 4px;
+margin-bottom: 20px;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+font-size: 14px;
+margin-top: 20px;
+}
+
+.pagination-controls button {
+padding: 6px 12px;
+font-size: 14px;
+background-color: #007bff;
+color: #fff;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+}
+
+.pagination-controls button:hover {
+background-color: #0056b3;
+}
+
+.pagination-controls input[type="number"] {
+width: 50px;
+padding: 6px;
+border: 1px solid #ddd;
+border-radius: 4px;
+}
+
+/* Print Buttons */
+#btn-export, #printButton {
+display: block;
+margin: 10px 0;
+padding: 8px;
+font-size: 14px;
+background-color: #ff6b6b;
+color: white;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+}
+
+#btn-export:hover, #printButton:hover {
+background-color: #d9534f;
+}
+
+/* Additional Styling */
+button:disabled {
+background-color: #ccc;
+cursor: not-allowed;
+}
+
+input{
+padding: 8px 16px;
+font-size: 14px;
+border: 1px solid #000000;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.3s;
+}
+
+.submit{
+padding: 8px 16px;
+font-size: 14px;
+color: #fff;
+background-color: #007bff;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.3s;
+}
+
+
+#tables{
+padding: 8px 16px;
+font-size: 14px;
+color: #000000;
+background-color: #ffffff;
+border: 1px solid #000000;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.3s;
+}
+
+
+</style>
+
+
 </head>
 <body>
 
