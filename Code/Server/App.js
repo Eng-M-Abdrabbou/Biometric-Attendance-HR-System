@@ -513,36 +513,36 @@ app.get('/api/data', async (req, res) => {
 // muster report 
 function fillMusterRollTable(limit = 500) {
   const query = `
- SELECT 
-   e.EmpID, 
-   e.FullName, 
-   CAST(i.date AS DATE) as date, 
-   i.clock_in, 
-   i.clock_out, 
-   gar.leave_id
- FROM 
-   employee_master e
-   JOIN input_data i ON e.EmpID = i.empid
-   LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND i.date = gar.shift_date
- UNION
- SELECT 
-   e.EmpID, 
-   e.FullName, 
-   CAST(i.date AS DATE) as date, 
-   i.clock_in, 
-   i.clock_out, 
-   NULL as leave_id
- FROM 
-   employee_master e
-   JOIN input_data i ON e.EmpID = i.empid
- WHERE 
-   (e.EmpID, CAST(i.date AS DATE)) NOT IN (
-     SELECT emp_id, shift_date FROM general_attendance_report
-   )
- ORDER BY 
-   EmpID,
-   date
- LIMIT ?
+    SELECT 
+      e.EmpID, 
+      e.FullName, 
+      CAST(i.date AS DATE) as date, 
+      i.clock_in, 
+      i.clock_out, 
+      gar.leave_id
+    FROM 
+      employee_master e
+      JOIN input_data i ON e.EmpID = i.empid
+      LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND i.date = gar.shift_date
+    UNION
+    SELECT 
+      e.EmpID, 
+      e.FullName, 
+      CAST(i.date AS DATE) as date, 
+      i.clock_in, 
+      i.clock_out, 
+      NULL as leave_id
+    FROM 
+      employee_master e
+      JOIN input_data i ON e.EmpID = i.empid
+    WHERE 
+      (e.EmpID, CAST(i.date AS DATE)) NOT IN (
+        SELECT emp_id, shift_date FROM general_attendance_report
+      )
+    ORDER BY 
+      EmpID,
+      date
+    LIMIT ?
   `;
   return db.query(query, [limit])
     .then(results => {
@@ -564,6 +564,17 @@ function fillMusterRollTable(limit = 500) {
       return Promise.all(promises)
         .then(() => {
           console.log('Muster roll table updated successfully.');
+
+          // Update muster_roll table based on changes to general_attendance_report table
+          const updateQuery = `
+            UPDATE muster_roll mr
+            JOIN general_attendance_report gar ON mr.emp_id = gar.emp_id AND mr.shift_date = gar.shift_date
+            SET mr.leave_id = gar.leave_id
+          `;
+          return db.query(updateQuery);
+        })
+        .then(() => {
+          console.log('Muster roll table updated with general attendance report data.');
           return Promise.resolve();
         })
         .catch(error => {
