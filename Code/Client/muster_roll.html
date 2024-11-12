@@ -137,28 +137,57 @@ clearFilterButton.addEventListener('click', function() {
       return Object.values(employeeMap);
     }
 
-    function getStatusText(item) {
-      const date = new Date(item.shift_date);
-      const day = date.getDay();
+function getStatusText(item) {
+  const date = new Date(item.shift_date);
+  const day = date.getDay();
 
-      if (day === 6 || day === 0) {
-        if (item.clock_in && item.clock_out) {
-          return 'Present';
-        } else if (item.clock_in || item.clock_out) {
-          return 'Miss Swipe';
-        } else {
-          return 'W';
-        }
-      }
-
-      if (item.clock_in && item.clock_out) {
-        return 'Present';
-      } else if (item.clock_in || item.clock_out) {
-        return 'Miss Swipe';
-      } else {
-        return 'Absent';
-      }
+  if (day === 6 || day === 0) {
+    if (item.clock_in && item.clock_out) {
+      return 'Present';
+    } else if (item.clock_in || item.clock_out) {
+      return 'Miss Swipe';
+    } else {
+      return 'W';
     }
+  }
+
+  if (item.leave_id) {
+    switch (item.leave_id) {
+      case 1:
+        return 'SL';
+      case 2:
+        return 'AL';
+      case 3:
+        return 'CLL';
+      case 4:
+        return 'HL';
+      case 5:
+        return 'ML';
+      case 6:
+        return 'CL';
+      case 7:
+        return 'BTL';
+      case 8:
+        return 'PL';
+      case 9:
+        return 'PESL';
+      case 10:
+        return 'PRL';
+      case 11:
+        break; // fall through to the rest of the if statement
+      default:
+        return 'No';
+    }
+  }
+
+  if (item.clock_in && item.clock_out) {
+    return 'Present';
+  } else if (item.clock_in || item.clock_out) {
+    return 'Miss Swipe';
+  } else {
+    return 'Absent';
+  }
+}
 
     function renderReport(data) {
       if (data.length === 0) {
