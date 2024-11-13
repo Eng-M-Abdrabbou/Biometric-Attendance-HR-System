@@ -648,6 +648,11 @@ function displayReport(data) {
                         // if (isString(record.awh)) {
                         //     return; // skip rows where awh is a string
                         // }
+                        // console.log("The leave is heeeeeeeeeeeeeeeeere", record.leave);
+                        // console.log("The leave is heeeeeeeeeeeeeeeeere", record.leave_id,"id");
+                        // console.log("The leave is heeeeeeeeeeeeeeeeere", record.awh,"awh");
+
+
                         let newawh1 = Math.floor(record.awh);
                         let newawh2 = Math.floor((record.awh % 1) * 100);
                         if (isNaN(newawh1) || isNaN(newawh2)) {                        
@@ -686,7 +691,52 @@ if(shiftId === '3'){
  if(lastOut == '00:00:00'){
     lastOut = "--------";
  }
-    
+
+ console.log("The leave is heeeeeeeeeeeeeeeeere", record.leave);
+
+
+if(record.leave != 11){
+console.log("The leave is heeeeeeeeeeeeeeeeere",record.leave);
+    switch(record.leave) {
+    case 1:
+        record.status = "SL";
+        break;
+    case 2:
+        record.status = "AL";
+        break;
+    case 3:
+        record.status = "CLL";
+        break;
+    case 4:
+        record.status = "HL";
+        break;
+    case 5:
+        record.status = "ML";
+        break;
+    case 6:
+        record.status = "CL";
+        break;
+    case 7:
+        record.status = "BTL";
+        break;
+    case 8:
+        record.status = "PL";
+        break;
+    case 9:
+        record.status = "PESL";
+        break;
+    case 10:
+        record.status = "PRL";
+        break;
+    case 11:
+        record.status = "No";
+        break;
+    default:
+        record.status = record.status;
+        break;
+}
+}
+ //if
     
     html += `
                             <tr>
@@ -706,6 +756,50 @@ if(shiftId === '3'){
                         `;
 } else {
     
+
+    if(record.leave != 11){
+console.log("The leave is heeeeeeeeeeeeeeeeere",record.leave);
+    switch(record.leave) {
+    case 1:
+        record.status = "SL";
+        break;
+    case 2:
+        record.status = "AL";
+        break;
+    case 3:
+        record.status = "CLL";
+        break;
+    case 4:
+        record.status = "HL";
+        break;
+    case 5:
+        record.status = "ML";
+        break;
+    case 6:
+        record.status = "CL";
+        break;
+    case 7:
+        record.status = "BTL";
+        break;
+    case 8:
+        record.status = "PL";
+        break;
+    case 9:
+        record.status = "PESL";
+        break;
+    case 10:
+        record.status = "PRL";
+        break;
+    case 11:
+        record.status = "No";
+        break;
+    default:
+        record.status = record.status;
+        break;
+}
+}
+
+
     html += `
                             <tr>
                                 <td>${record.shift_date}</td>

@@ -404,6 +404,7 @@ organizeReportData(report) {
       shift_date: record.shift_date,
       first_in: record.first_in,
       last_out: record.last_out,
+      leave: record.leave_id,
       status: record.status,
       awh: record.awh,
       ot: record.ot
@@ -590,7 +591,7 @@ logger.info('report', report);
               record.first_in,
               record.last_out,
               record.status,
-              11,
+              record.leave_id,
               record.awh,
               record.ot
           ]);
@@ -1272,7 +1273,7 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
       first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
       last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
       status: (status === 'A' && (moment(date).day() === 6)) ? 'W' : status,
-      leave_id: status === 'A' ? 11 : 11,
+      leave_id: await this.getLeaveId(employee, date),
       awh,
       ot,
       shift_id: shift.Shift_id,
@@ -1323,6 +1324,22 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
 
 
 
+async  getLeaveId(employee, date) {
+  try {
+    // Fetch leave_id based on emp_id and shift_date
+    const results = await this.executeQuery(
+      "SELECT leave_id FROM general_attendance_report WHERE emp_id = ? AND shift_date = ?",
+      [employee.EmpID, moment(date).format('YYYY-MM-DD')]
+    );
+logger.info('results', results);
+    // Return the leave_id if found, otherwise default to 11
+    return (results.length > 0 && results[0].leave_id) ? results[0].leave_id : 11;
+  } catch (error) {
+    logger.error('Error fetching leave_id:', { error: error.message });
+    // Default to leave_id 11 in case of any error
+    return 11;
+  }
+}
 
 
 
@@ -1393,7 +1410,7 @@ async processCrossDayAttendance(employee, shift, records, date, department, sect
         first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
         last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
         status,
-        leave_id: status === 'A' ? 11 : 11,
+        leave_id: await this.getLeaveId(employee, date),
         awh,
         ot,
         shift_id: shift.Shift_id,
@@ -1509,7 +1526,7 @@ async processCrossDayAttendance(employee, shift, records, date, department, sect
         first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
         last_out: '00:00:00', //clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
         status,
-        leave_id: status === 'A' ? 11 : 11,
+        leave_id: await this.getLeaveId(employee, date),
         awh,
         ot,
         shift_id: shift.Shift_id,
@@ -1542,7 +1559,7 @@ async processCrossDayAttendance(employee, shift, records, date, department, sect
         first_in: '00:00:00', //clockInTime ? clockInTime.format('HH:mm:ss') : 'Didn\'t clock in',
         last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'Didn\'t clock out',
         status,
-        leave_id: status === 'A' ? 11 : 11,
+        leave_id: await this.getLeaveId(employee, date),
         awh: 0, // AWH shown only in first record
         ot: 0,  // OT shown only in first record
         shift_id: shift.Shift_id,
