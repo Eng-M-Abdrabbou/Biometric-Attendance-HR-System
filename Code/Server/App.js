@@ -369,6 +369,7 @@ app.get('/api/attendance-report', async (req, res) => {
 
 
 
+//the Admin Crud endoints
 
 async function getPrimaryKeys(table) {
     const query = `
@@ -389,7 +390,7 @@ app.get('/tableInfo/:table', async (req, res) => {
     try {
         const TABLE = req.params.table;
         // Validate table name to prevent SQL injection
-        const validTables = ['accommodation', 'asst_master', 'company', 'departments', 'employee_master', 'general_attendance_report', 'grade', 'holidays', 'input_data', 'jobtitle', 'nationalities', 'section', 'shift', 'sites', 'test_user', 'visa', 'weekend'];
+        const validTables = ['accommodation', 'asst_master', 'company', 'departments', 'employee_master', 'general_attendance_report', 'grade', 'holidays', 'input_data', 'jobtitle', 'nationalities', 'section', 'shift', 'sites', 'test_user', 'visa', 'weekend','muster_roll'];
         if (!validTables.includes(TABLE)) {
             return res.status(400).json({ error: 'Invalid table name' });
         }
@@ -475,18 +476,6 @@ app.post('/deleteRow', async (req, res) => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 app.get('/filteredAttendance', async (req, res) => {
     try {
         const { startDate, endDate, empId, empName, status, page, rowsPerPage } = req.query;
@@ -514,9 +503,6 @@ app.get('/filteredAttendance', async (req, res) => {
             ? 'WHERE ' + whereConditions.join(' AND ')
             : '';
 
-
-
-
         // Handle pagination
         let limitClause = '';
         let limitParams = [];
@@ -535,19 +521,12 @@ app.get('/filteredAttendance', async (req, res) => {
         const countResult = await db.executeQuery(countQuery, params);
         const totalRows = countResult[0].totalRows;
 
-
-
-
-
-
         const query = `
         SELECT * FROM general_attendance_report 
         ${whereClause}
         ORDER BY shift_date
         ${limitClause}
     `;
-
-    
 
     const data = await db.executeQuery(query, [...params, ...limitParams]);
     res.json({ success: true, data, totalRows });
@@ -556,9 +535,6 @@ app.get('/filteredAttendance', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
 }
 });
-
-
-
 
 app.post('/bulkUpdate', async (req, res) => {
     try {
@@ -626,8 +602,6 @@ app.get('/api/departments', async (req, res) => {
     }
 });
 
-
-
 app.get('/api/data', async (req, res) => {
     try {
       const query = 'SELECT * FROM your_table_name';
@@ -650,6 +624,7 @@ app.get('/api/data', async (req, res) => {
 
 
 
+//Dashboard endpoints
 
   const nationalityMap = {
     1: 'India',
@@ -704,36 +679,6 @@ function calculateAttendance(data) {
     return { present, absent, Ms };
 }
 
-/*
-// Endpoint to fetch overall attendance
-app.get('/api/attendance', (req, res) => {
-    const { date } = req.query;
-
-    if (!date) {
-        return res.status(400).json({ error: 'Please provide a date parameter' });
-    }
-
-    const query = `
-        SELECT empid, date, clock_in, clock_out
-        FROM input_data
-        WHERE date = ?
-    `;
-
-    db.executeQuery(query, [date], (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            return res.status(500).json({ error: err.message });
-        }
-
-        const attendance = calculateAttendance(results);
-        res.json(attendance);
-    });
-});
-*/
-
-
-
-
 app.get('/api/attendance', async (req, res) => {
     const { date } = req.query;
   
@@ -757,60 +702,6 @@ app.get('/api/attendance', async (req, res) => {
     }
   });
   
-
-
-
-/*
-// Endpoint to fetch attendance distribution
-app.get('/api/attendance-distribution', (req, res) => {
-    const { date, type } = req.query;
-
-    if (!date || !type) {
-        return res.status(400).json({ error: 'Please provide date and type parameters' });
-    }
-
-    let groupField = '';
-    let nameMap = {};
-
-    if (type === 'nationality') {
-        groupField = 'e.NationalityID';
-        nameMap = nationalityMap;
-    } else if (type === 'department') {
-        groupField = 'e.DepId';
-        nameMap = departmentMap;
-    } else if (type === 'location') {
-        groupField = 'e.SiteId';
-        nameMap = siteMap;
-    } else {
-        res.status(400).json({ error: 'Invalid type parameter' });
-        return;
-    }
-
-    const query = `
-        SELECT ${groupField} AS groupId, COUNT(DISTINCT e.EmpID) AS employeeCount
-        FROM employee_master e
-        JOIN input_data i ON e.EmpID = i.empid
-        WHERE i.date = ?
-        GROUP BY ${groupField}
-    `;
-
-    db.executeQuery(query, [date], (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            return res.status(500).json({ error: err.message });
-        }
-
-        const data = results.map(record => ({
-            id: record.groupId,
-            label: nameMap[record.groupId] || `Unknown (${record.groupId})`,
-            count: record.employeeCount
-        }));
-
-        res.json(data);
-    });
-});
-*/
-
 
 app.get('/api/attendance-distribution', (req, res) => {
     const { date, type } = req.query;
@@ -858,70 +749,6 @@ app.get('/api/attendance-distribution', (req, res) => {
         });
 });
 
-
-/*
-/// Endpoint to fetch visa distribution
-app.get('/api/visa-distribution', (req, res) => {
-    const { date } = req.query;
-
-    if (!date) {
-        return res.status(400).json({ error: 'Please provide a date parameter' });
-    }
-
-    const query = `
-        SELECT v.visaType, COUNT(*) AS count
-        FROM employee_master e
-        JOIN visa v ON e.VisaId = v.visaId
-        JOIN input_data i ON e.EmpID = i.empid
-        WHERE i.date = ? AND i.clock_in IS NOT NULL AND i.clock_out IS NOT NULL
-        GROUP BY v.visaType
-    `;
-
-    db.executeQuery(query, [date], (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            return res.status(500).json({ error: err.message });
-        }
-
-        res.json(results);
-    });
-});
-// Endpoint to fetch employee attendance details
-app.get('/api/employee-attendance', (req, res) => {
-    const { date } = req.query;
-
-    if (!date) {
-        return res.status(400).json({ error: 'Please provide a date parameter' });
-    }
-
-    const query = `
-        SELECT e.EmpID, e.FullName, e.EmailID, v.visaType,
-               CASE 
-                   WHEN i.clock_in IS NOT NULL AND i.clock_out IS NOT NULL THEN 'Present'
-                   WHEN i.clock_in IS NULL AND i.clock_out IS NULL THEN 'Absent'
-                   ELSE 'Ms'
-               END AS attendanceStatus
-        FROM employee_master e
-        JOIN visa v ON e.VisaId = v.visaId
-        LEFT JOIN input_data i ON e.EmpID = i.empid AND i.date = ?
-    `;
-
-    db.executeQuery(query, [date], (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            return res.status(500).json({ error: err.message });
-        }
-
-        res.json(results);
-    });
-});
-*/
-
-
-
-
-
-
 app.get('/api/visa-distribution', (req, res) => {
     const { date } = req.query;
 
@@ -947,10 +774,6 @@ app.get('/api/visa-distribution', (req, res) => {
             res.status(500).json({ error: err.message });
         });
 });
-
-
-
-
 
 app.get('/api/employee-attendance', (req, res) => {
     const { date } = req.query;

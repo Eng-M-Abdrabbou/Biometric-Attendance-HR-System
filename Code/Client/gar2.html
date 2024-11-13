@@ -26,6 +26,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: smaller;
         }
         th, td {
             border: 1px solid #ddd;
@@ -273,10 +274,10 @@ button:disabled {
         <h1>General Attendance Report</h1>
         
         <!-- Debug Toggle Button -->
-        <button id="debugToggle" onclick="toggleDebugLog()" style="display: block;">Toggle Debug Log</button>
+        <button id="debugToggle" onclick="toggleDebugLog()" style="display: none;">Toggle Debug Log</button>
         
         <!-- Debug Log Panel -->
-        <div id="debugLog" class="debug-log" style="display: block;">
+        <div id="debugLog" class="debug-log" style="display: none;">
             <h3>Debug Log:</h3>
             <pre id="debugOutput"></pre>
         </div>
@@ -376,8 +377,25 @@ color: black; font-family: Arial, sans-serif; text-transform: uppercase; ">GENER
             </div>
         <div id="reportContainer"></div>
             
-    </div>
+    </div> 
+<div>
+    <br>
+    <br>
+    <br>
+<hr style="border: 1px solid black;">
+<p style="font-family:Arial, Helvetica, sans-serif;">
+<span><b>Note:&nbsp;&nbsp;&nbsp;</b></span>
+AWH = Actual Working Hours &nbsp;&nbsp;&nbsp; OT = Over Time &nbsp;&nbsp;&nbsp; SS = Shift Start &nbsp;&nbsp;&nbsp; SE = Shift End &nbsp;&nbsp;&nbsp;
+DCI = Did Not Clock In &nbsp;&nbsp;&nbsp; DCO = Did Not Clock Out &nbsp;&nbsp;&nbsp; LGT = Late Grace Time &nbsp;&nbsp;&nbsp; W = Weekend <br>
+ST = Shift Type &nbsp;&nbsp;&nbsp; SS = Shift Start &nbsp;&nbsp;&nbsp; SE = Shift End &nbsp;&nbsp;&nbsp; 
+BH = Break Hours &nbsp;&nbsp;&nbsp; TABS = Time Allowed Before Shift  &nbsp;&nbsp;&nbsp; 
+SII = Shift Incharge ID &nbsp;&nbsp;&nbsp; TWHB = Total Working Hours Before &nbsp;&nbsp;&nbsp;
+P = Present &nbsp;&nbsp;&nbsp; A = Absent &nbsp;&nbsp;&nbsp; MS = Miss Swipe  &nbsp;&nbsp;&nbsp;SL = Sick Leave &nbsp;&nbsp;&nbsp; AL = Annual Leave &nbsp;&nbsp;&nbsp;
+CLL = Continuous Learning Leave &nbsp;&nbsp;&nbsp; HL = Hajj Leave &nbsp;&nbsp;&nbsp;ML = Marriage Leave&nbsp;&nbsp;&nbsp; CL = Compassionate Leave <br>
+BTL = Business Travel Leave &nbsp;&nbsp;&nbsp;PL = Paternity Leave&nbsp;&nbsp;&nbsp;PESL = Patient Escorting Leave&nbsp;&nbsp;&nbsp;PRL = Parental Leave <br>
+</p>
 
+</div>
     <script>
 
 // const moment = require('moment'); 
@@ -593,14 +611,14 @@ function displayReport(data) {
             <h2 style="color: red;">&nbsp;&nbsp;Shift: ${shiftData.shift_name}</h2>
             <table>
                 <tr>
-                    <th>Shift Type</th>
-                    <th>Shift Start</th>
-                    <th>Shift End</th>
-                    <th>Break Hours</th>
-                    <th>Time allowed before shift</th>
-                    <th>Shift Incharge id</th>
-                    <th>Total Working Hours Before</th>
-                    <th>LGT in Minutes</th>
+                    <th>ST</th>
+                    <th>SS</th>
+                    <th>SE</th>
+                    <th>BH</th>
+                    <th>TABS</th>
+                    <th>SII</th>
+                    <th>TWHB</th>
+                    <th>LGT in Mins</th>
                 </tr>
                 <tr>
                     <td>${shiftData.shift_type}</td>
@@ -633,8 +651,8 @@ function displayReport(data) {
                                 <th>Designation</th>                               
                                 <th>First In</th>
                                 <th>Last Out</th>
-                                <th>Shift Start</th>
-                                <th>Shift End</th>
+                                <th>SS</th>
+                                <th>SE</th>
                                 <th>Status</th>
                                 <th>AWH</th>
                                 <th>OT</th>
@@ -679,12 +697,12 @@ if (newot2 < 10) {
     newot2 = `0${newot2}`;
 }
                         
-                        let firstIn = record.first_in == "Invalid date" || record.first_in === null || record.first_in === '00:00:00' ? "Didn't clock in" : record.first_in;
-                        let lastOut = record.last_out == "Invalid date" || record.last_out === null || record.last_out === '00:00:00' ? "Didn't clock out" : record.last_out;
+                        let firstIn = record.first_in == "Invalid date" || record.first_in === null || record.first_in === '00:00:00' ? "DCI" : record.first_in;
+                        let lastOut = record.last_out == "Invalid date" || record.last_out === null || record.last_out === '00:00:00' ? "DCO" : record.last_out;
 if(shiftId === '3'){
 
-    let firstIn = record.first_in == "Invalid date" || record.first_in === null ? "Didn't clock in" : record.first_in;
-    let lastOut = record.last_out == "Invalid date" || record.last_out === null ? "Didn't clock out" : record.last_out;
+    let firstIn = record.first_in == "Invalid date" || record.first_in === null ? "DCI" : record.first_in;
+    let lastOut = record.last_out == "Invalid date" || record.last_out === null ? "DCO" : record.last_out;
  if(firstIn =='00:00:00'){
     firstIn = "--------";
  }
