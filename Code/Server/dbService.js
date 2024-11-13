@@ -1197,6 +1197,17 @@ async processAttendanceData(results) {
 
 
 
+async checkNationality(emp_id) {
+  const sql = `SELECT EmpID FROM employee_master WHERE NationalityID = 3 AND EmpID = ?`;
+  const results = await this.executeQuery(sql, [emp_id]);
+
+  // Return true if the employee has NationalityID = 3, otherwise false
+  return results.length > 0;
+}
+
+
+
+
 async processEmployeeAttendance(employee, shift, records, date, department, section, site, designation, grade) {
   try {
     // Handle cross-day shifts (shift_id = 3)
@@ -1265,6 +1276,15 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
       }
     }
 
+
+    const isNationality3 = await this.checkNationality(employee.EmpID);
+    const dayOfWeek = moment(date).day();
+    const isWeekend = isNationality3
+      ? (dayOfWeek === 6 || dayOfWeek === 0) // Weekend for NationalityID = 3: Saturday and Monday
+      : (dayOfWeek === 6);                  // Weekend for others: Saturday only
+
+      const updatedStatus = (status === 'A' && isWeekend) ? 'W' : status;
+
     const attendanceRecord = {
       sap_id: employee.SAPID,
       emp_id: employee.EmpID,
@@ -1272,7 +1292,8 @@ async processEmployeeAttendance(employee, shift, records, date, department, sect
       shift_date: moment(date).format('DD-MM-YYYY'),
       first_in: clockInTime ? clockInTime.format('HH:mm:ss') : 'DCI',
       last_out: clockOutTime ? clockOutTime.format('HH:mm:ss') : 'DCO',
-      status: (status === 'A' && (moment(date).day() === 6)) ? 'W' : status,
+      status: updatedStatus,
+      // (status === 'A' && (moment(date).day() === 6)) ? 'W' : status,
       leave_id: await this.getLeaveId(employee, date),
       awh,
       ot,
