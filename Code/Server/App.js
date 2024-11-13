@@ -512,81 +512,100 @@ app.get('/api/data', async (req, res) => {
 // muster report 
 // muster report 
 function fillMusterRollTable(limit = 500) {
-  const query = `
-    SELECT 
-      e.EmpID, 
-      e.FullName, 
-      CAST(i.date AS DATE) as date, 
-      i.clock_in, 
-      i.clock_out, 
-      gar.leave_id
-    FROM 
-      employee_master e
-      JOIN input_data i ON e.EmpID = i.empid
-      LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND i.date = gar.shift_date
-    UNION
-    SELECT 
-      e.EmpID, 
-      e.FullName, 
-      CAST(i.date AS DATE) as date, 
-      i.clock_in, 
-      i.clock_out, 
-      NULL as leave_id
-    FROM 
-      employee_master e
-      JOIN input_data i ON e.EmpID = i.empid
-    WHERE 
-      (e.EmpID, CAST(i.date AS DATE)) NOT IN (
-        SELECT emp_id, shift_date FROM general_attendance_report
-      )
-    ORDER BY 
-      EmpID,
-      date
-    LIMIT ?
-  `;
-  return db.query(query, [limit])
-    .then(results => {
-      console.log('Data retrieved:', results.length);
-      const musterRoll = results.map(row => [
-        row.EmpID,
-        row.FullName,
-        row.date,
-        row.clock_in,
-        row.clock_out,
-        row.leave_id
-      ]);
-
-      const promises = musterRoll.map(record => {
-        const insertQuery = 'INSERT INTO muster_roll (emp_id, emp_name, shift_date, clock_in, clock_out, leave_id) VALUES (?, ?, ?, ?, ?, ?)';
-        return db.query(insertQuery, record);
-      });
-
-      return Promise.all(promises)
-        .then(() => {
-          console.log('Muster roll table updated successfully.');
-
-          // Update muster_roll table based on changes to general_attendance_report table
-          const updateQuery = `
-            UPDATE muster_roll mr
-            JOIN general_attendance_report gar ON mr.emp_id = gar.emp_id AND mr.shift_date = gar.shift_date
-            SET mr.leave_id = gar.leave_id
-          `;
-          return db.query(updateQuery);
-        })
-        .then(() => {
-          console.log('Muster roll table updated with general attendance report data.');
-          return Promise.resolve();
-        })
-        .catch(error => {
-          console.error('Insert query error:', error);
-          return Promise.reject(error);
+    const query = `
+      SELECT 
+        e.EmpID, 
+        e.FullName, 
+        CAST(i.date AS DATE) as date, 
+        i.clock_in, 
+        i.clock_out, 
+        COALESCE(gar.leave_id, NULL) as leave_id
+      FROM 
+        employee_master e
+        JOIN input_data i ON e.EmpID = i.empid
+        LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND i.date = gar.shift_date
+      ORDER BY 
+        EmpID,
+        date
+      LIMIT ?
+    `;
+  
+    return db.query(query, [limit])
+      .then(results => {
+        console.log('Data retrieved:', results.length);
+        const musterRoll = results.map(row => [
+          row.EmpID,
+          row.FullName,
+          row.date,
+          row.clock_in,
+          row.clock_out,
+          row.leave_id
+        ]);
+  
+        const checkExistingQuery = `
+          SELECT emp_id, shift_date, clock_in, clock_out, leave_id
+          FROM muster_roll
+          WHERE emp_id = ? AND shift_date = ?
+        `;
+  
+        const promises = musterRoll.map(record => {
+          return db.query(checkExistingQuery, [record[0], record[2]])
+            .then(existingRecord => {
+              if (existingRecord.length === 0) {
+                // Record doesn't exist, so insert it
+                const insertQuery = `
+                  INSERT INTO muster_roll (emp_id, emp_name, shift_date, clock_in, clock_out, leave_id)
+                  VALUES (?, ?, ?, ?, ?, ?)
+                `;
+                return db.query(insertQuery, record);
+              } else if (
+                existingRecord[0].clock_in !== record[3] ||
+                existingRecord[0].clock_out !== record[4] ||
+                existingRecord[0].leave_id !== record[5]
+              ) {
+                // Record exists but data has changed, so update it
+                const updateQuery = `
+                  UPDATE muster_roll
+                  SET emp_name = ?, clock_in = ?, clock_out = ?, leave_id = ?
+                  WHERE emp_id = ? AND shift_date = ?
+                `;
+                return db.query(updateQuery, [record[1], record[3], record[4], record[5], record[0], record[2]]);
+              } else {
+                // Record exists and data has not changed, so do nothing
+                return Promise.resolve();
+              }
+            });
         });
-    })
-    .catch(error => {
-      console.error('Query error:', error);
-      return Promise.reject(error);
-    });
-}
+  
+        return Promise.all(promises)
+          .then(() => {
+            console.log('Muster roll table updated successfully.');
+  
+            // Update muster_roll table based on changes to general_attendance_report table
+            const updateQuery = `
+              UPDATE muster_roll mr
+              JOIN general_attendance_report gar ON mr.emp_id = gar.emp_id AND mr.shift_date = gar.shift_date
+              SET mr.leave_id = gar.leave_id
+            `;
+            return db.query(updateQuery);
+          })
+          .then(() => {
+            console.log('Muster roll table updated with general attendance report data.');
+            return Promise.resolve();
+          })
+          .catch(error => {
+            console.error('Insert query error:', error);
+            return Promise.reject(error);
+          });
+      })
+      .catch(error => {
+        console.error('Query error:', error);
+        return Promise.reject(error);
+      });
+  }
+  
+  
+
 
 app.get('/fill-muster-roll-table', async (req, res) => {
   const limit = req.query.limit || 500;
