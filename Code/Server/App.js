@@ -35,19 +35,20 @@ app.use(express.static(path.join(__dirname, '../Client')));
 
 const logger = winston.createLogger({
     level: 'debug',
-    format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json()
+     format: 
+     winston.format.combine(
+    //     winston.format.timestamp(),
+    //     winston.format.json()
     ),
     transports: [
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+     //   new winston.transports.File({ filename: 'error.log', level: 'error' }),
     //    new winston.transports.File({ filename: 'combined.log' }),
-        new winston.transports.Console({
-            format: winston.format.combine(
-                winston.format.colorize(),
-                winston.format.simple()
-            )
-        })
+        // new winston.transports.Console({
+        //     format: winston.format.combine(
+        //         //winston.format.colorize(),
+        //        // winston.format.simple()
+        //     )
+        // })
     ]
 });
 
@@ -188,6 +189,8 @@ app.get('/api/employees/:id', async (req, res) => {
 })
 
 
+
+
 // Filter options endpoint
 app.get('/api/filter-options', async (req, res) => {
     logger.info('Received request for filter options');
@@ -209,7 +212,7 @@ app.get('/api/filter-options', async (req, res) => {
 
 
 
-
+// GAR report 
 app.get('/api/attendance-report', async (req, res) => {
     logger.info('Received attendance report request', { query: req.query });
     try {
