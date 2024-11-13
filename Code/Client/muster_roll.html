@@ -16,10 +16,11 @@
   </style>
 </head>
 <body>
+  <br>
+  <br>
  <div class="container">
    <div class="row">
      <div class="col-12">
-       <h1 class="my-4">Muster Roll Report</h1>
        <div class="form-group">
          <button id="view-report-button" class="btn btn-danger mb-3">View Report</button>
          <button id="clear-filter-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
@@ -46,13 +47,26 @@
            Please select a month to view the report.
          </div>
        </div>
-       <p id="loading-message">Loading report...</p>
+      <div id="loading-message" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="sr-only">Loading report...</span>
+        </div>
+      </div>
        <table id="muster-roll-table" class="table table-striped">
          <thead>
            <tr id="header-row">
              <th>Employee ID</th>
              <th>Employee Name</th>
            </tr>
+           <img sizes="50px" width="800px" height="160px" src="Images\Logo\Company Logo.png" alt="FEDERAL ELECTRIC Company Logo">
+<h1>FEDERAL ELECTRIC</h1>
+<p > PO BOX 9769,Mussafah, Abu Dhabi, UAE.                                  </p>
+<p >  Contact Numbers: +971 2 5592229 / 5512788                             </p>
+<p >  Email: info@federalelectricals.com Website: www.federalelectricals.com</p>
+<br>
+<h3>Muster Roll Report</h3>
+<br>
+            </div>
          </thead>
          <tbody id="muster-roll-body">
          </tbody>
