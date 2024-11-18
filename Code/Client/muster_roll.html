@@ -16,11 +16,19 @@
   </style>
 </head>
 <body>
+  <br>
+  <br>
  <div class="container">
    <div class="row">
      <div class="col-12">
-       <h1 class="my-4">Muster Roll Report</h1>
        <div class="form-group">
+        <img sizes="50px" width="800px" height="160px" src="Images\Logo\Company Logo.png" alt="FEDERAL ELECTRIC Company Logo">
+        <h1>FEDERAL ELECTRIC</h1>
+        <p > PO BOX 9769,Mussafah, Abu Dhabi, UAE.                                  </p>
+        <p >  Contact Numbers: +971 2 5592229 / 5512788                             </p>
+        <p >  Email: info@federalelectricals.com Website: www.federalelectricals.com</p>
+        <br>
+        <h3>Muster Roll Report</h3>
          <button id="view-report-button" class="btn btn-danger mb-3">View Report</button>
          <button id="clear-filter-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
            <i class="fas fa-eraser"></i> Clear Filters
@@ -46,13 +54,19 @@
            Please select a month to view the report.
          </div>
        </div>
-       <p id="loading-message">Loading report...</p>
+      <div id="loading-message" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="sr-only">Loading report...</span>
+        </div>
+      </div>
        <table id="muster-roll-table" class="table table-striped">
          <thead>
            <tr id="header-row">
              <th>Employee ID</th>
              <th>Employee Name</th>
            </tr>
+<br>
+            </div>
          </thead>
          <tbody id="muster-roll-body">
          </tbody>
@@ -137,28 +151,57 @@ clearFilterButton.addEventListener('click', function() {
       return Object.values(employeeMap);
     }
 
-    function getStatusText(item) {
-      const date = new Date(item.shift_date);
-      const day = date.getDay();
+function getStatusText(item) {
+  const date = new Date(item.shift_date);
+  const day = date.getDay();
 
-      if (day === 6 || day === 0) {
-        if (item.clock_in && item.clock_out) {
-          return 'Present';
-        } else if (item.clock_in || item.clock_out) {
-          return 'Miss Swipe';
-        } else {
-          return 'W';
-        }
-      }
-
-      if (item.clock_in && item.clock_out) {
-        return 'Present';
-      } else if (item.clock_in || item.clock_out) {
-        return 'Miss Swipe';
-      } else {
-        return 'Absent';
-      }
+  if (day === 6 || day === 0) {
+    if (item.clock_in && item.clock_out) {
+      return 'Present';
+    } else if (item.clock_in || item.clock_out) {
+      return 'Miss Swipe';
+    } else {
+      return 'W';
     }
+  }
+
+  if (item.leave_id) {
+    switch (item.leave_id) {
+      case 1:
+        return 'SL';
+      case 2:
+        return 'AL';
+      case 3:
+        return 'CLL';
+      case 4:
+        return 'HL';
+      case 5:
+        return 'ML';
+      case 6:
+        return 'CL';
+      case 7:
+        return 'BTL';
+      case 8:
+        return 'PL';
+      case 9:
+        return 'PESL';
+      case 10:
+        return 'PRL';
+      case 11:
+        break; // fall through to the rest of the if statement
+      default:
+        return 'No';
+    }
+  }
+
+  if (item.clock_in && item.clock_out) {
+    return 'Present';
+  } else if (item.clock_in || item.clock_out) {
+    return 'Miss Swipe';
+  } else {
+    return 'Absent';
+  }
+}
 
     function renderReport(data) {
       if (data.length === 0) {
