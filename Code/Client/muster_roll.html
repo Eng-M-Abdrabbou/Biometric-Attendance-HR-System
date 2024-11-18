@@ -11,7 +11,7 @@
     #loading-message { display: none; }
     .present { color: green; }
     .absent { color: red; }
-    .miss-swipe { color: yellow; }
+    .miss-swipe { color: orange; }
     .alert-container { margin-top: 20px; }
   </style>
 </head>
@@ -54,11 +54,12 @@
            Please select a month to view the report.
          </div>
        </div>
-      <div id="loading-message" class="text-center">
-        <div class="spinner-border" role="status">
-          <span class="sr-only">Loading report...</span>
-        </div>
-      </div>
+     <div id="loading-message">
+  <div class="spinner-border" role="status">
+    <span class="sr-only">Loading report...</span>
+  </div>
+  <div class="loading-text">Loading report...</div>
+</div>
        <table id="muster-roll-table" class="table table-striped">
          <thead>
            <tr id="header-row">
