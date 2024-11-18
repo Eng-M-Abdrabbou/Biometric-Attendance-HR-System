@@ -155,7 +155,7 @@ function getStatusText(item) {
   const date = new Date(item.shift_date);
   const day = date.getDay();
 
-  if (day === 6 || day === 0) {
+  if (day === 6 ) {
     if (item.clock_in && item.clock_out) {
       return 'Present';
     } else if (item.clock_in || item.clock_out) {
