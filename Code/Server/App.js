@@ -932,64 +932,150 @@ app.get('/api/employee-attendance1', (req, res) => {
 
 
 // muster report 
-function fillMusterRollTable(res, limit = 500) {
-      const query = 'SELECT e.EmpID, e.FullName, CAST(i.date AS DATE) as date, i.clock_in, i.clock_out FROM employee_master e JOIN input_data i ON e.EmpID = i.empid LIMIT ?';
-      db.query(query, [limit])
-        .then(results => {
-          console.log('Data retrieved:', results.length);
-          const musterRoll = results.map(row => [
-            row.EmpID,
-            row.FullName,
-            row.date,
-            row.clock_in,
-            row.clock_out
-          ]);
-    
-          const checkQuery = 'SELECT * FROM muster_roll WHERE emp_id = ? AND shift_date = ?';
-          const promises = musterRoll.map(record => {
-            return db.query(checkQuery, [record[0], record[2]])
-              .then(result => {
-                if (result.length === 0) {
-                  const insertQuery = 'INSERT INTO muster_roll (emp_id, emp_name, shift_date, clock_in, clock_out) VALUES (?, ?, ?, ?, ?)';
-                  return db.query(insertQuery, record);
-                } else {
-                  return Promise.resolve();
-                }
-              });
-          });
-    
-          Promise.all(promises)
-            .then(() => {
-              console.log('Muster roll table updated successfully.');
-              res.send('Muster roll table updated successfully.');
-            })
-            .catch(error => {
-              console.error('Insert query error:', error);
-              res.status(500).send('Insert query error');
-            });
-        })
-        .catch(error => {
-          console.error('Query error:', error);
-          res.status(500).send('Query error');
-        });
-    }
-    app.get('/fill-muster-roll-table', (req, res) => {
-      const limit = req.query.limit || 500;
-      fillMusterRollTable(res, limit);
-    });
-    
-    app.get('/fetch-muster-roll', async (req, res) => {
-      try {
-        const limit = req.query.limit || 500;
-        const query = 'SELECT emp_id, emp_name, DATE_FORMAT(shift_date, "%Y-%m-%d") as shift_date, clock_in, clock_out FROM muster_roll LIMIT ?';
-        const results = await db.query(query, [limit]);
-        res.json(results);
-      } catch (err) {
-        console.error('Query error:', err);
-        res.status(500).send('Internal Server Error');
-      }
-    });
 
+async function fillMusterRollTable(limit = 50000000000) {
+    const query = `
+      SELECT 
+        e.EmpID, 
+        e.FullName, 
+        CAST(i.date AS DATE) as date, 
+        i.clock_in, 
+        i.clock_out, 
+        COALESCE(gar.leave_id, NULL) as leave_id
+      FROM 
+        employee_master e
+        JOIN input_data i ON e.EmpID = i.empid
+        LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND i.date = gar.shift_date
+      ORDER BY 
+        EmpID,
+        date
+      LIMIT ?
+    `;
+  
+    try {
+      const results = await db.query(query, [limit]);
+      console.log('Data retrieved:', results.length);
+  
+      // Fetch existing records within the same date range
+      const dateRange = results.map(record => record.date);
+      const minDate = new Date(Math.min(...dateRange));
+      const maxDate = new Date(Math.max(...dateRange));
+  
+      const existingQuery = `
+        SELECT emp_id, shift_date, clock_in, clock_out, leave_id
+        FROM muster_roll
+        WHERE shift_date BETWEEN ? AND ?
+      `;
+      const existingRecords = await db.query(existingQuery, [minDate, maxDate]);
+      const existingMap = new Map(existingRecords.map(record => [`${record.emp_id}-${record.shift_date}`, record]));
+  
+      const inserts = [];
+      const updates = [];
+  
+      results.forEach(record => {
+        const key = `${record.EmpID}-${record.date}`;
+        const existing = existingMap.get(key);
+  
+        if (!existing) {
+          inserts.push([
+            record.EmpID, 
+            record.FullName, 
+            record.date, 
+            record.clock_in, 
+            record.clock_out, 
+            record.leave_id
+          ]);
+        } else if (
+          existing.clock_in !== record.clock_in ||
+          existing.clock_out !== record.clock_out ||
+          existing.leave_id !== record.leave_id
+        ) {
+          updates.push([
+            record.FullName, 
+            record.clock_in, 
+            record.clock_out, 
+            record.leave_id, 
+            record.EmpID, 
+            record.date
+          ]);
+        }
+      });
+  
+      const batchSize = 100; // Adjust batch size based on your system's capability
+  
+      for (let i = 0; i < inserts.length; i += batchSize) {
+        const batchInserts = inserts.slice(i, i + batchSize);
+        const insertQuery = `
+          INSERT INTO muster_roll (emp_id, emp_name, shift_date, clock_in, clock_out, leave_id)
+          VALUES ${batchInserts.map(() => '(?, ?, ?, ?, ?, ?)').join(', ')}
+        `;
+        const insertValues = batchInserts.flat();
+        await db.query(insertQuery, insertValues);
+      }
+  
+      for (let i = 0; i < updates.length; i += batchSize) {
+        const batchUpdates = updates.slice(i, i + batchSize);
+        const updatePromises = batchUpdates.map(update => {
+          const updateQuery = `
+            UPDATE muster_roll
+            SET emp_name = ?, clock_in = ?, clock_out = ?, leave_id = ?
+            WHERE emp_id = ? AND shift_date = ?
+          `;
+          return db.query(updateQuery, update);
+        });
+        await Promise.all(updatePromises);
+      }
+  
+      const finalUpdateQuery = `
+        UPDATE muster_roll mr
+        JOIN general_attendance_report gar ON mr.emp_id = gar.emp_id AND mr.shift_date = gar.shift_date
+        SET mr.leave_id = gar.leave_id
+      `;
+      await db.query(finalUpdateQuery);
+  
+      console.log('Muster roll table updated successfully.');
+  
+    } catch (error) {
+      console.error('Query error:', error);
+      throw error;
+    }
+  }
+  
+  app.get('/fill-muster-roll-table', async (req, res) => {
+    const limit = req.query.limit || 5000000000;
+    try {
+      await fillMusterRollTable(limit);
+      res.send('Muster roll table updated successfully.');
+    } catch (error) {
+      console.error('Error updating muster roll table:', error);
+      res.status(500).send('Error updating muster roll table');
+    }
+  });
+  
+  app.get('/fetch-muster-roll', async (req, res) => {
+    try {
+      const limit = req.query.limit || 5000000000;
+      await fillMusterRollTable(limit);
+      const query = `
+        SELECT 
+          emp_id, 
+          emp_name, 
+          DATE_FORMAT(shift_date, "%Y-%m-%d") as shift_date, 
+          clock_in, 
+          clock_out, 
+          leave_id
+        FROM 
+          muster_roll
+        LIMIT ?
+      `;
+      const results = await db.query(query, [limit]);
+      res.json(results);
+    } catch (err) {
+      console.error('Query error:', err);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+  
 
 
 
