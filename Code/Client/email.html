@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email notifications</title>
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <style>
+
+/* General Reset */
+body, h1, h3, p, input, button {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Body Styling */
+body {
+    background-color: #f4f4f9;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Container */
+.row {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Header Styling */
+h1 {
+    font-size: 2.5rem;
+    color: #ff0000aa;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+h3 {
+    font-size: 1.5rem;
+    color: #495057;
+    margin: 20px 0 10px;
+}
+
+/* Text Styling */
+p {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+label {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Input Styling */
+input[type="date"], input[type="email"] {
+    width: 100%;
+    padding: 10px 15px;
+    margin: 10px 0 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    color: #495057;
+}
+
+input:focus {
+    border-color: #ff0000aa;
+    outline: none;
+    box-shadow: 0 0 5px rgba(255, 38, 38, 0.385);
+}
+
+/* Button Styling */
+button {
+    background-color: #ff0000aa;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+    background-color: #ce0000;
+    transform: translateY(-2px);
+}
+
+button:active {
+    background-color: #450202;
+    transform: translateY(0);
+}
+
+/* Form */
+form {
+    margin-top: 20px;
+}
+
+/* Footer Text */
+footer {
+    margin-top: 20px;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="row d-flex justify-content-center">
+        <h1>FEDERAL ELECTRIC</h1>
+        <p>PO BOX 9769, Mussafah, Abu Dhabi, UAE.</p>
+        <p>Contact Numbers: +971 2 5592229 / 5512788</p>
+        <p>Email: info@federalelectricals.com Website: www.federalelectricals.com</p>
+
+        <h3>Send Absent Attendance Email Notification</h3>
+        <label for="date">Date:</label>
+        <input type="date" id="date" required>
+
+        <form class="p-3 p-xl-4" method="post" onsubmit="sendEmail(event)">
+            <div class="mb-3">
+                <input class="form-control" type="email" id="email-1" name="email" placeholder="Email" required>
+            </div>
+            <div>
+                <button class="btn btn-primary shadow d-block w-100" id="send-mail" type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function(){
+            emailjs.init({
+                publicKey: "RKd4e-vN-h9qTHQGU",
+            });
+        })();
+    </script>
+    <script>
+        emailjs.init("RKd4e-vN-h9qTHQGU");
+
+        function createTableHTML(employees, tableTitle) {
+            if (employees.length === 0) return '';
+            const tableRows = employees.map(employee => `<p>${employee.Id} ${employee.Name.length > 6 ? employee.Name.slice(0, 6) + '..' : employee.Name}</p>`).join('');
+            return `<p>${tableTitle}:</p> <br> Total Absent: ${employees.length} <br>${tableRows}<br>`;
+        }
+
+        async function fetchAndSendAbsentEmail() {
+            const date = document.getElementById('date').value;
+            const recipientEmail = document.getElementById('email-1').value;
+
+            if (!date || !recipientEmail) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/employee-attendance1?date=${date}`);
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    alert('No employee attendance details found for this date.');
+                    return;
+                }
+
+                const absentEmployees = data.filter(employee => employee.Status === 'A');
+console.log(absentEmployees);
+                if (absentEmployees.length === 0) {
+                    alert('No employees were absent on this date.');
+                    return;
+                }
+
+                const recipientName = recipientEmail.split('@')[0];
+
+                // Create email body with both tables
+                const emailBody = `
+                        ${createTableHTML(absentEmployees, 'Absent Employees')}                               
+`;
+console.log(emailBody);
+                // Send email
+                const emailData = {
+                    to_name: `Mr/Ms: ${recipientName}`,
+                    from_name: "Biometric Attendance System",
+                    to_email: recipientEmail,
+                    subject: `Absent Employees Report - ${date}`,
+                    body: emailBody,
+                    date: date
+                };
+
+                try {
+                    const result = await emailjs.send("service_zgcrq5q", "template_dbg68d9", emailData);
+                    if (result.status === 200) {
+                        alert('Attendance email sent successfully!');
+                    } else {
+                        alert('Failed to send the email. Please try again later.');
+                    }
+                } catch (error) {
+                    console.error('Error sending email:', error);
+                    if (error.text && error.text.includes('size limit')) {
+                        alert('The data is too large to send via email. Please try again with fewer records.');
+                    } else {
+                        alert('Failed to send email. Please try again later.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching attendance data:', error);
+                alert('An error occurred while fetching attendance data. Please try again later.');
+            }
+        }
+
+        function sendEmail(event) {
+            event.preventDefault();
+            fetchAndSendAbsentEmail();
+        }
+    </script>
+</body>
+</html>

@@ -10,6 +10,8 @@ const XLSX = require('xlsx');
 const fs = require('fs');
 const chokidar = require('chokidar');
 const { processExcelData, mainDataSync } = require('./dataSync');
+const nodemailer = require('nodemailer');
+
 
 const redis = require('redis');
 const { promisify } = require('util');
@@ -73,6 +75,61 @@ app.use((err, req, res, next) => {
 
 
 
+// Send email route
+// Create a Nodemailer transporter
+const transporter = nodemailer.createTransport({
+    service: 'gmail',  // Replace with your email service provider
+    auth: {
+        user: 'boompowfire@gmail.com',  // Replace with your Gmail address
+        pass: 'BoomPow123'    // Replace with your email password
+    }
+});
+
+// Send email route
+app.post('/send-email', (req, res) => {
+    // Log the incoming request body
+    console.log('Received request to send email:', req.body);
+    
+    // Extract email details from the request body
+    const { to, subject, text, html } = req.body;
+
+    // Validate required fields
+    if (!to || !subject || !text) {
+        console.log('Error: Missing required email fields (to, subject, text).');
+        return res.status(400).send('Missing required fields: to, subject, text');
+    }
+
+    console.log(`Sending email to: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Email Body: ${text}`);
+
+    // Set up email options
+    const mailOptions = {
+        from: '"Your Name" <boompowfire@gmail.com>',  // Replace with your name and email
+        to: to,
+        subject: subject,
+        text: text,
+        html: html || text  // If no HTML body, fallback to plain text
+    };
+
+    // Log email options before sending
+    console.log('Mail Options:', mailOptions);
+
+    // Send the email
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.log('Error occurred while sending email:', error);
+            return res.status(500).send('Error sending email');
+        }
+
+        // Log success response
+        console.log('Email sent successfully:', info.response);
+        res.status(200).send('Email sent: ' + info.response);
+    });
+});
+
+
+
 
 
 const excelFilePath = path.join(
@@ -85,6 +142,41 @@ watcher.on('change', async (path) => {
   console.log(`File ${path} has been changed`);
   await mainDataSync(excelFilePath);
 });
+
+
+
+const logFilePath = "D:\\Mahmoud\\projects\\Biometric Attendance Project\\Code\\Server\\combined.log";
+const logWatcher = chokidar.watch(logFilePath, { persistent: true });
+
+logWatcher.on('change', async (path) => {
+  console.log(`Log file ${path} has been changed`);
+  setTimeout(async () => {
+    try {
+      await fs.promises.writeFile(logFilePath, 'Log Cleared');
+      console.log('Log file has been cleared');
+    } catch (error) {
+      console.error('Error clearing log file:', error);
+    }
+  }, 60000);
+});
+
+
+
+const errorLogFilePath = "D:\\Mahmoud\\projects\\Biometric Attendance Project\\Code\\Server\\error.log";
+const errorLogWatcher = chokidar.watch(errorLogFilePath, { persistent: true });
+
+errorLogWatcher.on('change', async (path) => {
+  console.log(`Error log file ${path} has been changed`);
+  setTimeout(async () => {
+    try {
+      await fs.promises.writeFile(errorLogFilePath, 'Error Log Cleared');
+      console.log('Error log file has been cleared');
+    } catch (error) {
+      console.error('Error clearing error log file:', error);
+    }
+  }, 60000);
+});
+
 
 
 
@@ -809,7 +901,33 @@ app.get('/api/employee-attendance', (req, res) => {
 
 
 
+app.get('/api/employee-attendance1', (req, res) => {
+    const { date } = req.query;
 
+    if (!date) {
+        return res.status(400).json({ error: 'Please provide a date parameter' });
+    }
+
+    const query = `
+    SELECT e.EmpID AS Id, e.FullName AS Name,
+           CASE 
+               WHEN i.clock_in IS NOT NULL AND i.clock_out IS NOT NULL THEN 'P'
+               WHEN i.clock_in IS NULL AND i.clock_out IS NULL THEN 'A'
+               ELSE 'Ms'
+           END AS Status
+    FROM employee_master e
+    LEFT JOIN input_data i ON e.EmpID = i.empid AND i.date = STR_TO_DATE(?, '%Y-%m-%d')
+`;
+
+    db.executeQuery(query, [date])
+        .then(results => {
+            res.json(results);
+        })
+        .catch(err => {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: err.message });
+        });
+});
 
 
 
@@ -969,6 +1087,9 @@ async function fillMusterRollTable(limit = 50000000000) {
 
 
 
+app.get('/email', (req, res) => {
+            res.sendFile(path.join(__dirname,'..','Client','email.html'));
+        });
 
 app.get('/muster_roll', (req, res) => {
         res.sendFile(path.join(__dirname,'..','Client','muster_roll.html'));
