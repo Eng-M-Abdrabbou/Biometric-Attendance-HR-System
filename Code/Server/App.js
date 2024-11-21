@@ -820,6 +820,7 @@ async function fillMusterRollTable(limit = 50000000000) {
       SELECT 
         e.EmpID, 
         e.FullName, 
+        e.NationalityID,  
         CAST(i.date AS DATE) as date, 
         i.clock_in, 
         i.clock_out, 
@@ -844,7 +845,7 @@ async function fillMusterRollTable(limit = 50000000000) {
       const maxDate = new Date(Math.max(...dateRange));
   
       const existingQuery = `
-        SELECT emp_id, shift_date, clock_in, clock_out, leave_id
+        SELECT emp_id, shift_date, clock_in, clock_out, leave_id, Nationalityid
         FROM muster_roll
         WHERE shift_date BETWEEN ? AND ?
       `;
@@ -862,6 +863,7 @@ async function fillMusterRollTable(limit = 50000000000) {
           inserts.push([
             record.EmpID, 
             record.FullName, 
+            record.NationalityID, // Added this field
             record.date, 
             record.clock_in, 
             record.clock_out, 
@@ -870,13 +872,15 @@ async function fillMusterRollTable(limit = 50000000000) {
         } else if (
           existing.clock_in !== record.clock_in ||
           existing.clock_out !== record.clock_out ||
-          existing.leave_id !== record.leave_id
+          existing.leave_id !== record.leave_id ||
+          existing.Nationalityid !== record.NationalityID // Added this condition
         ) {
           updates.push([
             record.FullName, 
             record.clock_in, 
             record.clock_out, 
             record.leave_id, 
+            record.NationalityID, // Added this field
             record.EmpID, 
             record.date
           ]);
@@ -888,8 +892,8 @@ async function fillMusterRollTable(limit = 50000000000) {
       for (let i = 0; i < inserts.length; i += batchSize) {
         const batchInserts = inserts.slice(i, i + batchSize);
         const insertQuery = `
-          INSERT INTO muster_roll (emp_id, emp_name, shift_date, clock_in, clock_out, leave_id)
-          VALUES ${batchInserts.map(() => '(?, ?, ?, ?, ?, ?)').join(', ')}
+          INSERT INTO muster_roll (emp_id, emp_name, Nationalityid, shift_date, clock_in, clock_out, leave_id)
+          VALUES ${batchInserts.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ')}
         `;
         const insertValues = batchInserts.flat();
         await db.query(insertQuery, insertValues);
@@ -900,7 +904,7 @@ async function fillMusterRollTable(limit = 50000000000) {
         const updatePromises = batchUpdates.map(update => {
           const updateQuery = `
             UPDATE muster_roll
-            SET emp_name = ?, clock_in = ?, clock_out = ?, leave_id = ?
+            SET emp_name = ?, clock_in = ?, clock_out = ?, leave_id = ?, Nationalityid = ?
             WHERE emp_id = ? AND shift_date = ?
           `;
           return db.query(updateQuery, update);
@@ -942,6 +946,7 @@ async function fillMusterRollTable(limit = 50000000000) {
         SELECT 
           emp_id, 
           emp_name, 
+          Nationalityid,  
           DATE_FORMAT(shift_date, "%Y-%m-%d") as shift_date, 
           clock_in, 
           clock_out, 
@@ -957,6 +962,7 @@ async function fillMusterRollTable(limit = 50000000000) {
       res.status(500).send('Internal Server Error');
     }
   });
+
   
 
 

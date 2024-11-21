@@ -105,58 +105,69 @@ clearFilterButton.addEventListener('click', function() {
   renderReport(reportData);
 });
 
-    function filterReportData(month, status, name, id) {
-      const filteredData = reportData.filter(item => {
-        let statusText = getStatusText(item);
-        let nameMatch = name === '' || item.emp_name.toLowerCase().includes(name.toLowerCase());
-        let idMatch = id === '' || item.emp_id === Number(id);
-        return (month === '' || item.shift_date.startsWith(month)) &&
-               (status === '' || statusText === status) &&
-               nameMatch &&
-               idMatch;
-      });
+ function filterReportData(month, status, name, id) {
+   const filteredData = reportData.filter(item => {
+     let statusText = getStatusText(item);
+     let nameMatch = name === '' || item.emp_name.toLowerCase().includes(name.toLowerCase());
+     let idMatch = id === '' || item.emp_id === Number(id);
+     return (month === '' || item.shift_date.startsWith(month)) &&
+            (status === '' || statusText === status) &&
+            nameMatch &&
+            idMatch;
+   });
+ 
+   let allDates = [];
+   if (month) {
+     const date = new Date(month + '-01');
+     const monthIndex = date.getMonth();
+     const year = date.getFullYear();
+     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+ 
+     for (let i = 1; i <= daysInMonth; i++) {
+       const day = (i < 10) ? `0${i}` : i;
+       allDates.push(`${month}-${day}`);
+     }
+   }
+ 
+   const employeeMap = {};
+   filteredData.forEach(item => {
+     if (!employeeMap[item.emp_id]) {
+       employeeMap[item.emp_id] = {
+         emp_id: item.emp_id,
+         emp_name: item.emp_name,
+         Nationalityid: item.Nationalityid, // Add this line
+         shifts: {}
+       };
+     }
+     employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
+   });
+ 
+   Object.values(employeeMap).forEach(employee => {
+     allDates.forEach(date => {
+       if (!employee.shifts[date]) {
+         employee.shifts[date] = getStatusText({ emp_id: employee.emp_id, shift_date: date });
+       }
+     });
+   });
+ 
+   return Object.values(employeeMap);
+ }
 
-      let allDates = [];
-      if (month) {
-        const date = new Date(month + '-01');
-        const monthIndex = date.getMonth();
-        const year = date.getFullYear();
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-
-        for (let i = 1; i <= daysInMonth; i++) {
-          const day = (i < 10) ? `0${i}` : i;
-          allDates.push(`${month}-${day}`);
-        }
-      }
-
-      const employeeMap = {};
-      filteredData.forEach(item => {
-        if (!employeeMap[item.emp_id]) {
-          employeeMap[item.emp_id] = {
-            emp_id: item.emp_id,
-            emp_name: item.emp_name,
-            shifts: {}
-          };
-        }
-        employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
-      });
-
-      Object.values(employeeMap).forEach(employee => {
-        allDates.forEach(date => {
-          if (!employee.shifts[date]) {
-            employee.shifts[date] = getStatusText({ emp_id: employee.emp_id, shift_date: date });
-          }
-        });
-      });
-
-      return Object.values(employeeMap);
-    }
-
-function getStatusText(item) {
+    function getStatusText(item) {
   const date = new Date(item.shift_date);
   const day = date.getDay();
 
-  if (day === 6 ) {
+if((day === 0)&& item.Nationalityid ===3){
+  if (item.clock_in && item.clock_out) {
+      return 'Present';
+    } else if (item.clock_in || item.clock_out) {
+      return 'Miss Swipe';
+    } else {
+      return 'W';
+    }
+}
+
+  if (day === 6) {
     if (item.clock_in && item.clock_out) {
       return 'Present';
     } else if (item.clock_in || item.clock_out) {
@@ -199,47 +210,55 @@ function getStatusText(item) {
     return 'Present';
   } else if (item.clock_in || item.clock_out) {
     return 'Miss Swipe';
-  } else {
-    return 'Absent';
   }
 }
 
-    function renderReport(data) {
-      if (data.length === 0) {
-        musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
-        return;
-      }
-
-      musterRollBody.innerHTML = '';
-      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
-
-      const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
-      uniqueDates.sort().forEach(date => {
-        const headerCell = document.createElement('th');
-        headerCell.textContent = date;
-        headerCell.classList.add('date-column');
-        headerRow.appendChild(headerCell);
-      });
-
-      data.forEach(employee => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${employee.emp_id}</td>
-          <td>${employee.emp_name}</td>
-          ${uniqueDates.map(date => {
-            const statusText = employee.shifts[date] || 'Absent';
-            const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
-            return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
-          }).join('')}
-        `;
-        musterRollBody.appendChild(row);
-      });
+  function renderReport(data) {
+    console.log("Data:", data);
+    if (data.length === 0) {
+      musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
+      return;
     }
-
+  
+    musterRollBody.innerHTML = '';
+    headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+  
+    const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
+    uniqueDates.sort().forEach(date => {
+      const headerCell = document.createElement('th');
+      headerCell.textContent = date;
+      headerCell.classList.add('date-column');
+      headerRow.appendChild(headerCell);
+    });
+  
+    data.forEach(employee => {
+      console.log("Employee Nationality ID:", employee.Nationalityid);
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${employee.emp_id}</td>
+        <td>${employee.emp_name}</td>
+        ${uniqueDates.map(date => {
+          const dateObj = new Date(date); 
+          const dayOfWeek = dateObj.getUTCDay(); // 0 is Sunday, 6 is Saturday 
+          let statusText; 
+          if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) 
+          { 
+            statusText = 'W'; 
+          } else {  
+            statusText = employee.shifts[date] || 'absent'; 
+          }
+          const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
+          return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
+        }).join('')}
+      `;
+      musterRollBody.appendChild(row);
+    });
+  }
     function clearReport() {
       musterRollBody.innerHTML = '';
       headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
     }
+
 
    function fetchReport() {
      if (!monthFilter.value) {
