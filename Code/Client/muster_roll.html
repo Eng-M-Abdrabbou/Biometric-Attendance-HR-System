@@ -26,7 +26,7 @@
   body {
       background-color: #f5f5f5;
       padding: 0 30px 30px 30px; /* Adjusted padding to account for fixed navbar */
-      overflow-x: hidden;
+      overflow-x: visible;
       margin-top: 80px; /* Added margin to prevent content from hiding behind navbar */
   }
 
@@ -345,7 +345,7 @@ gap: 10px;
   table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 250px;
+      margin-top: 25px;
       animation: fadeIn 0.6s ease-in-out;
   }
 
@@ -395,6 +395,22 @@ gap: 10px;
       from { transform: scale(0.9); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
   }
+  i[data-tooltip] {
+    position: relative;
+  }
+  
+  i[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+  }
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -404,47 +420,37 @@ gap: 10px;
   rel="stylesheet"
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
 >
+
 </head>
 <body>
 
 
   <!-- Navbar -->
-  <nav class="navbar">
-      <div class="navbar-brand">Attendance Dashboard</div>
-      <ul class="navbar-menu">
-          <li>
-              <div class="tooltip">
-                  <a href="http://localhost:8000/index.html"><i class="fas fa-home"></i></a>
-                  <span class="tooltip-text">Home</span>
-              </div>
-          </li>
-          <li>
-              <div class="tooltip">
-                  <a href="http://localhost:8000/gar"><i class="fas fa-file-alt"></i></a>
-                  <span class="tooltip-text">General Attendance Report</span>
-              </div>
-          </li>
-          <li>
-              <div class="tooltip">
-                  <a href="http://localhost:8000/muster_roll"><i class="fas fa-list-alt"></i></a>
-                  <span class="tooltip-text">Muster Roll Report</span>
-              </div>
-          </li>
-          <li>
-              <div class="tooltip">
-                  <a href="http://localhost:8000/login.html"><i class="fas fa-user-cog"></i></a>
-                  <span class="tooltip-text">Admin CRUD</span>
-              </div>
-          </li>
-          <li>
-              <div class="tooltip">
-                  <a href="http://localhost:8000/email.html"><i class="fas fa-envelope"></i></a>
-                  <span class="tooltip-text">Email Notification</span>
-              </div>
-          </li>
-      </ul>
-  </nav>
-
+<nav class="navbar navbar-expand-lg navbar-dark bg-maroon">
+  <div class="navbar-brand">Attendance Dashboard</div>
+  <ul class="navbar-nav">
+    <li class="nav-item">
+      <a class="nav-link" href="http://localhost:8000/index.html">
+        <i class="fa fa-home" data-tooltip="Home Page"></i>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="http://localhost:8000/gar">
+        <i class="fa fa-file-alt" data-tooltip="General Attendance Report"></i>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="http://localhost:8000/login.html">
+        <i class="fa fa-user-cog" data-tooltip="Admin Login"></i>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="http://localhost:8000/email.html">
+        <i class="fa fa-envelope" data-tooltip="Email Notification"></i>
+      </a>
+    </li>
+  </ul>
+</nav>
 
 
   <br>
