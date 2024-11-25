@@ -464,21 +464,22 @@ gap: 10px;
          <button id="clear-filter-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
            <i class="fas fa-eraser"></i> Clear Filters
          </button>
-         <button id="export-excel-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
-           <i class="fas fa-file-excel"></i> Export to Excel
-         </button>
+         <button id="export-excel-button" class="btn btn-success mb-3" style="margin-left: 10px;">
+          <i class="fas fa-file-excel"></i> Export to Excel
+</button>
+
          <button id="export-pdf-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
            <i class="fas fa-file-pdf"></i> Export to PDF
          </button>
-         <input id="month-filter" type="month" class="form-control mb-3" placeholder="Month">
-         <select id="status-filter" class="form-control mb-3">
+         <input id="month-filter" type="month" class="form-control mb-3" placeholder="Month" style="width: 200px;">
+         <select id="status-filter" class="form-control mb-3" style="width: 200px;">
            <option value="">All</option>
            <option value="Present">Present</option>
            <option value="Miss Swipe">Miss Swipe</option>
            <option value="Absent">Absent</option>
          </select>
-         <input id="name-filter" type="text" class="form-control mb-3" placeholder="Employee Name">
-         <input id="id-filter" type="text" class="form-control mb-3" placeholder="Employee ID">
+         <input id="name-filter" type="text" class="form-control mb-3" placeholder="Employee Name" style="width: 300px;">
+         <input id="id-filter" type="text" class="form-control mb-3" placeholder="Employee ID" style="width: 300px;">
        </div>
        <div class="alert-container">
          <div id="alert-message" class="alert alert-danger" role="alert" style="display: none;">
@@ -536,58 +537,77 @@ clearFilterButton.addEventListener('click', function() {
   renderReport(reportData);
 });
 
-    function filterReportData(month, status, name, id) {
-      const filteredData = reportData.filter(item => {
-        let statusText = getStatusText(item);
-        let nameMatch = name === '' || item.emp_name.toLowerCase().includes(name.toLowerCase());
-        let idMatch = id === '' || item.emp_id === Number(id);
-        return (month === '' || item.shift_date.startsWith(month)) &&
-               (status === '' || statusText === status) &&
-               nameMatch &&
-               idMatch;
-      });
+function filterReportData(month, status, name, id) {
+  const filteredData = reportData.filter(item => {
+    let statusText = getStatusText(item);
+    let nameMatch = name === '' || item.emp_name.toLowerCase().includes(name.toLowerCase());
+    let idMatch = id === '' || item.emp_id === Number(id);
 
-      let allDates = [];
-      if (month) {
-        const date = new Date(month + '-01');
-        const monthIndex = date.getMonth();
-        const year = date.getFullYear();
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-
-        for (let i = 1; i <= daysInMonth; i++) {
-          const day = (i < 10) ? `0${i}` : i;
-          allDates.push(`${month}-${day}`);
-        }
-      }
-
-      const employeeMap = {};
-      filteredData.forEach(item => {
-        if (!employeeMap[item.emp_id]) {
-          employeeMap[item.emp_id] = {
-            emp_id: item.emp_id,
-            emp_name: item.emp_name,
-            shifts: {}
-          };
-        }
-        employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
-      });
-
-      Object.values(employeeMap).forEach(employee => {
-        allDates.forEach(date => {
-          if (!employee.shifts[date]) {
-            employee.shifts[date] = getStatusText({ emp_id: employee.emp_id, shift_date: date });
-          }
-        });
-      });
-
-      return Object.values(employeeMap);
+    let statusMatch;
+    if (status === 'Absent') {
+      statusMatch = !item.shifts || !item.shifts[item.shift_date] || item.shifts[item.shift_date] === 'W' || !item.shifts[item.shift_date];
+    } else {
+      statusMatch = status === '' || getStatusText(item) === status;
     }
 
-function getStatusText(item) {
+    return (month === '' || item.shift_date.startsWith(month)) &&
+           statusMatch &&
+           nameMatch &&
+           idMatch;
+  });
+ 
+   let allDates = [];
+   if (month) {
+     const date = new Date(month + '-01');
+     const monthIndex = date.getMonth();
+     const year = date.getFullYear();
+     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+ 
+     for (let i = 1; i <= daysInMonth; i++) {
+       const day = (i < 10) ? `0${i}` : i;
+       allDates.push(`${month}-${day}`);
+     }
+   }
+ 
+   const employeeMap = {};
+   filteredData.forEach(item => {
+     if (!employeeMap[item.emp_id]) {
+       employeeMap[item.emp_id] = {
+         emp_id: item.emp_id,
+         emp_name: item.emp_name,
+         Nationalityid: item.Nationalityid, // Add this line
+         shifts: {}
+       };
+     }
+     employeeMap[item.emp_id].shifts[item.shift_date] = getStatusText(item);
+   });
+ 
+   Object.values(employeeMap).forEach(employee => {
+     allDates.forEach(date => {
+       if (!employee.shifts[date]) {
+         employee.shifts[date] = getStatusText({ emp_id: employee.emp_id, shift_date: date });
+       }
+     });
+   });
+ 
+   return Object.values(employeeMap);
+ }
+
+    function getStatusText(item) {
   const date = new Date(item.shift_date);
   const day = date.getDay();
 
-  if (day === 6 ) {
+if((day === 0)&& item.Nationalityid ===3){
+  if (item.clock_in && item.clock_out) {
+      return 'Present';
+    } else if (item.clock_in || item.clock_out) {
+      return 'Miss Swipe';
+    } else {
+      return 'W';
+    }
+}
+
+  if (day === 6) {
     if (item.clock_in && item.clock_out) {
       return 'Present';
     } else if (item.clock_in || item.clock_out) {
@@ -630,47 +650,84 @@ function getStatusText(item) {
     return 'Present';
   } else if (item.clock_in || item.clock_out) {
     return 'Miss Swipe';
-  } else {
-    return 'Absent';
   }
 }
 
-    function renderReport(data) {
-      if (data.length === 0) {
-        musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
-        return;
+ function renderReport(data) {
+   console.log("Data:", data);
+   if (data.length === 0) {
+     musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
+     return;
+   }
+ 
+   musterRollBody.innerHTML = '';
+   headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+ 
+   const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
+   uniqueDates.sort().forEach(date => {
+     const headerCell = document.createElement('th');
+     headerCell.textContent = date;
+     headerCell.classList.add('date-column');
+     headerRow.appendChild(headerCell);
+   });
+ 
+data.forEach(employee => {
+
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${employee.emp_id}</td>
+    <td>${employee.emp_name}</td>
+    ${uniqueDates.map(date => {
+      const dateObj = new Date(date); 
+      const dayOfWeek = dateObj.getUTCDay(); // 0 is Sunday, 6 is Saturday 
+      let statusText; 
+      if (statusFilter.value === 'Absent') {
+        if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
+          statusText = 'W'; 
+        } else if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.shifts[date] === 'W') {
+          statusText = 'W'; 
+        } else if (!employee.shifts[date] || employee.shifts[date] === 'W') {
+          statusText = 'Absent';
+        } else {
+          statusText = '';
+        }
+      } else if (statusFilter.value === 'Miss Swipe') {
+        if (employee.shifts[date] === 'Miss Swipe') {
+          statusText = 'Miss Swipe'; 
+        } else if (employee.Nationalityid == 3 && (dayOfWeek === 0 || dayOfWeek === 6)) {
+          statusText = 'W'; 
+        } else if (employee.Nationalityid !== 3 && dayOfWeek === 6) {
+          statusText = 'W'; 
+        } else {
+          statusText = ''; // Hide absent and other statuses
+        }
+      } else if (statusFilter.value === 'Present') {
+        if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
+          statusText = 'W'; 
+        } else if (employee.shifts[date] && employee.shifts[date] !== 'Absent') {
+          statusText = employee.shifts[date] === 'W' ? 'W' : 'Present'; 
+        } else {
+          statusText = ''; // Hide absent
+        }
+      } else {
+        if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
+          statusText = 'W'; 
+        } else {
+          statusText = employee.shifts[date] || 'absent'; 
+        }
       }
-
-      musterRollBody.innerHTML = '';
-      headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
-
-      const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
-      uniqueDates.sort().forEach(date => {
-        const headerCell = document.createElement('th');
-        headerCell.textContent = date;
-        headerCell.classList.add('date-column');
-        headerRow.appendChild(headerCell);
-      });
-
-      data.forEach(employee => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${employee.emp_id}</td>
-          <td>${employee.emp_name}</td>
-          ${uniqueDates.map(date => {
-            const statusText = employee.shifts[date] || 'Absent';
-            const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
-            return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
-          }).join('')}
-        `;
-        musterRollBody.appendChild(row);
-      });
-    }
-
+      const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
+      return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
+    }).join('')}`
+  ;
+  musterRollBody.appendChild(row);
+});
+ }
     function clearReport() {
       musterRollBody.innerHTML = '';
       headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
     }
+
 
    function fetchReport() {
      if (!monthFilter.value) {
