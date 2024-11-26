@@ -760,6 +760,15 @@ button:disabled {
                             <option value="">All Visas</option>
                         </select>
                     </div>
+                    <div class="filter-item">
+                        <label for="statusFilter">Status:</label>
+                        <select id="statusFilter" name="statusFilter">
+                            <option value="">All</option>
+                            <option value="P">Present</option>
+                            <option value="A">Absent</option>
+                            <option value="MS">Miss Swipe</option>
+                        </select>
+                    </div>                    
                 </div>
             </div>
         </td>
@@ -829,6 +838,30 @@ BTL = Business Travel Leave &nbsp;&nbsp;&nbsp;PL = Paternity Leave&nbsp;&nbsp;&n
     <script>
 
 // const moment = require('moment'); 
+document.getElementById('statusFilter').addEventListener('change', () => {
+    applyStatusFilter();
+});
+
+function applyStatusFilter() {
+    const filterValue = document.getElementById('statusFilter').value;
+    const tableRows = document.querySelectorAll('#reportContainer table tbody tr');
+
+    tableRows.forEach(row => {
+        const statusCell = row.querySelector('td:nth-child(10)'); // Assuming "Status" is the 10th column
+        if (statusCell) {
+            const status = statusCell.textContent.trim();
+            if (filterValue === '' || status === filterValue) {
+                row.style.display = ''; // Show row
+            } else {
+                row.style.display = 'none'; // Hide row
+            }
+        }
+    });
+}
+
+
+
+
 
         // Debug logging function
         function logDebug(message, data = null) {
