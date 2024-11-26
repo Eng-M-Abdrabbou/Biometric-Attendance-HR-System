@@ -1091,7 +1091,14 @@ function displayReport(data) {
                         <tbody>
                 `;
 
+
                 for (const [empId, empData] of Object.entries(depData.employees)) {
+                    empData.attendance.sort((a, b) => {
+                  const dateA = new Date(a.shift_date);
+                  const dateB = new Date(b.shift_date);
+                  return dateA - dateB;
+                });
+
                     empData.attendance.forEach((record, index) => {
                         // if (isString(record.awh)) {
                         //     return; // skip rows where awh is a string
