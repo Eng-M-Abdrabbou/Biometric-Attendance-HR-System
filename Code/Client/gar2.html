@@ -767,6 +767,7 @@ button:disabled {
                             <option value="P">Present</option>
                             <option value="A">Absent</option>
                             <option value="MS">Miss Swipe</option>
+                            <option value="W">Weekend</option>
                         </select>
                     </div>                    
                 </div>
@@ -1126,11 +1127,27 @@ function displayReport(data) {
 
 
                 for (const [empId, empData] of Object.entries(depData.employees)) {
-                    empData.attendance.sort((a, b) => {
-                  const dateA = new Date(a.shift_date);
-                  const dateB = new Date(b.shift_date);
-                  return dateA - dateB;
-                });
+                    
+                    
+                    
+
+                //     empData.attendance.sort((a, b) => {
+                //   const dateA = new Date(a.shift_date);
+                //   const dateB = new Date(b.shift_date);
+                //   return dateA - dateB;
+                // });
+
+
+
+empData.attendance.sort((a, b) => {
+  const dateA = new Date(a.shift_date.split('-').reverse().join('-')); // assume format is 'DD-MM-YYYY'
+  const dateB = new Date(b.shift_date.split('-').reverse().join('-')); // assume format is 'DD-MM-YYYY'
+  return dateA - dateB;
+});
+
+
+
+
 
                     empData.attendance.forEach((record, index) => {
                         // if (isString(record.awh)) {
