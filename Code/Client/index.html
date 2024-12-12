@@ -726,7 +726,10 @@ document.getElementById('triggerSync').addEventListener('click', async () => {
                 row.insertCell().innerText = employee.EmpID;
                 row.insertCell().innerText = employee.FullName;
                 row.insertCell().innerText = employee.EmailID;
-                row.insertCell().innerText = employee.attendanceStatus;
+                const statusCell = row.insertCell();
+                statusCell.innerText = employee.attendanceStatus;
+                statusCell.style.color = employee.attendanceStatus === 'Present' ? 'green' :
+                                         employee.attendanceStatus === 'Absent' ? 'red' : 'black';
             });
 
             employeeAttendanceDetails.appendChild(table);
