@@ -5,16 +5,519 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin-CRUD</title>
     <style>
+        /* Reset and Font */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         body {
+            background-color: #f5f5f5;
+            padding: 0 30px 30px 30px; /* Adjusted padding to account for fixed navbar */
+            overflow-x: visible;
+            margin-top: 80px; /* Added margin to prevent content from hiding behind navbar */
             font-family: Arial, sans-serif;
-            margin: 20px;
             background-color: #f9f9f9;
+            margin: 20px;
         }
-        select, button {
+
+        /* Navbar Styles */
+        .navbar {
+            background-color: #943240;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+            overflow: visible; /* Ensure tooltips are visible */
+            position: fixed; /* Make navbar fixed at the top */
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000; /* Ensure navbar stays above other elements */
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            margin-right: 20px;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar a:hover {
+            color: #ddd;
+        }
+
+        .navbar .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .navbar .navbar-menu {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            overflow: visible; /* Ensure tooltips are visible */
+        }
+
+        .navbar .navbar-menu li {
+            list-style: none;
+            position: relative; /* For tooltip positioning */
+            overflow: visible; /* Ensure tooltips are visible */
+            margin-left: 20px;
+        }
+
+        .navbar i {
+            font-size: 20px;
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 9999; /* Ensures tooltip is above other elements */
+            top: 125%; /* Positions the tooltip below the icon */
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            bottom: 100%; /* Arrow pointing upwards */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent #333 transparent;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Controls Container */
+        .controls-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            align-items: center; /* Vertically center the items */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            animation: slideIn 0.5s ease-in-out;
+        }
+
+        .controls-group {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .date-controls, .distribution-controls, .visa-controls {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: 500;
+            color: #666;
+            font-size: 15px;
+            min-width: 100px; /* Ensure labels have a consistent width */
+        }
+
+        input[type="date"], select, input[type="text"] {
+            padding: 12px 18px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+            background-color: #f9f9f9;
+            transition: border-color 0.3s, transform 0.3s;
+            min-width: 200px; /* Ensure inputs have a consistent width */
+        }
+
+        input[type="date"]:focus, select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #943240;
+            transform: scale(1.02);
+        }
+
+        button {
+            position: relative;
+            overflow: hidden;
+            color: white;
+            background-color: #943240;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
+            animation: fadeInUp 0.6s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 10px 0 0; /* Add right margin for spacing */
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        button:hover {
+            background-color: #7a2a35;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+        }
+
+        button:hover::after {
+            width: 200px;
+            height: 200px;
+        }
+
+        button i {
+            margin-right: 8px;
+        }
+
+        /* General Container */
+        .container {
+            max-width: 1450px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-family: Arial, sans-serif;
+        }
+
+        /* Page Header */
+        h1 {
+            color: #333;
+            font-size: 28px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        /* Company Info */
+        #reportDataContainer img {
+            display: block;
+            margin: 0 auto 20px;
+        }
+
+        #reportDataContainer h1,
+        #reportDataContainer p,
+        #reportDataContainer h3,
+        #reportDataContainer h2 {
+            text-align: center;
+        }
+
+        #reportDataContainer p {
+            font-size: 14px;
+            color: #555;
+            margin: 4px 0;
+        }
+
+        /* Filter Form Styling */
+        .filter-form {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 0; /* Remove bottom margin for horizontal alignment */
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+
+        .filter-item label {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .filter-item input[type="date"],
+        .filter-item input[type="text"],
+        .filter-item select {
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .filter-item input[type="text"]::placeholder {
+            color: #aaa;
+        }
+
+        /* Filter Buttons */
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            padding-top: 10px;
+        }
+
+        .filter-buttons button {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #fff;
+            background-color: #943240;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0 10px 0 0; /* Add right margin for spacing */
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #fff;
+            background-color: #943240;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0 10px 0 0; /* Add right margin for spacing */
+        }
+
+        .filter-buttons button:hover {
+            background-color: #0056b3;
+        }
+
+        #resetFilters {
+            background-color: #6c757d;
+        }
+
+        #resetFilters:hover {
+            background-color: #5a6268;
+        }
+
+        #triggerSync {
+            background-color: #28a745;
+        }
+
+        #triggerSync:hover {
+            background-color: #218838;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            font-size: 18px;
+            color: #007bff;
+            padding: 20px;
+        }
+
+        /* Debug Panel */
+        #debugLog {
+            margin: 20px 0;
             padding: 10px;
-            margin: 10px 0;
-            font-size: 16px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #333;
         }
+
+        #debugLog h3 {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #debugOutput {
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            color: #d9534f;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        /* Pagination Controls */
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .pagination-controls button {
+            padding: 6px 12px;
+            font-size: 14px;
+            background-color: #943240;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .pagination-controls button:hover {
+            background-color: #99545e;
+        }
+
+        .pagination-controls input[type="number"] {
+            width: 50px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* Print Buttons */
+        #btn-export, #printButton {
+            display: block;
+            margin: 10px 10px 10px 0; /* Add right margin for horizontal spacing */
+            padding: 8px;
+            font-size: 14px;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #btn-export:hover, #printButton:hover {
+            background-color: #d9534f;
+        }
+
+        /* Additional Styling */
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        input {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            min-width: 200px; /* Ensure inputs have a consistent width */
+        }
+
+        .submit {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0 10px 0 0; /* Add right margin for spacing */
+        }
+
+        #tables {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #000000;
+            background-color: #ffffff;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            min-width: 200px; /* Ensure select has a consistent width */
+        }
+
+        /* Filters Section */
+        .filters {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            background: #fff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            gap: 20px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Bulk Edit Section */
+        .bulk-edit {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            gap: 20px;
+        }
+
+        /* Table Styling */
         table {
             border-collapse: collapse;
             width: 100%;
@@ -22,765 +525,119 @@
             background-color: #fff;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+
         th, td {
             border: 1px solid #ddd;
-            padding: 12px;
+            padding: 12px 18px;
             text-align: left;
+            font-size: 15px;
         }
+
         th {
-            background-color: #616362;
+            background-color: #943240;
             color: white;
+            font-weight: 500;
         }
+
         tr:nth-child(even) {
             background-color: #f2f2f2;
         }
+
         tr:hover {
             background-color: #ddd;
         }
+
         .editable:hover {
             background-color: #f5f5f5;
             cursor: pointer;
-        }
-        .action-buttons {
-            margin-top: 20px;
-        }
-        .action-buttons button {
-            margin-right: 10px;
         }
 
         tr.selected {
             background-color: #a1c5ff !important; 
         }
-        
 
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
 
+        .chart-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.4s;
+            animation: zoomIn 0.6s ease-in-out;
+            max-width: 500px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
 
+        canvas {
+            max-width: 100%;
+            width: 400px;
+            height: 400px;
+        }
 
-
-        .filters {
-            background: #fff;
+        .chart-details-box {
+            background-color: #f9f9f9;
             padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
         }
-        .filter-group {
-            display: inline-block;
-            margin-right: 15px;
-            margin-bottom: 10px;
-        }
-        .filter-group label {
+
+        .chart-details-box span {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .bulk-edit {
-            background: #f0f0f0;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
         }
 
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
 
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
-
-
-
-
-<style>
-    .container { padding: 20px; }
-    .filter-form { 
-        margin-bottom: 20px; 
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-    }
-    .filter-group {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 15px;
-        flex-wrap: wrap;
-    }
-    .filter-item {
-        flex: 1;
-        min-width: 200px;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-    th, td {
-        border: 1px solid #000000;
-        padding: 8px;
-        text-align: left;
-    }
-    th { background-color: #9D3E4E; }
-    .filter-buttons {
-        display: flex;
-        gap: 10px;
-    }
-    button {
-        padding: 8px 16px;
-        cursor: pointer;
-    }
-
-
-/* General Container */
-.container {
-max-width: 1450px;
-margin: 20px auto;
-padding: 20px;
-background-color: #f5f5f5;
-border-radius: 8px;
-box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-font-family: Arial, sans-serif;
-}
-
-/* Page Header */
-h1 {
-color: #333;
-font-size: 28px;
-text-align: center;
-font-weight: bold;
-margin-bottom: 20px;
-}
-
-/* Company Info */
-#reportDataContainer img {
-display: block;
-margin: 0 auto 20px;
-}
-
-#reportDataContainer h1,
-#reportDataContainer p,
-#reportDataContainer h3,
-#reportDataContainer h2 {
-text-align: center;
-}
-
-#reportDataContainer p {
-font-size: 14px;
-color: #555;
-margin: 4px 0;
-}
-
-/* Filter Form Styling */
-.filter-form {
-display: flex;
-flex-wrap: wrap;
-gap: 16px;
-margin-bottom: 20px;
-background-color: #fff;
-padding: 15px;
-border-radius: 6px;
-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.filter-group {
-display: flex;
-flex: 1;
-gap: 12px;
-}
-
-.filter-item {
-display: flex;
-flex-direction: column;
-min-width: 200px;
-}
-
-.filter-item label {
-font-size: 14px;
-color: #333;
-margin-bottom: 6px;
-}
-
-.filter-item input[type="date"],
-.filter-item input[type="text"],
-.filter-item select {
-padding: 8px;
-font-size: 14px;
-border-radius: 4px;
-border: 1px solid #ddd;
-}
-
-.filter-item input[type="text"]::placeholder {
-color: #aaa;
-}
-
-/* Filter Buttons */
-.filter-buttons {
-display: flex;
-gap: 10px;
-justify-content: flex-start;
-padding-top: 10px;
-}
-
-.filter-buttons button {
-padding: 8px 16px;
-font-size: 14px;
-color: #fff;
-background-color: #007bff;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-transition: background-color 0.3s;
-}
-
-button{
-padding: 8px 16px;
-font-size: 14px;
-color: #fff;
-background-color: #007bff;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-transition: background-color 0.3s;
-
-}
-
-.filter-buttons button:hover {
-background-color: #0056b3;
-}
-
-#resetFilters {
-background-color: #6c757d;
-}
-
-#resetFilters:hover {
-background-color: #5a6268;
-}
-
-#triggerSync {
-background-color: #28a745;
-}
-
-#triggerSync:hover {
-background-color: #218838;
-}
-
-/* Loading Spinner */
-.loading-spinner {
-display: none;
-text-align: center;
-font-size: 18px;
-color: #007bff;
-padding: 20px;
-}
-
-/* Debug Panel */
-#debugLog {
-margin: 20px 0;
-padding: 10px;
-background-color: #f8f9fa;
-border: 1px solid #ddd;
-border-radius: 4px;
-color: #333;
-}
-
-#debugLog h3 {
-font-size: 16px;
-font-weight: bold;
-}
-
-#debugOutput {
-white-space: pre-wrap;
-font-family: monospace;
-font-size: 14px;
-}
-
-/* Error Message */
-.error-message {
-display: none;
-color: #d9534f;
-background-color: #f8d7da;
-padding: 10px;
-border-radius: 4px;
-margin-bottom: 20px;
-}
-
-/* Pagination Controls */
-.pagination-controls {
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 8px;
-font-size: 14px;
-margin-top: 20px;
-}
-
-.pagination-controls button {
-padding: 6px 12px;
-font-size: 14px;
-background-color: #007bff;
-color: #fff;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-}
-
-.pagination-controls button:hover {
-background-color: #0056b3;
-}
-
-.pagination-controls input[type="number"] {
-width: 50px;
-padding: 6px;
-border: 1px solid #ddd;
-border-radius: 4px;
-}
-
-/* Print Buttons */
-#btn-export, #printButton {
-display: block;
-margin: 10px 0;
-padding: 8px;
-font-size: 14px;
-background-color: #ff6b6b;
-color: white;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-}
-
-#btn-export:hover, #printButton:hover {
-background-color: #d9534f;
-}
-
-/* Additional Styling */
-button:disabled {
-background-color: #ccc;
-cursor: not-allowed;
-}
-
-input{
-padding: 8px 16px;
-font-size: 14px;
-border: 1px solid #000000;
-border-radius: 4px;
-cursor: pointer;
-transition: background-color 0.3s;
-}
-
-.submit{
-padding: 8px 16px;
-font-size: 14px;
-color: #fff;
-background-color: #007bff;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-transition: background-color 0.3s;
-}
-
-
-#tables{
-padding: 8px 16px;
-font-size: 14px;
-color: #000000;
-background-color: #ffffff;
-border: 1px solid #000000;
-border-radius: 4px;
-cursor: pointer;
-transition: background-color 0.3s;
-}
-
-
-</style>
-
-<style>
-    /* Reset and Font */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    body {
-        background-color: #f5f5f5;
-        padding: 0 30px 30px 30px; /* Adjusted padding to account for fixed navbar */
-        overflow-x: visible;
-        margin-top: 80px; /* Added margin to prevent content from hiding behind navbar */
-    }
-
-
-
-    /* Navbar Styles */
-    .navbar {
-        background-color: #943240;
-        padding: 15px 30px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: white;
-        overflow: visible; /* Ensure tooltips are visible */
-        position: fixed; /* Make navbar fixed at the top */
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000; /* Ensure navbar stays above other elements */
-    }
-
-
-
-    .navbar a {
-        color: white;
-        text-decoration: none;
-        font-size: 18px;
-        margin-right: 20px;
-        transition: color 0.3s;
-        display: flex;
-        align-items: center;
-    }
-
-
-
-    .navbar a:hover {
-        color: #ddd;
-    }
-
-
-
-    .navbar .navbar-brand {
-        font-size: 24px;
-        font-weight: bold;
-    }
-
-
-
-    .navbar .navbar-menu {
-        display: flex;
-        align-items: center;
-        list-style: none;
-        overflow: visible; /* Ensure tooltips are visible */
-    }
-
-
-
-    .navbar .navbar-menu li {
-        list-style: none;
-        position: relative; /* For tooltip positioning */
-        overflow: visible; /* Ensure tooltips are visible */
-        margin-left: 20px;
-    }
-
-
-
-    .navbar i {
-        font-size: 20px;
-    }
-
-
-
-    /* Tooltip Styles */
-    .tooltip {
-        position: relative;
-        display: inline-block;
-
-        position: relative;
-        display: inline-block;
-    }
-
-
-
-    .tooltip .tooltip-text {
-        visibility: hidden;
-        background-color: #333;
-        color: white;
-        text-align: center;
-        padding: 6px 10px;
-        border-radius: 6px;
-        position: absolute;
-        z-index: 9999; /* Ensures tooltip is above other elements */
-        top: 125%; /* Positions the tooltip below the icon */
-        left: 50%;
-        transform: translateX(-50%);
-        white-space: nowrap;
-        font-size: 14px;
-        opacity: 0;
-        transition: opacity 0.3s;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-
-
-    .tooltip .tooltip-text::after {
-        content: "";
-        position: absolute;
-        bottom: 100%; /* Arrow pointing upwards */
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: transparent transparent #333 transparent;
-    }
-
-
-
-    .tooltip:hover .tooltip-text {
-        visibility: visible;
-        opacity: 1;
-        
-    }
-
-
-
-    /* Existing Styles */
-    .controls-container {
-        background-color: white;
-        padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        margin-bottom: 30px;
-        display: flex;
-        flex-direction: row;
-        gap: 20px;
-        animation: slideIn 0.5s ease-in-out;
-
-         display: flex;
-flex-wrap: nowrap; /* Ensures all elements stay on one line */
-gap: 20px; /* Adds spacing between groups */
-align-items: center; /* Aligns items vertically in the center */
-    }
-
-
-
-    .controls-group {
-        display: flex;
-        flex-direction: row;
-        gap: 15px;
-
-        display: flex;
-flex-direction: row; /* Keeps the inner elements stacked vertically */
-align-items: start; /* Aligns label and inputs to the start */
-gap: 10px; /* Adds spacing between internal elements */
-    }
-
-
-
-    .date-controls, .distribution-controls, .visa-controls {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        flex-wrap: wrap;
-
-        display: flex;
-flex-direction: row; /* Keeps the label, input, and buttons stacked */
-gap: 10px;
-    }
-
-
-
-    label {
-        font-weight: 500;
-        color: #666;
-        font-size: 15px;
-    }
-
-
-
-    input[type="date"], select {
-        padding: 12px 18px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 15px;
-        background-color: #f9f9f9;
-        transition: border-color 0.3s, transform 0.3s;
-    }
-
-
-
-    input[type="date"]:focus, select:focus {
-        outline: none;
-        border-color: #943240;
-        transform: scale(1.02);
-    }
-
-
-
-    button {
-        position: relative;
-        overflow: hidden;
-        color: white;
-        background-color: #943240;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 15px;
-        transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
-        animation: fadeInUp 0.6s ease-in-out;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-
-
-    button::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        transition: width 0.3s, height 0.3s;
-    }
-
-
-
-    button:hover {
-        background-color: #7a2a35;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateY(-3px);
-    }
-
-
-
-    button:hover::after {
-        width: 200px;
-        height: 200px;
-    }
-
-
-
-    button i {
-        margin-right: 8px;
-    }
-
-
-
-    .charts-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 30px;
-        margin-top: 30px;
-    }
-
-
-
-    .chart-container {
-        background-color: white;
-        padding: 40px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transition: transform 0.4s;
-        animation: zoomIn 0.6s ease-in-out;
-        max-width: 500px;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        overflow: hidden;
-    }
-
-
-
-    canvas {
-        max-width: 100%;
-        width: 400px;
-        height: 400px;
-    }
-
-
-
-    .chart-details-box {
-        background-color: #f9f9f9;
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        margin-top: 20px;
-        width: 100%;
-        text-align: center;
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-    }
-
-
-
-    .chart-details-box span {
-        display: block;
-        margin-bottom: 10px;
-        font-size: 14px;
-        color: #333;
-
-    }
-
-
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 250px;
-        animation: fadeIn 0.6s ease-in-out;
-    }
-
-
-
-    th, td {
-        padding: 12px 18px;
-        border: 1px solid #ddd;
-        text-align: left;
-        font-size: 15px;
-    }
-
-
-
-    th {
-
-        background-color: #943240;
-        color: white;
-        font-weight: 500;
-
-    }
-
-
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-
-
-    @keyframes slideIn {
-        from { transform: translateY(20px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-
-
-
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-
-
-    @keyframes zoomIn {
-        from { transform: scale(0.9); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-    }
-
-</style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-<!-- FontAwesome for Icons -->
-<link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    >
 </head>
 <body>
-
 
     <!-- Navbar -->
     <nav class="navbar">
@@ -819,525 +676,492 @@ gap: 10px;
         </ul>
     </nav>
 
-
-    
-<div id="attendance-filters" style="display: none;" class="filters">
-    <div class="filter-group">
-        <label>Date Range:</label>
-        <input type="date" id="startDate">
-        <input type="date" id="endDate">
-    </div>
-    <div class="filter-group">
-        <label>Employee ID:</label>
-        <input type="text" id="empId">
-    </div>
-    <div class="filter-group">
-        <label>Employee Name:</label>
-        <input type="text" id="empName">
-    </div>
-    <div class="filter-group">
-        <label>Status:</label>
-        <input type="text" id="status">
-    </div>
-    <button onclick="applyFilters()">Apply Filters</button>
-</div>
-
-<div id="bulk-edit" style="display: none;" class="bulk-edit">
-    <select id="columnSelect">
-        <option value="">Select Column to Edit</option>
-        <option value="leave_id">Leave ID</option>
-        <option value="status">Status</option>
-        <option value="awh">AWH</option>
-        <option value="ot">OT</option>
-    </select>
-    <input type="text" id="bulkValue" placeholder="New value">
-    <button onclick="performBulkUpdate()">Update All Filtered Rows</button>
-</div>
-
-
-    <select name="table" id="tables">
-        <option value="accommodation">accommodation</option>
-        <option value="asst_master">asst_master</option>
-        <option value="company">company</option>
-        <option value="departments">departments</option>
-        <option value="employee_master">employee_master</option>
-        <option value="general_attendance_report">general_attendance_report</option>
-        <option value="grade">grade</option>
-        <option value="holidays">holidays</option>
-        <option value="input_data">input_data</option>
-        <option value="jobtitle">jobtitle</option>
-        <option value="nationalities">nationalities</option>
-        <option value="section">section</option>
-        <option value="shift">shift</option>
-        <option value="sites">sites</option>
-        <option value="test_user">test_user</option>
-        <option value="visa">visa</option>
-        <option value="weekend">weekend</option>
-        <option value="muster_roll">muster_roll</option>
-
-    </select>
-    <button type="submit" id="submit">Load Table</button>
-    <p id="info" style="display: none;">press on the value you want to edit, it will turn into a textbox, you can't edit a primary key value.</p>
-    <div class="action-buttons">
-        <button id="addRow">Add New Row</button>
-        <button id="deleteRow">Delete Selected Row</button>
+    <div id="attendance-filters" style="display: none; margin-top: 100px;" class="filters">
+        <div class="filter-group">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate">
+        </div>
+        <div class="filter-group">
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate">
+        </div>
+        <div class="filter-group">
+            <label for="empId">Employee ID:</label>
+            <input type="text" id="empId" placeholder="Enter Employee ID">
+        </div>
+        <div class="filter-group">
+            <label for="empName">Employee Name:</label>
+            <input type="text" id="empName" placeholder="Enter Employee Name">
+        </div>
+        <div class="filter-group">
+            <label for="status">Status:</label>
+            <input type="text" id="status" placeholder="Enter Status">
+        </div>
+        <button onclick="applyFilters()">Apply Filters</button>
     </div>
 
+    <div id="bulk-edit" style="display: none;" class="bulk-edit">
+        <select id="columnSelect">
+            <option value="">Select Column to Edit</option>
+            <option value="leave_id">Leave ID</option>
+            <option value="status">Status</option>
+            <option value="awh">AWH</option>
+            <option value="ot">OT</option>
+        </select>
+        <input type="text" id="bulkValue" placeholder="New value">
+        <button onclick="performBulkUpdate()">Update All Filtered Rows</button>
+    </div>
+
+    <div class="controls-container" style="margin-top: 100px;">
+        <select name="table" id="tables">
+            <option value="accommodation">accommodation</option>
+            <option value="asst_master">asst_master</option>
+            <option value="company">company</option>
+            <option value="departments">departments</option>
+            <option value="employee_master">employee_master</option>
+            <option value="general_attendance_report">general_attendance_report</option>
+            <option value="grade">grade</option>
+            <option value="holidays">holidays</option>
+            <option value="input_data">input_data</option>
+            <option value="jobtitle">jobtitle</option>
+            <option value="nationalities">nationalities</option>
+            <option value="section">section</option>
+            <option value="shift">shift</option>
+            <option value="sites">sites</option>
+            <option value="test_user">test_user</option>
+            <option value="visa">visa</option>
+            <option value="weekend">weekend</option>
+            <option value="muster_roll">muster_roll</option>
+        </select>
+        <button type="submit" id="submit">Load Table</button>
+        <p id="info" style="display: none;">Press on the value you want to edit. It will turn into a textbox. You can't edit a primary key value.</p>
+        <div class="action-buttons">
+            <button id="addRow">Add New Row</button>
+            <br>
+            <button id="deleteRow">Delete Selected Row</button>
+        </div>
+    </div>
 
     <!-- Pagination Controls -->
-<div id="pagination-controls" style="display: none;">
-    <label for="rowsPerPage">Rows per page:</label>
-    <select id="rowsPerPage">
-        <option value="10" selected>10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-        <option value="All">All</option>
-    </select>
+    <div id="pagination-controls" style="display: none;" class="pagination-controls">
+        <label for="rowsPerPage">Rows per page:</label>
+        <select id="rowsPerPage">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="All">All</option>
+        </select>
 
-    <button id="prevPage">Previous</button>
-    <span id="currentPage">Page 1</span>
-    <button id="nextPage">Next</button>
-</div>
-
-
+        <button id="prevPage">Previous</button>
+        <span id="currentPage">Page 1</span>
+        <button id="nextPage">Next</button>
+    </div>
 
     <div id="table-info"></div>
 
     <script>
+        let currentPage = 1;
+        let rowsPerPage = 10; // Default rows per page
 
-let currentPage = 1;
-let rowsPerPage = 10; // Default rows per page
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0]; // Get today's date in 'YYYY-MM-DD' format
+            document.getElementById('startDate').value = today;
+            document.getElementById('endDate').value = today;
+        }
 
-
-function setDefaultDates() {
-    const today = new Date().toISOString().split('T')[0]; // Get today's date in 'YYYY-MM-DD' format
-    document.getElementById('startDate').value = today;
-    document.getElementById('endDate').value = today;
-}
-
-window.onload = function() {
-    setDefaultDates();
-};
-
+        window.onload = function() {
+            setDefaultDates();
+        };
 
         // Add event listener for row selection
-document.getElementById('table-info').addEventListener('click', selectRow);
+        document.getElementById('table-info').addEventListener('click', selectRow);
 
         document.getElementById('addRow').addEventListener('click', addNewRow);
         document.getElementById('deleteRow').addEventListener('click', deleteSelectedRow);
-    document.getElementById('submit').addEventListener('click', loadTable);
+        document.getElementById('submit').addEventListener('click', loadTable);
 
-    let currentTable = '';
-    let currentPrimaryKeys = [];
+        let currentTable = '';
+        let currentPrimaryKeys = [];
 
-    function loadTable() {
-        document.getElementById('info').style.display = 'block';
-        const table = document.getElementById('tables').value;
-        currentTable = table;
+        function loadTable() {
+            document.getElementById('info').style.display = 'block';
+            const table = document.getElementById('tables').value;
+            currentTable = table;
 
-
-
-
-        if (table === 'general_attendance_report') {
-    { const url = 'http://localhost:8000/gar'; 
-    if (localStorage.getItem('tabOpen') === url) 
-    { alert('Please generate the GAR report first, for the data to be available'); }
-     else { const newTab = window.open(url, '_blank'); 
-     localStorage.setItem('tabOpen', url); 
-     newTab.onload = function() 
-     { newTab.alert('Please generate the GAR report first, for the data to be available');
-      newTab.onbeforeunload = function() { localStorage.removeItem('tabOpen'); }; };}}
-
-
-    document.getElementById('attendance-filters').style.display = 'block';
-    document.getElementById('bulk-edit').style.display = 'block';
-    document.getElementById('pagination-controls').style.display = 'block';
-} else {
-    document.getElementById('attendance-filters').style.display = 'none';
-    document.getElementById('bulk-edit').style.display = 'none';
-    document.getElementById('pagination-controls').style.display = 'none';
-}
-
-
-
-        fetch(`/tableInfo/${table}`)
-        .then(response => response.json())
-        .then(({ primaryKeys, data }) => {
-            currentPrimaryKeys = primaryKeys;
-            const parent = document.getElementById('table-info');
-                parent.innerHTML = '';
-                
-                if (data.length === 0) {
-                    parent.textContent = 'No data available for this table.';
-                    return;
+            if (table === 'general_attendance_report') {
+                const url = 'http://localhost:8000/gar'; 
+                if (localStorage.getItem('tabOpen') === url) { 
+                    alert('Please generate the GAR report first, for the data to be available'); 
+                } else { 
+                    const newTab = window.open(url, '_blank'); 
+                    localStorage.setItem('tabOpen', url); 
+                    newTab.onload = function() { 
+                        newTab.alert('Please generate the GAR report first, for the data to be available');
+                        newTab.onbeforeunload = function() { localStorage.removeItem('tabOpen'); }; 
+                    };
                 }
 
-                
-                const table = document.createElement('table');
-                const thead = document.createElement('thead');
-                const tbody = document.createElement('tbody');
-                table.appendChild(thead);
-                table.appendChild(tbody);
+                document.getElementById('attendance-filters').style.display = 'flex';
+                document.getElementById('bulk-edit').style.display = 'flex';
+                document.getElementById('pagination-controls').style.display = 'flex';
+            } else {
+                document.getElementById('attendance-filters').style.display = 'none';
+                document.getElementById('bulk-edit').style.display = 'none';
+                document.getElementById('pagination-controls').style.display = 'none';
+            }
 
-                // Create table header
-                const headerRow = document.createElement('tr');
-                thead.appendChild(headerRow);
-                Object.keys(data[0]).forEach(key => {
-                    const headerCell = document.createElement('th');
-                    headerCell.textContent = key;
-                    headerRow.appendChild(headerCell);
-                });
+            fetch(`/tableInfo/${table}`)
+                .then(response => response.json())
+                .then(({ primaryKeys, data }) => {
+                    currentPrimaryKeys = primaryKeys;
+                    const parent = document.getElementById('table-info');
+                    parent.innerHTML = '';
 
-                // Create table body
-                data.forEach(row => {
-                    const rowElement = document.createElement('tr');
-                    tbody.appendChild(rowElement);
-                    Object.entries(row).forEach(([key, value]) => {
-                        const cell = document.createElement('td');
-                        cell.textContent = value !== null ? value : '';
-                        if (!primaryKeys.includes(key)) {
-                            cell.classList.add('editable');
-                            cell.addEventListener('click', () => editCell(cell, key, row, primaryKeys));
-                        }
-                        rowElement.appendChild(cell);
+                    if (data.length === 0) {
+                        parent.textContent = 'No data available for this table.';
+                        return;
+                    }
+
+                    const tableElement = document.createElement('table');
+                    const thead = document.createElement('thead');
+                    const tbody = document.createElement('tbody');
+                    tableElement.appendChild(thead);
+                    tableElement.appendChild(tbody);
+
+                    // Create table header
+                    const headerRow = document.createElement('tr');
+                    thead.appendChild(headerRow);
+                    Object.keys(data[0]).forEach(key => {
+                        const headerCell = document.createElement('th');
+                        headerCell.textContent = key;
+                        headerRow.appendChild(headerCell);
                     });
+
+                    // Create table body
+                    data.forEach(row => {
+                        const rowElement = document.createElement('tr');
+                        tbody.appendChild(rowElement);
+                        Object.entries(row).forEach(([key, value]) => {
+                            const cell = document.createElement('td');
+                            cell.textContent = value !== null ? value : '';
+                            if (!primaryKeys.includes(key)) {
+                                cell.classList.add('editable');
+                                cell.addEventListener('click', () => editCell(cell, key, row, primaryKeys));
+                            }
+                            rowElement.appendChild(cell);
+                        });
+                    });
+                    parent.appendChild(tableElement);
+
+                    if (currentTable === 'general_attendance_report') {
+                        currentPage = 1; // Reset to first page
+                        applyFilters();
+                    }
+
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const parent = document.getElementById('table-info');
+                    parent.textContent = 'An error occurred while loading the table.';
                 });
-                parent.appendChild(table);
+        }
 
+        function editCell(cell, column, row, primaryKeys) {
+            const oldValue = cell.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = oldValue;
+            cell.textContent = '';
+            cell.appendChild(input);
+            input.focus();
 
-                if (currentTable === 'general_attendance_report') {
-    currentPage = 1; // Reset to first page
-    applyFilters();
-}
+            input.addEventListener('blur', function() {
+                const newValue = this.value;
+                if (newValue !== oldValue) {
+                    updateValue(primaryKeys, row, column, newValue, cell);
+                } else {
+                    cell.textContent = oldValue;
+                }
+            });
 
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    this.blur();
+                }
+            });
+        }
+
+        function updateValue(primaryKeys, row, column, value, cell) {
+            const table = document.getElementById('tables').value;
+            const primaryKeyValues = primaryKeys.map(key => row[key]);
+            fetch('/updateTable', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ table, primaryKeys, primaryKeyValues, column, value }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cell.textContent = value;
+                } else {
+                    alert('Update failed: ' + data.error);
+                    cell.textContent = oldValue;
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
-                const parent = document.getElementById('table-info');
-                parent.textContent = 'An error occurred while loading the table.';
-            });
-    }
-
-    function editCell(cell, column, row, primaryKeys) {
-        const oldValue = cell.textContent;
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = oldValue;
-        cell.textContent = '';
-        cell.appendChild(input);
-        input.focus();
-
-        input.addEventListener('blur', function() {
-            const newValue = this.value;
-            if (newValue !== oldValue) {
-                updateValue(primaryKeys, row, column, newValue, cell);
-            } else {
+                alert('Update failed: ' + error.message);
                 cell.textContent = oldValue;
-            }
-        });
-
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                this.blur();
-            }
-        });
-    }
-
-    function updateValue(primaryKeys, row, column, value, cell) {
-        const table = document.getElementById('tables').value;
-        const primaryKeyValues = primaryKeys.map(key => row[key]);
-        fetch('/updateTable', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ table, primaryKeys, primaryKeyValues, column, value }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                cell.textContent = value;
-            } else {
-                alert('Update failed: ' + data.error);
-                cell.textContent = cell.oldValue;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Update failed: ' + error.message);
-            cell.textContent = cell.oldValue;
-        });
-    }
-
-    function addNewRow() {
-        if (!currentTable) {
-            alert('Please load a table first');
-            return;
+            });
         }
-        
-        const newRow = {};
-        const table = document.querySelector('table');
-        const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
-        
-        headers.forEach(header => {
-            const value = prompt(`Enter value for ${header}:`);
-            newRow[header] = value;
-        });
 
-        fetch('/insertRow', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ table: currentTable, row: newRow }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('New row inserted successfully');
-                loadTable(); // Reload the table to show the new row
-            } else {
-                alert('Insert failed: ' + data.error);
+        function addNewRow() {
+            if (!currentTable) {
+                alert('Please load a table first');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Insert failed: ' + error.message);
-        });
-    }
+            
+            const newRow = {};
+            const table = document.querySelector('table');
+            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
+            
+            headers.forEach(header => {
+                const value = prompt(`Enter value for ${header}:`);
+                newRow[header] = value;
+            });
 
-
-function deleteSelectedRow() {
-    if (!currentTable) {
-        alert('Please load a table first');
-        return;
-    }
-
-    const selectedRow = document.querySelector('tr.selected');
-    if (!selectedRow) {
-        alert('Please select a row to delete');
-        return;
-    }
-
-    const rowData = {};
-    const table = selectedRow.closest('table');
-    const headerCells = table.querySelector('thead tr').cells;
-
-    currentPrimaryKeys.forEach(key => {
-        const headerIndex = Array.from(headerCells).findIndex(cell => cell.textContent === key);
-        if (headerIndex !== -1) {
-            // +1 because nth-child is 1-based
-            const cell = selectedRow.querySelector(`td:nth-child(${headerIndex + 1})`);
-            rowData[key] = cell.textContent;
+            fetch('/insertRow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ table: currentTable, row: newRow }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('New row inserted successfully');
+                    loadTable(); // Reload the table to show the new row
+                } else {
+                    alert('Insert failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Insert failed: ' + error.message);
+            });
         }
-    });
 
-    if (confirm('Are you sure you want to delete this row?')) {
-        fetch('/deleteRow', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ table: currentTable, primaryKeys: currentPrimaryKeys, rowData }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Row deleted successfully');
-                loadTable(); // Reload the table to reflect the deletion
-            } else {
-                alert('Delete failed: ' + data.error);
+        function deleteSelectedRow() {
+            if (!currentTable) {
+                alert('Please load a table first');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Delete failed: ' + error.message);
-        });
-    }
-}
 
-function selectRow(event) {
-    const clickedRow = event.target.closest('tr');
-    if (clickedRow && !event.target.closest('td').classList.contains('editable')) {
-        document.querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
-        clickedRow.classList.add('selected');
-    }
-}
-
-
-    // Add event listener for row selection
-    document.getElementById('table-info').addEventListener('click', selectRow);
-
-
-
-
-function applyFilters() {
-    const filters = {
-        startDate: document.getElementById('startDate').value,
-        endDate: document.getElementById('endDate').value,
-        empId: document.getElementById('empId').value,
-        empName: document.getElementById('empName').value,
-        status: document.getElementById('status').value,
-        page: currentPage,
-        rowsPerPage: document.getElementById('rowsPerPage').value === 'All' ? 'All' : parseInt(document.getElementById('rowsPerPage').value)
-    };
-
-    const queryString = new URLSearchParams(filters).toString();
-    fetch(`/filteredAttendance?${queryString}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateTableContent(data.data);
-                updatePaginationControls(data.totalRows);
-            } else {
-                alert('Error applying filters: ' + data.error);
+            const selectedRow = document.querySelector('tr.selected');
+            if (!selectedRow) {
+                alert('Please select a row to delete');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error applying filters: ' + error.message);
-        });
-}
 
+            const rowData = {};
+            const table = selectedRow.closest('table');
+            const headerCells = table.querySelector('thead tr').cells;
 
+            currentPrimaryKeys.forEach(key => {
+                const headerIndex = Array.from(headerCells).findIndex(cell => cell.textContent === key);
+                if (headerIndex !== -1) {
+                    // +1 because nth-child is 1-based
+                    const cell = selectedRow.querySelector(`td:nth-child(${headerIndex + 1})`);
+                    rowData[key] = cell.textContent;
+                }
+            });
 
-// Event listeners for pagination controls
-document.getElementById('rowsPerPage').addEventListener('change', function() {
-    currentPage = 1; // Reset to first page
-    rowsPerPage = this.value === 'All' ? 'All' : parseInt(this.value);
-    applyFilters();
-});
-
-document.getElementById('prevPage').addEventListener('click', function() {
-    if (currentPage > 1) {
-        currentPage--;
-        applyFilters();
-    }
-});
-
-document.getElementById('nextPage').addEventListener('click', function() {
-    currentPage++;
-    applyFilters();
-});
-
-
-
-
-
-
-
-function updatePaginationControls(totalRows) {
-    const totalPages = rowsPerPage === 'All' ? 1 : Math.ceil(totalRows / rowsPerPage);
-
-    document.getElementById('currentPage').textContent = `Page ${currentPage} of ${totalPages}`;
-
-    // Disable/Enable Prev button
-    if (currentPage <= 1) {
-        document.getElementById('prevPage').disabled = true;
-    } else {
-        document.getElementById('prevPage').disabled = false;
-    }
-
-    // Disable/Enable Next button
-    if (currentPage >= totalPages) {
-        document.getElementById('nextPage').disabled = true;
-    } else {
-        document.getElementById('nextPage').disabled = false;
-    }
-}
-
-
-
-
-
-
-
-
-function updateTableContent(data) {
-    const parent = document.getElementById('table-info');
-    parent.innerHTML = '';
-    
-    if (data.length === 0) {
-        parent.textContent = 'No data available for this table.';
-        return;
-    }
-
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const tbody = document.createElement('tbody');
-    table.appendChild(thead);
-    table.appendChild(tbody);
-
-    // Create header row
-    const headerRow = document.createElement('tr');
-    Object.keys(data[0]).forEach(key => {
-        const th = document.createElement('th');
-        th.textContent = key;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-
-    // Create data rows
-    data.forEach(row => {
-        const tr = document.createElement('tr');
-        Object.entries(row).forEach(([key, value]) => {
-            const td = document.createElement('td');
-            td.textContent = value !== null ? value : '';
-            if (!currentPrimaryKeys.includes(key)) {
-                td.classList.add('editable');
-                td.addEventListener('click', () => editCell(td, key, row, currentPrimaryKeys));
+            if (confirm('Are you sure you want to delete this row?')) {
+                fetch('/deleteRow', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ table: currentTable, primaryKeys: currentPrimaryKeys, rowData }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Row deleted successfully');
+                        loadTable(); // Reload the table to reflect the deletion
+                    } else {
+                        alert('Delete failed: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Delete failed: ' + error.message);
+                });
             }
-            tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-    });
-
-    parent.appendChild(table);
-}
-
-function performBulkUpdate() {
-    const column = document.getElementById('columnSelect').value;
-    const value = document.getElementById('bulkValue').value;
-    
-    if (!column || !value) {
-        alert('Please select a column and enter a value');
-        return;
-    }
-
-    const filters = {
-        startDate: document.getElementById('startDate').value,
-        endDate: document.getElementById('endDate').value,
-        empId: document.getElementById('empId').value,
-        empName: document.getElementById('empName').value,
-        status: document.getElementById('status').value
-    };
-
-    fetch('/bulkUpdate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ column, value, filters }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(`Updated ${data.rowsAffected} rows successfully`);
-            applyFilters(); // Refresh the table
-        } else {
-            alert('Update failed: ' + data.error);
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Update failed: ' + error.message);
-    });
-}
 
+        function selectRow(event) {
+            const clickedRow = event.target.closest('tr');
+            if (clickedRow && !event.target.closest('td').classList.contains('editable')) {
+                document.querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
+                clickedRow.classList.add('selected');
+            }
+        }
 
+        // Add event listener for row selection
+        document.getElementById('table-info').addEventListener('click', selectRow);
 
+        function applyFilters() {
+            const filters = {
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                empId: document.getElementById('empId').value,
+                empName: document.getElementById('empName').value,
+                status: document.getElementById('status').value,
+                page: currentPage,
+                rowsPerPage: document.getElementById('rowsPerPage').value === 'All' ? 'All' : parseInt(document.getElementById('rowsPerPage').value)
+            };
 
+            const queryString = new URLSearchParams(filters).toString();
+            fetch(`/filteredAttendance?${queryString}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateTableContent(data.data);
+                        updatePaginationControls(data.totalRows);
+                    } else {
+                        alert('Error applying filters: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error applying filters: ' + error.message);
+                });
+        }
+
+        // Event listeners for pagination controls
+        document.getElementById('rowsPerPage').addEventListener('change', function() {
+            currentPage = 1; // Reset to first page
+            rowsPerPage = this.value === 'All' ? 'All' : parseInt(this.value);
+            applyFilters();
+        });
+
+        document.getElementById('prevPage').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                applyFilters();
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', function() {
+            currentPage++;
+            applyFilters();
+        });
+
+        function updatePaginationControls(totalRows) {
+            const totalPages = rowsPerPage === 'All' ? 1 : Math.ceil(totalRows / rowsPerPage);
+
+            document.getElementById('currentPage').textContent = `Page ${currentPage} of ${totalPages}`;
+
+            // Disable/Enable Prev button
+            if (currentPage <= 1) {
+                document.getElementById('prevPage').disabled = true;
+            } else {
+                document.getElementById('prevPage').disabled = false;
+            }
+
+            // Disable/Enable Next button
+            if (currentPage >= totalPages) {
+                document.getElementById('nextPage').disabled = true;
+            } else {
+                document.getElementById('nextPage').disabled = false;
+            }
+        }
+
+        function updateTableContent(data) {
+            const parent = document.getElementById('table-info');
+            parent.innerHTML = '';
+            
+            if (data.length === 0) {
+                parent.textContent = 'No data available for this table.';
+                return;
+            }
+
+            const tableElement = document.createElement('table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            tableElement.appendChild(thead);
+            tableElement.appendChild(tbody);
+
+            // Create header row
+            const headerRow = document.createElement('tr');
+            Object.keys(data[0]).forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            // Create data rows
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                Object.entries(row).forEach(([key, value]) => {
+                    const td = document.createElement('td');
+                    td.textContent = value !== null ? value : '';
+                    if (!currentPrimaryKeys.includes(key)) {
+                        td.classList.add('editable');
+                        td.addEventListener('click', () => editCell(td, key, row, currentPrimaryKeys));
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+
+            parent.appendChild(tableElement);
+        }
+
+        function performBulkUpdate() {
+            const column = document.getElementById('columnSelect').value;
+            const value = document.getElementById('bulkValue').value;
+            
+            if (!column || !value) {
+                alert('Please select a column and enter a value');
+                return;
+            }
+
+            const filters = {
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                empId: document.getElementById('empId').value,
+                empName: document.getElementById('empName').value,
+                status: document.getElementById('status').value
+            };
+
+            fetch('/bulkUpdate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ column, value, filters }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Updated ${data.rowsAffected} rows successfully`);
+                    applyFilters(); // Refresh the table
+                } else {
+                    alert('Update failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Update failed: ' + error.message);
+            });
+        }
     </script>
 </body>
 </html>

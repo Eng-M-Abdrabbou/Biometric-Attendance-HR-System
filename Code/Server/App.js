@@ -339,7 +339,7 @@ app.get('/api/attendance-report', async (req, res) => {
 
         // Pagination parameters
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 100; // Default to 100 records per page
+        const limit = parseInt(req.query.limit) || 10000000; // Default to 100 records per page
         const offset = (page - 1) * limit;
 
         // Validate date range if provided
@@ -954,24 +954,21 @@ app.get('/api/employee-attendance1', (req, res) => {
 async function fillMusterRollTable(limit = 50000000000) {
     const query = `
       SELECT 
-    e.EmpID, 
-    e.FullName, 
-    e.NationalityID,  
-    d.date, 
-    i.clock_in, 
-    i.clock_out, 
-    COALESCE(gar.leave_id, NULL) as leave_id
-  FROM 
-    employee_master e
-    CROSS JOIN (
-      SELECT DISTINCT CAST(i.date AS DATE) as date
-      FROM input_data i
-    ) d
-    LEFT JOIN input_data i ON e.EmpID = i.empid AND d.date = CAST(i.date AS DATE)
-    LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND d.date = gar.shift_date
-  ORDER BY 
-    EmpID,
-    d.date
+        e.EmpID, 
+        e.FullName, 
+        e.NationalityID,  
+        CAST(i.date AS DATE) as date, 
+        i.clock_in, 
+        i.clock_out, 
+        COALESCE(gar.leave_id, NULL) as leave_id
+      FROM 
+        employee_master e
+        JOIN input_data i ON e.EmpID = i.empid
+        LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND i.date = gar.shift_date
+      ORDER BY 
+        EmpID,
+        date
+      LIMIT ?
     `;
   
     try {
