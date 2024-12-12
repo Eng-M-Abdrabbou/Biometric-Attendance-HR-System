@@ -1588,9 +1588,9 @@ document.getElementById('btn-export').addEventListener('click', async () => {
 
     document.getElementById('triggerSync').addEventListener('click', async () => {
         try {
-          const response = await fetch('/api/trigger-sync', { method: 'POST' });
-          const data = await response.json();
-          alert(data.message);
+          const response = await fetch('/sync2', { method: 'POST' });
+        //   const data = await response.json();
+        //   alert(data.message);
         } catch (error) {
           console.error('Error triggering sync:', error);
           alert('Failed to trigger data synchronization');

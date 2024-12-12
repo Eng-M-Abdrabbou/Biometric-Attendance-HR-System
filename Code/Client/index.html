@@ -500,6 +500,12 @@
                 </div>
             </div>
         </div>
+        <div class="tooltip">
+            <button id="triggerSync">
+                <i class="fas fa-sync-alt favicon-refresh"></i>
+            </button>
+            <span class="tooltip-text">Refresh Data</span>
+        </div>
     </div>
     
 
@@ -526,6 +532,24 @@
     <!-- Employee Attendance Details -->
     <div id="employeeAttendanceDetails" style="transform: translateY(-200px);"></div>
     <script>
+
+
+document.getElementById('triggerSync').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/sync2', { method: 'POST' });
+        //   const data = await response.json();
+        //   alert(data.message);
+        alert('Data synchronization done successfully!');
+
+        } catch (error) {
+          console.error('Error triggering sync:', error);
+          alert('Failed to trigger data synchronization');
+        }
+      });
+
+
+
+
         let attendanceChart;
         let distributionChart;
         let visaChart;
@@ -705,7 +729,10 @@
                 row.insertCell().innerText = employee.EmpID;
                 row.insertCell().innerText = employee.FullName;
                 row.insertCell().innerText = employee.EmailID;
-                row.insertCell().innerText = employee.attendanceStatus;
+                const statusCell = row.insertCell();
+                statusCell.innerText = employee.attendanceStatus;
+                statusCell.style.color = employee.attendanceStatus === 'Present' ? 'green' :
+                                         employee.attendanceStatus === 'Absent' ? 'red' : 'black';
             });
 
             employeeAttendanceDetails.appendChild(table);
