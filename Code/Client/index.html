@@ -497,6 +497,12 @@
                 </div>
             </div>
         </div>
+        <div class="tooltip">
+            <button id="triggerSync">
+                <i class="fas fa-sync-alt favicon-refresh"></i>
+            </button>
+            <span class="tooltip-text">Refresh Data</span>
+        </div>
     </div>
     
 
@@ -523,6 +529,22 @@
     <!-- Employee Attendance Details -->
     <div id="employeeAttendanceDetails" style="transform: translateY(-200px);"></div>
     <script>
+
+
+document.getElementById('triggerSync').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/sync2', { method: 'POST' });
+        //   const data = await response.json();
+        //   alert(data.message);
+        } catch (error) {
+          console.error('Error triggering sync:', error);
+          alert('Failed to trigger data synchronization');
+        }
+      });
+
+
+
+
         let attendanceChart;
         let distributionChart;
         let visaChart;
