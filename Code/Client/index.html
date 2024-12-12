@@ -536,6 +536,8 @@ document.getElementById('triggerSync').addEventListener('click', async () => {
           const response = await fetch('/sync2', { method: 'POST' });
         //   const data = await response.json();
         //   alert(data.message);
+        alert('Data synchronization done successfully!');
+
         } catch (error) {
           console.error('Error triggering sync:', error);
           alert('Failed to trigger data synchronization');
