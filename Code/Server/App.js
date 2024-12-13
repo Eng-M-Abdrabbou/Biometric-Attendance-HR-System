@@ -11,6 +11,7 @@ const fs = require('fs');
 const chokidar = require('chokidar');
 const { processExcelData, mainDataSync } = require('./dataSync');
 const nodemailer = require('nodemailer');
+const bodyParser = require('body-parser');
 
 
 const redis = require('redis');
@@ -23,6 +24,7 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 
 
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -30,6 +32,8 @@ const dbService = require('./dbService.js');
  const { Console } = require('console');
 const moment = require('moment/moment.js');
 const db = dbService.getDbServiceInstance();
+
+
 
 
 app.use(express.static(path.join(__dirname, '../../Client')));
@@ -1086,7 +1090,31 @@ async function fillMusterRollTable(limit = 50000000000) {
 
   
 
+// login for system user 
+app.post('/login', async (req, res) => {
+  console.log('req.body:', req.body);
+  const username = req.body.username;
+  const password = req.body.password;
 
+  if (!username || !password) {
+    console.error('Username or password is missing');
+    res.status(400).send({ message: 'Username and password are required' });
+    return;
+  }
+
+  try {
+    const results = await db.query(`SELECT * FROM user WHERE username = ? AND password = ?`, [username, password]);
+
+    if (results.length === 0) {
+      res.status(401).send({ message: 'Invalid username or password' });
+    } else {
+      res.send({ message: 'Login successful' });
+    }
+  } catch (err) {
+    console.error('error running query:', err);
+    res.status(500).send({ message: 'Internal Server Error' });
+  }
+});
 
 
 
