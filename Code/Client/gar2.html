@@ -667,7 +667,7 @@ button:disabled {
             <ul class="navbar-menu">
                 <li>
                     <div class="tooltip">
-                        <a href="http://localhost:8000/index.html"><i class="fas fa-home"></i></a>
+                        <a href="http://localhost:8000/home.html"><i class="fas fa-home"></i></a>
                         <span class="tooltip-text">Home</span>
                     </div>
                 </li>
@@ -837,6 +837,14 @@ BTL = Business Travel Leave &nbsp;&nbsp;&nbsp;PL = Paternity Leave&nbsp;&nbsp;&n
 
 </div>
     <script>
+
+        // session ifo
+    fetch('/session-info')
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Session info:', data.session);
+      })
+      .catch((error) => console.error(error));
 
 // const moment = require('moment'); 
 document.getElementById('statusFilter').addEventListener('change', () => {

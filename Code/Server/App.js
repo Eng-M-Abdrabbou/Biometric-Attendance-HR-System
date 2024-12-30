@@ -12,6 +12,7 @@ const chokidar = require('chokidar');
 const { processExcelData, mainDataSync } = require('./dataSync');
 const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
+const session = require('express-session');
 
 
 const redis = require('redis');
@@ -23,6 +24,9 @@ dotenv.config();
 const PORT = process.env.PORT || 8000;
 app.use(cors());
 
+
+app.use('/images', express.static(path.join(__dirname, '..', 'Client', 'Images')));
+app.use(express.static(path.join(__dirname, '..', 'Client/home.html')));
 
 
 app.use(express.json());
@@ -36,8 +40,19 @@ const db = dbService.getDbServiceInstance();
 
 
 
-app.use(express.static(path.join(__dirname, '../../Client')));
-app.use(express.static(path.join(__dirname, '../Client')));
+
+
+
+
+
+// session key 
+
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: true
+}));
+
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -231,9 +246,7 @@ app.get('/api/admin-credentials', (req, res) => {
 });
 
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname,'..','Client','Login.html'));
-});
+
 
 
 app.post('/api/input/:id', async (req, res) => {
@@ -1092,15 +1105,8 @@ async function fillMusterRollTable(limit = 50000000000) {
 
 // login for system user 
 app.post('/login', async (req, res) => {
-  console.log('req.body:', req.body);
   const username = req.body.username;
   const password = req.body.password;
-
-  if (!username || !password) {
-    console.error('Username or password is missing');
-    res.status(400).send({ message: 'Username and password are required' });
-    return;
-  }
 
   try {
     const results = await db.query(`SELECT * FROM user WHERE username = ? AND password = ?`, [username, password]);
@@ -1108,6 +1114,7 @@ app.post('/login', async (req, res) => {
     if (results.length === 0) {
       res.status(401).send({ message: 'Invalid username or password' });
     } else {
+      req.session.username = username;
       res.send({ message: 'Login successful' });
     }
   } catch (err) {
@@ -1117,21 +1124,39 @@ app.post('/login', async (req, res) => {
 });
 
 
+//session info
+app.get('/session-info', (req, res) => {
+    res.send({ session: req.session });
+  });
+
 
 app.get('/email', (req, res) => {
-            res.sendFile(path.join(__dirname,'..','Client','email.html'));
+        res.sendFile(path.join(__dirname,'..','Client','email.html'));
         });
 
 app.get('/muster_roll', (req, res) => {
-        res.sendFile(path.join(__dirname,'..','Client','muster_roll.html'));
-    });
+  if (!req.session.username) {
+    res.redirect('/loginSite.html');
+  } else {
+    res.sendFile(path.join(__dirname, '..', 'Client', 'muster_roll.html'));
+  }
+});
+
+
+
+
+
 
 app.get('/Clocking', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Clocking.html'));
 });
 
 app.get('/gar', (req, res) => {
+  if (!req.session.username) {
+    res.redirect('/loginSite.html');
+  } else {
     res.sendFile(path.join(__dirname,'..','Client','GAR2.html'));
+  }
 });
 
 app.get('/Dashboard', (req, res) => {
@@ -1141,6 +1166,49 @@ app.get('/Dashboard', (req, res) => {
 app.get('/Admin_CRUD.html', (req, res) => {
     res.sendFile(path.join(__dirname,'..','Client','Admin_CRUD.html'));
 });
+
+//site login
+app.get('/loginSite.html', (req, res) => {
+    res.sendFile(path.join(__dirname,'..','Client','loginSite.html'));
+});
+
+//dashboard
+app.get('/', (req, res) => {
+    if (!req.session.username) {
+      res.redirect('/loginSite.html');
+    } else {
+      res.sendFile(path.join(__dirname, '..', 'Client', '/home.html'));
+    }
+  });
+
+//admin login
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname,'..','Client','login.html'));
+});
+
+//home
+
+app.get('/home.html', (req, res) => {
+  if (!req.session.username) {
+    res.redirect('/loginSite.html');
+  } else {
+    res.sendFile(path.join(__dirname, '..', 'Client', 'home.html'));
+  }
+});
+
+//signout
+app.post('/signout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+    } else {
+      res.send();
+    }
+  });
+});
+
+  
+
 
 
 app.listen(PORT, () => {

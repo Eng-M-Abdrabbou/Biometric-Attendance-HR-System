@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    >
+    <style>
+        /* Reset and Font */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 0 30px 30px 30px; /* Adjusted padding to account for fixed navbar */
+            overflow-x: hidden;
+            margin-top: 80px; /* Added margin to prevent content from hiding behind navbar */
+        }
+
+
+
+        /* Navbar Styles */
+        .navbar {
+            background-color: #943240;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+            overflow: visible; /* Ensure tooltips are visible */
+            position: fixed; /* Make navbar fixed at the top */
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000; /* Ensure navbar stays above other elements */
+        }
+
+
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            margin-right: 20px;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+
+
+        .navbar a:hover {
+            color: #ddd;
+        }
+
+
+
+        .navbar .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+
+
+        .navbar .navbar-menu {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            overflow: visible; /* Ensure tooltips are visible */
+        }
+
+
+
+        .navbar .navbar-menu li {
+            list-style: none;
+            position: relative; /* For tooltip positioning */
+            overflow: visible; /* Ensure tooltips are visible */
+            margin-left: 20px;
+        }
+
+
+
+        .navbar i {
+            font-size: 20px;
+        }
+
+
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+
+            position: relative;
+            display: inline-block;
+        }
+
+
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 9999; /* Ensures tooltip is above other elements */
+            top: 125%; /* Positions the tooltip below the icon */
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+
+
+        .tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            bottom: 100%; /* Arrow pointing upwards */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent #333 transparent;
+        }
+
+
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            
+        }
+
+
+
+        /* Existing Styles */
+        .controls-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            animation: slideIn 0.5s ease-in-out;
+
+             display: flex;
+    flex-wrap: nowrap; /* Ensures all elements stay on one line */
+    gap: 20px; /* Adds spacing between groups */
+    align-items: center; /* Aligns items vertically in the center */
+        }
+
+
+
+        .controls-group {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+
+            display: flex;
+    flex-direction: row; /* Keeps the inner elements stacked vertically */
+    align-items: start; /* Aligns label and inputs to the start */
+    gap: 10px; /* Adds spacing between internal elements */
+        }
+
+
+
+        .date-controls, .distribution-controls, .visa-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+
+            display: flex;
+    flex-direction: row; /* Keeps the label, input, and buttons stacked */
+    gap: 10px;
+        }
+
+
+
+        label {
+            font-weight: 500;
+            color: #666;
+            font-size: 15px;
+        }
+
+
+
+        input[type="date"], select {
+            padding: 12px 18px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+            background-color: #f9f9f9;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+
+
+
+        input[type="date"]:focus, select:focus {
+            outline: none;
+            border-color: #943240;
+            transform: scale(1.02);
+        }
+
+
+
+        button {
+            position: relative;
+            overflow: hidden;
+            color: white;
+            background-color: #943240;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
+            animation: fadeInUp 0.6s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+
+
+        button:hover {
+            background-color: #7a2a35;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+        }
+
+
+
+        button:hover::after {
+            width: 200px;
+            height: 200px;
+        }
+
+
+
+        button i {
+            margin-right: 8px;
+        }
+
+
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+
+
+        .chart-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.4s;
+            animation: zoomIn 0.6s ease-in-out;
+            max-width: 500px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+
+
+        canvas {
+            max-width: 100%;
+            width: 400px;
+            height: 400px;
+        }
+
+
+
+        .chart-details-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+
+
+        .chart-details-box span {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+
+        }
+
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 250px;
+            animation: fadeIn 0.6s ease-in-out;
+        }
+
+
+
+        th, td {
+            padding: 12px 18px;
+            border: 1px solid #ddd;
+            text-align: left;
+            font-size: 15px;
+        }
+
+
+
+        th {
+
+            background-color: #943240;
+            color: white;
+            font-weight: 500;
+
+        }
+
+
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+
+
+        @keyframes zoomIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+    </style>
+
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">Attendance Dashboard</div>
+        <ul class="navbar-menu">
+            <li>
+                <div class="tooltip">
+                    <a href="#"><i class="fas fa-home"></i></a>
+                    <span class="tooltip-text">Home</span>
+                </div>
+            </li>
+            <li>
+                <div class="tooltip">
+                    <a href="http://localhost:8000/gar"><i class="fas fa-file-alt"></i></a>
+                    <span class="tooltip-text">General Attendance Report</span>
+                </div>
+            </li>
+            <li>
+                <div class="tooltip">
+                    <a href="http://localhost:8000/muster_roll"><i class="fas fa-list-alt"></i></a>
+                    <span class="tooltip-text">Muster Roll Report</span>
+                </div>
+            </li>
+            <li>
+                <div class="tooltip">
+                    <a href="http://localhost:8000/login.html"><i class="fas fa-user-cog"></i></a>
+                    <span class="tooltip-text">Admin CRUD</span>
+                </div>
+            </li>
+            <li>
+                <div class="tooltip">
+                    <a href="http://localhost:8000/email.html"><i class="fas fa-envelope"></i></a>
+                    <span class="tooltip-text">Email Notification</span>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+
+
+    <!-- Controls Container -->
+    <div class="controls-container">
+        <div class="controls-group">
+            <div class="date-controls">
+                <label for="date">Date:</label>
+                <input type="date" id="date" required>
+                <div class="tooltip">
+                    <button onclick="fetchAndRenderAttendance()">
+                        <i class="fas fa-calendar-check"></i>
+                    </button>
+                    <span class="tooltip-text">Show Attendance Summary</span>
+                </div>
+                <div class="tooltip">
+                    <button onclick="fetchAndDisplayEmployeeAttendance()">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    <span class="tooltip-text">View Detailed Employee Attendance</span>
+                </div>
+                <div class="tooltip">
+                    <button onclick="saveAttendanceRecord()">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <span class="tooltip-text">Download Attendance Report</span>
+                </div>
+            </div>
+        </div>
+        <div class="controls-group">
+            <div class="distribution-controls">
+                <label for="distributionType">Distribution Type:</label>
+                <select id="distributionType">
+                    <option value="nationality">Nationality</option>
+                    <option value="department">Department</option>
+                    <option value="location">Location</option>
+                </select>
+                <div class="tooltip">
+                    <button onclick="fetchAndDisplayDistribution()">
+                        <i class="fas fa-chart-pie"></i>
+                    </button>
+                    <span class="tooltip-text">View Distribution Analysis</span>
+                </div>
+            </div>
+        </div>
+        <div class="controls-group">
+            <div class="visa-controls">
+                <label for="visaCategory">Visa Category:</label>
+                <select id="visaCategory">
+                    <option value="1">FM-FTC LLC</option>
+                    <option value="2">F1-FPT LLC</option>
+                    <option value="3">FB-FTC Branch LLC</option>
+                    <option value="4">DU-Idle Pay Group</option>
+                    <option value="5">FD-Federal Dubai</option>
+                </select>
+                <div class="tooltip">
+                    <button onclick="fetchAndDisplayVisaDistribution()">
+                        <i class="fas fa-passport"></i>
+                    </button>
+                    <span class="tooltip-text">View Visa Distribution</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+        <div class="chart-container">
+            <h3 class="chart-title">Attendance Distribution</h3>
+            <canvas id="attendanceChart"></canvas>
+            <div id="attendanceChartDetails" class="chart-details-box"></div>
+        </div>
+        <div class="chart-container">
+            <h3 class="chart-title" id="distributionChartTitle">Distribution Chart</h3>
+            <canvas id="distributionChart"></canvas>
+            <div id="distributionChartDetails" class="chart-details-box"></div>
+        </div>
+        <div class="chart-container">
+            <h3 class="chart-title" id="visaChartTitle">Visa Category Distribution</h3>
+            <canvas id="visaChart"></canvas>
+            <div id="visaChartDetails" class="chart-details-box"></div>
+        </div>
+    </div>
+    <!-- Employee Attendance Details -->
+    <div id="employeeAttendanceDetails" style="transform: translateY(-200px);"></div>
+    <script>
+
+        // session ifo
+    fetch('/session-info')
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Session info:', data.session);
+      })
+      .catch((error) => console.error(error));
+
+      
+        let attendanceChart;
+        let distributionChart;
+        let visaChart;
+
+        async function fetchAttendanceData(date) {
+            const response = await fetch(`/api/attendance?date=${date}`);
+            const data = await response.json();
+            return data;
+        }
+
+        async function fetchAndRenderAttendance() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const { present, absent, Ms } = await fetchAttendanceData(date);
+
+            const labels = ['Present', 'Absent', 'Ms'];
+            const dataValues = [present, absent, Ms];
+            const colors = ['#4CAF50', '#FF5733', '#FFC300'];
+
+            if (!attendanceChart) {
+                const ctx = document.getElementById('attendanceChart').getContext('2d');
+                attendanceChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            } else {
+                attendanceChart.data.datasets[0].data = dataValues;
+                attendanceChart.update();
+            }
+
+            updateChartDetails('attendanceChart', labels, dataValues, colors);
+        }
+
+        async function fetchAndDisplayDistribution() {
+            const date = document.getElementById('date').value;
+            const distributionType = document.getElementById('distributionType').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const response = await fetch(`/api/attendance-distribution?date=${date}&type=${distributionType}`);
+            const data = await response.json();
+            const labels = data.map(item => item.label);
+            const counts = data.map(item => item.count);
+            const colors = generateColors(counts.length);
+
+            document.getElementById('distributionChartTitle').innerText = `${distributionType.charAt(0).toUpperCase() + distributionType.slice(1)} Distribution`;
+
+            if (!distributionChart) {
+                const ctx = document.getElementById('distributionChart').getContext('2d');
+                distributionChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            } else {
+                distributionChart.data.labels = labels;
+                distributionChart.data.datasets[0].data = counts;
+                distributionChart.data.datasets[0].backgroundColor = colors;
+                distributionChart.update();
+            }
+
+            updateChartDetails('distributionChart', labels, counts, colors);
+        }
+
+        function generateColors(count) {
+            const baseColors = ['#943240', '#4CAF50', '#FFC300', '#FF5733', '#8E44AD', '#3498DB', '#1ABC9C', '#F39C12', '#e74c3c', '#2ecc71', '#e67e22'];
+            const colors = [];
+
+            for (let i = 0; i < count; i++) {
+                colors.push(baseColors[i % baseColors.length]);
+            }
+
+            return colors;
+        }
+
+        async function fetchAndDisplayVisaDistribution() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const response = await fetch(`/api/visa-distribution?date=${date}`);
+            const data = await response.json();
+            const labels = data.map(item => item.visaType);
+            const counts = data.map(item => item.count);
+            const colors = generateColors(counts.length);
+
+            if (!visaChart) {
+                const ctx = document.getElementById('visaChart').getContext('2d');
+                visaChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            } else {
+                visaChart.data.labels = labels;
+                visaChart.data.datasets[0].data = counts;
+                visaChart.data.datasets[0].backgroundColor = colors;
+                visaChart.update();
+            }
+
+            updateChartDetails('visaChart', labels, counts, colors);
+        }
+
+        async function fetchAndDisplayEmployeeAttendance() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            const response = await fetch(`/api/employee-attendance?date=${date}`);
+            const data = await response.json();
+
+            const employeeAttendanceDetails = document.getElementById('employeeAttendanceDetails');
+            employeeAttendanceDetails.innerHTML = '';
+
+            if (data.length === 0) {
+                employeeAttendanceDetails.innerHTML = 'No employee attendance details found for this date.';
+                return;
+            }
+
+            const table = document.createElement('table');
+            const header = table.insertRow();
+            header.insertCell().innerText = 'EmpID';
+            header.insertCell().innerText = 'FullName';
+            header.insertCell().innerText = 'EmailID';
+            header.insertCell().innerText = 'Attendance Status';
+
+            data.forEach(employee => {
+                const row = table.insertRow();
+                row.insertCell().innerText = employee.EmpID;
+                row.insertCell().innerText = employee.FullName;
+                row.insertCell().innerText = employee.EmailID;
+                row.insertCell().innerText = employee.attendanceStatus;
+            });
+
+            employeeAttendanceDetails.appendChild(table);
+        }
+
+        function saveAttendanceRecord() {
+            const date = document.getElementById('date').value;
+
+            if (!date) {
+                alert('Please select a date.');
+                return;
+            }
+
+            fetch(`/api/employee-attendance?date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    const worksheet = XLSX.utils.json_to_sheet(data);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+                    XLSX.writeFile(workbook, `Attendance_${date}.xlsx`);
+                })
+                .catch(error => {
+                    console.error('Error fetching attendance data:', error);
+                });
+        }
+
+        function updateChartDetails(chartId, labels, data, colors) {
+            const detailsContainer = document.getElementById(chartId + 'Details');
+            detailsContainer.innerHTML = '';
+            labels.forEach((label, index) => {
+                const span = document.createElement('span');
+
+                const colorBox = document.createElement('span');
+                colorBox.className = 'color-box';
+                colorBox.style.backgroundColor = colors[index];
+
+                span.appendChild(colorBox);
+                span.appendChild(document.createTextNode(`${label}: ${data[index]}`));
+
+                detailsContainer.appendChild(span);
+            });
+        }
+    </script>
+    <div id="employeeList"></div>
+</body>
+</html>

@@ -420,6 +420,7 @@ gap: 10px;
   rel="stylesheet"
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
 >
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
 </head>
 <body>
@@ -430,7 +431,7 @@ gap: 10px;
   <div class="navbar-brand">Attendance Dashboard</div>
   <ul class="navbar-nav">
     <li class="nav-item">
-      <a class="nav-link" href="http://localhost:8000/index.html">
+      <a class="nav-link" href="http://localhost:8000/home.html">
         <i class="fa fa-home" data-tooltip="Home Page"></i>
       </a>
     </li>
@@ -449,6 +450,12 @@ gap: 10px;
         <i class="fa fa-envelope" data-tooltip="Email Notification"></i>
       </a>
     </li>
+<li class="nav-item">
+  <a class="nav-link" href="#" onclick="signout()">
+    Sign Out
+  </a>
+</li>
+
   </ul>
 </nav>
 
@@ -522,6 +529,29 @@ gap: 10px;
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script>
+
+    //signout 
+
+    function signout() {
+      // Terminate the session
+      fetch('/signout', { method: 'POST' })
+        .then(() => {
+          // Redirect to the login page
+          window.location.href = '/';
+        })
+        .catch((err) => {
+          console.error('Error signing out:', err);
+        });
+    }
+
+// session ifo
+    fetch('/session-info')
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Session info:', data.session);
+      })
+      .catch((error) => console.error(error));
+
 const viewReportButton = document.getElementById('view-report-button');
 const musterRollBody = document.getElementById('muster-roll-body');
 const monthFilter = document.getElementById('month-filter');
