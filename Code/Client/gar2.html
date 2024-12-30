@@ -663,7 +663,8 @@ button:disabled {
     
         <!-- Navbar -->
         <nav class="navbar">
-            <div class="navbar-brand">Attendance Dashboard</div>
+            <img src="./Images/Logo/Company Logo.png" alt="Logo" class="navbar-logo" style="width: 190px; height: 70px; object-fit: cover;">
+        <div class="navbar-brand" style="margin-right: -60px;">Attendance Dashboard</div>
             <ul class="navbar-menu">
                 <li>
                     <div class="tooltip">
@@ -1595,9 +1596,9 @@ document.getElementById('btn-export').addEventListener('click', async () => {
 
     document.getElementById('triggerSync').addEventListener('click', async () => {
         try {
-          const response = await fetch('/api/trigger-sync', { method: 'POST' });
-          const data = await response.json();
-          alert(data.message);
+          const response = await fetch('/sync2', { method: 'POST' });
+        //   const data = await response.json();
+        //   alert(data.message);
         } catch (error) {
           console.error('Error triggering sync:', error);
           alert('Failed to trigger data synchronization');

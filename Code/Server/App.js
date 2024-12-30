@@ -37,6 +37,8 @@ const dbService = require('./dbService.js');
 const moment = require('moment/moment.js');
 const db = dbService.getDbServiceInstance();
 
+//test
+
 
 
 
@@ -164,7 +166,7 @@ watcher.on('change', async (path) => {
 
 
 
-const logFilePath = "D:\\Mahmoud\\projects\\Biometric Attendance Project\\Code\\Server\\combined.log";
+const logFilePath = "..\\combined.log";
 const logWatcher = chokidar.watch(logFilePath, { persistent: true });
 
 logWatcher.on('change', async (path) => {
@@ -181,7 +183,7 @@ logWatcher.on('change', async (path) => {
 
 
 
-const errorLogFilePath = "D:\\Mahmoud\\projects\\Biometric Attendance Project\\Code\\Server\\error.log";
+const errorLogFilePath = "..\\error.log";
 const errorLogWatcher = chokidar.watch(errorLogFilePath, { persistent: true });
 
 errorLogWatcher.on('change', async (path) => {
@@ -197,6 +199,24 @@ errorLogWatcher.on('change', async (path) => {
 });
 
 
+
+
+const {syncDataFromSqlServer} = require('./datasync2');
+if(1+1==2){
+    syncDataFromSqlServer();
+ }
+
+
+app.post('/sync2', async (req, res) => {
+try{
+    syncDataFromSqlServer();
+    console.log('The sync was done succesfully!');
+}
+catch(error){
+console.log('The sync failed');
+}
+
+ });
 
 
 //comment this part only temporart to make testing faster.
@@ -952,25 +972,22 @@ app.get('/api/employee-attendance1', (req, res) => {
 
 async function fillMusterRollTable(limit = 50000000000) {
     const query = `
-  SELECT 
-    e.EmpID, 
-    e.FullName, 
-    e.NationalityID,  
-    d.date, 
-    i.clock_in, 
-    i.clock_out, 
-    COALESCE(gar.leave_id, NULL) as leave_id
-  FROM 
-    employee_master e
-    CROSS JOIN (
-      SELECT DISTINCT CAST(i.date AS DATE) as date
-      FROM input_data i
-    ) d
-    LEFT JOIN input_data i ON e.EmpID = i.empid AND d.date = CAST(i.date AS DATE)
-    LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND d.date = gar.shift_date
-  ORDER BY 
-    EmpID,
-    d.date
+      SELECT 
+        e.EmpID, 
+        e.FullName, 
+        e.NationalityID,  
+        CAST(i.date AS DATE) as date, 
+        i.clock_in, 
+        i.clock_out, 
+        COALESCE(gar.leave_id, NULL) as leave_id
+      FROM 
+        employee_master e
+        JOIN input_data i ON e.EmpID = i.empid
+        LEFT JOIN general_attendance_report gar ON e.EmpID = gar.emp_id AND i.date = gar.shift_date
+      ORDER BY 
+        EmpID,
+        date
+      LIMIT ?
     `;
   
     try {
@@ -1215,3 +1232,5 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 })
 
+
+//test
