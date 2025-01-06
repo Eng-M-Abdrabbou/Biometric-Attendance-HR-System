@@ -421,7 +421,7 @@
             </li>
             <li>
                 <div class="tooltip">
-                    <a href="http://localhost:8000/login.html"><i class="fas fa-user-cog"></i></a>
+                    <a href="http://localhost:8000/Admin_CRUD.html"><i class="fas fa-user-cog"></i></a>
                     <span class="tooltip-text">Admin CRUD</span>
                 </div>
             </li>
@@ -431,7 +431,16 @@
                     <span class="tooltip-text">Email Notification</span>
                 </div>
             </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="signout()">
+                  Sign Out
+                </a>
+              </li>
+              
         </ul>
+
+
     </nav>
 
 
@@ -523,6 +532,17 @@
     <div id="employeeAttendanceDetails" style="transform: translateY(-200px);"></div>
     <script>
 
+function signout() {
+      // Terminate the session
+      fetch('/signout', { method: 'POST' })
+        .then(() => {
+          // Redirect to the login page
+          window.location.href = '/';
+        })
+        .catch((err) => {
+          console.error('Error signing out:', err);
+        });
+    } 
         // session ifo
     fetch('/session-info')
       .then((response) => response.json())

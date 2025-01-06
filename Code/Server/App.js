@@ -255,16 +255,15 @@ app.post('/api/trigger-sync', async (req, res) => {
 
 
 
-app.get('/api/admin-credentials', (req, res) => {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
-
-    res.json({
-        email: adminEmail,
-        password: adminPassword,
-    });
+app.post('/api/admin-credentials', (req, res) => {
+  const { email, password } = req.body;
+  
+  if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+    req.session.adminUsername = process.env.ADMIN_EMAIL; // Set the session
+    return res.json({ success: true });
+  }
+  return res.json({ success: false });
 });
-
 
 
 
@@ -1181,8 +1180,13 @@ app.get('/Dashboard', (req, res) => {
 });
 
 app.get('/Admin_CRUD.html', (req, res) => {
-    res.sendFile(path.join(__dirname,'..','Client','Admin_CRUD.html'));
+  if (!req.session.adminUsername) {
+    return res.redirect('/login.html');
+  } else {
+    return res.sendFile(path.join(__dirname, '..', 'Client', 'Admin_CRUD.html'));
+  }
 });
+
 
 //site login
 app.get('/loginSite.html', (req, res) => {

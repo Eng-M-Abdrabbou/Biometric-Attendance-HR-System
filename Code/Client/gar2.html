@@ -686,7 +686,7 @@ button:disabled {
                 </li>
                 <li>
                     <div class="tooltip">
-                        <a href="http://localhost:8000/login.html"><i class="fas fa-user-cog"></i></a>
+                        <a href="http://localhost:8000/Admin_CRUD.html"><i class="fas fa-user-cog"></i></a>
                         <span class="tooltip-text">Admin CRUD</span>
                     </div>
                 </li>
@@ -696,6 +696,13 @@ button:disabled {
                         <span class="tooltip-text">Email Notification</span>
                     </div>
                 </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="signout()">
+                      Sign Out
+                    </a>
+                  </li>
+
             </ul>
         </nav>
     
@@ -838,6 +845,20 @@ BTL = Business Travel Leave &nbsp;&nbsp;&nbsp;PL = Paternity Leave&nbsp;&nbsp;&n
 
 </div>
     <script>
+
+        //sign out function
+        
+    function signout() {
+      // Terminate the session
+      fetch('/signout', { method: 'POST' })
+        .then(() => {
+          // Redirect to the login page
+          window.location.href = '/';
+        })
+        .catch((err) => {
+          console.error('Error signing out:', err);
+        });
+    } 
 
         // session ifo
     fetch('/session-info')

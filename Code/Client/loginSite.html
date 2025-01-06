@@ -1,48 +1,287 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Page Title</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric Attendance System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+   
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Other head elements like title, meta tags, stylesheets -->
+
+ 
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f4f6f9 0%, #e9ecef 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            background: linear-gradient(to right, #943240, #943240);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar .logo {
+            height: 50px;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .navbar .title {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .login-card .logo {
+            width: 120px;
+            margin-bottom: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-card h2 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .label {
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input {
+            padding: 12px 15px;
+            font-size: 15px;
+            width: 100%;
+            border-radius: 10px;
+            border: 2px solid #e1e1e1;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .input:focus {
+            border-color: #943240;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(164, 34, 55, 0.1);
+            background: #fff;
+        }
+
+        .submit-button {
+            padding: 12px 30px;
+            font-size: 16px;
+            color: #fff;
+            background: linear-gradient(to right, #A42237, #c62d45);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .submit-button:hover {
+            background: linear-gradient(to right, #943240, #943240);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(164, 34, 55, 0.2);
+        }
+
+        .forgot-password {
+            display: block;
+            margin-top: 10px;
+            color: #A42237;
+            text-decoration: none;
+            font-size: 14px;
+            text-align: right;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: #c62d45;
+            text-decoration: underline;
+        }
+
+        footer {
+            background: linear-gradient(to right, #943240, #943240);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 14px;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes inputFocus {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .input:focus {
+            animation: inputFocus 0.3s ease;
+        }
+        .nav-item .tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 120%; /* Position below the icon */
+    left: 10%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.nav-item:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(5px);
+}
+
+       
+    </style>
 </head>
+
 <body>
-    <form id="login-form">
-      <label for="username">Username:</label>
-      <input type="text" id="username" name="username"><br><br>
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password"><br><br>
-      <button type="submit">Login</button>
-    </form>
+    <nav class="navbar">
+        <img src="Images/Logo/Company Logo.png" alt="Company Logo" class="logo" style="width: 150px; height: auto;">
+        <div class="title" style="flex: 5; text-align: center; font-size: 24px; font-weight: bold;">
+            Biometric Attendance System
+        </div>
+        <ul class="nav-items" style="display: flex; justify-content: flex-end; align-items: center; flex: 1; list-style: none; margin: 0; padding: 0;">
+            <li class="nav-item" style="position: relative; margin-left: 10px;">
+                <a class="nav-link" href="http://localhost:8000/Admin_CRUD.html" style="text-decoration: none; color: inherit;">
+                    <i class="fa fa-user-cog" style="color: white; font-size: 21px;" aria-hidden="true"></i>
+                    <span class="tooltip">Admin Crud</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
     
-    <script>
-      // Add event listener to form submission
-      document.getElementById('login-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-      
-        fetch('/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password })
-        })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.message === 'Login successful') {
-            console.log('Login successful!');
-            console.log('Session info:', data.session); // Log the session info
-        window.location.href = '/home.html';
-          } else {
-            console.error(data.message);
-            // You can display an error message to the user
-          }
-        })
-        .catch((error) => console.error(error));
-      });
-    </script>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <div class="container">
+        <div class="login-card">
+            <img src="./Images/Logo/Company Logo.png" alt="Company Logo" class="logo">
+            <h2>Basis Log-In</h2>
+            <form id="adminLoginForm" method="POST" style="display: flex; flex-direction: column;">
+              <div class="form-group">
+                <label for="username" class="label">Username</label>
+                <input type="text" id="adminUsername" name="username" required class="input" placeholder="Enter your username">
+              </div>
+                <div class="form-group">
+                    <label for="password" class="label">Password</label>
+                    <input type="password" id="adminPassword" name="password" required class="input" placeholder="Enter your password">
+                   
+                </div>
+                <button type="submit" class="submit-button">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Federal Electric. All Rights Reserved.</p>
+    </footer>
+    
+ <script>
+   document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+     e.preventDefault();
+     const username = document.getElementById('adminUsername').value;
+     const password = document.getElementById('adminPassword').value;
+   
+     fetch('/login', {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json'
+       },
+       body: JSON.stringify({ username, password })
+     })
+     .then((response) => response.json())
+     .then((data) => {
+       if (data.message === 'Login successful') {
+         console.log('Login successful!');
+         console.log('Session info:', data.session); // Log the session info
+         window.location.href = '/home.html';
+       } else {
+         console.error(data.message);
+         // You can display an error message to the user
+       }
+     })
+     .catch((error) => console.error(error));
+   });
+ </script>
 </body>
 </html>

@@ -678,8 +678,15 @@
                     <span class="tooltip-text">Email Notification</span>
                 </div>
             </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="signout()">
+                  Sign Out
+                </a>
+              </li>
         </ul>
     </nav>
+    <br>
 
     <div id="attendance-filters" style="display: none; margin-top: 100px;" class="filters">
         <div class="filter-group">
@@ -766,6 +773,18 @@
     <div id="table-info"></div>
 
     <script>
+
+function signout() {
+      // Terminate the session
+      fetch('/signout', { method: 'POST' })
+        .then(() => {
+          // Redirect to the login page
+          window.location.href = '/home.html';
+        })
+        .catch((err) => {
+          console.error('Error signing out:', err);
+        });
+    } 
         let currentPage = 1;
         let rowsPerPage = 10; // Default rows per page
 
