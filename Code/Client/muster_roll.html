@@ -411,13 +411,27 @@ gap: 10px;
     border-radius: 5px;
     font-size: 12px;
   }
+  .custom-btn {
+  background-color: #943240; /* Normal state background color */
+  color: white; /* White text color */
+  border: none;
+}
+
+.custom-btn:hover {
+  background-color: white; /* Background turns white when hovered */
+  color: #943240; /* Font color changes to #943240 on hover */
+}
+
+.custom-btn:disabled {
+  background-color: #d3d3d3; /* Light gray for disabled state */
+  color: #a1a1a1; /* Gray text for disabled state */
+}
+
+
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
 <!-- FontAwesome for Icons -->
 <link
   rel="stylesheet"
@@ -433,7 +447,7 @@ gap: 10px;
 <nav class="navbar navbar-expand-lg navbar-dark bg-maroon">
 
 <img src="./Images/Logo/Company Logo.png" alt="Logo" class="navbar-logo" style="width: 190px; height: 70px; object-fit: cover;">
-        <div class="navbar-brand" style="margin-right: -60px;">Muster Roll Report</div>
+        <div class="navbar-brand" style="margin-right: -180px;">Muster Roll Report</div>
   <ul class="navbar-nav">
     <li class="nav-item">
       <a class="nav-link" href="http://localhost:8000/home.html">
@@ -447,7 +461,7 @@ gap: 10px;
     </li>
     <li class="nav-item">
       <a class="nav-link" href="http://localhost:8000/Admin_CRUD.html">
-        <i class="fa fa-user-cog" data-tooltip="Admin Dashboard"></i>
+        <i class="fa fa-user-cog" data-tooltip="Admin CRUD"></i>
       </a>
     </li>
     <li class="nav-item">
@@ -476,7 +490,7 @@ gap: 10px;
         <p > PO BOX 9769,Mussafah, Abu Dhabi, UAE.                                  </p>
         <p >  Contact Numbers: +971 2 5592229 / 5512788                             </p>
         <p >  Email: info@federalelectricals.com Website: www.federalelectricals.com</p>
-        <br>
+       
         <h3>Muster Roll Report</h3>
          <button id="view-report-button" class="btn btn-danger mb-3">View Report</button>
          <button id="clear-filter-button" class="btn btn-secondary mb-3" style="margin-left: 10px;">
@@ -499,6 +513,7 @@ gap: 10px;
          </select>
          <input id="name-filter" type="text" class="form-control mb-3" placeholder="Employee Name" style="width: 300px; display: inline-block; margin-right: 10px;">
          <input id="id-filter" type="text" class="form-control mb-3" placeholder="Employee ID" style="width: 300px; display: inline-block;"></div>
+       </div>
        <div class="alert-container">
          <div id="alert-message" class="alert alert-danger" role="alert" style="display: none;">
            Please select a month to view the report.
@@ -516,12 +531,25 @@ gap: 10px;
              <th>Employee ID</th>
              <th>Employee Name</th>
            </tr>
-<br>
             </div>
          </thead>
          <tbody id="muster-roll-body">
          </tbody>
        </table>
+       <div id="pagination-controls" class="pagination-controls">
+        <!-- Pagination buttons will be inserted here -->
+      </div>
+      <div>
+        <br>
+    <hr style="border: 1px solid black;">
+    <p style="font-family:Arial, Helvetica, sans-serif;">
+    <span><b>Note:&nbsp;&nbsp;&nbsp;</b></span>
+    SL = Sick Leave &nbsp;&nbsp;&nbsp; AL = Annual Leave &nbsp;&nbsp;&nbsp;
+    CLL = Continuous Learning Leave &nbsp;&nbsp;&nbsp; HL = Hajj Leave &nbsp;&nbsp;&nbsp;ML = Marriage Leave&nbsp;&nbsp;&nbsp; CL = Compassionate Leave <br>
+    BTL = Business Travel Leave &nbsp;&nbsp;&nbsp;PL = Paternity Leave&nbsp;&nbsp;&nbsp;PESL = Patient Escorting Leave&nbsp;&nbsp;&nbsp;PRL = Parental Leave <br>
+    </p>
+    
+    </div>
      </div>
    </div>
  </div>
@@ -694,76 +722,102 @@ if((day === 0)&& item.Nationalityid ===3){
   }
 }
 
- function renderReport(data) {
-   console.log("Data:", data);
-   if (data.length === 0) {
-     musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
-     return;
-   }
- 
-   musterRollBody.innerHTML = '';
-   headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
- 
-   const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
-   uniqueDates.sort().forEach(date => {
-     const headerCell = document.createElement('th');
-     headerCell.textContent = date;
-     headerCell.classList.add('date-column');
-     headerRow.appendChild(headerCell);
-   });
- 
-data.forEach(employee => {
+let currentPage = 1;
+const recordsPerPage = 10; // You can change this value to adjust the number of records per page
 
-  const row = document.createElement('tr');
-  row.innerHTML = `
-    <td>${employee.emp_id}</td>
-    <td>${employee.emp_name}</td>
-    ${uniqueDates.map(date => {
-      const dateObj = new Date(date); 
-      const dayOfWeek = dateObj.getUTCDay(); // 0 is Sunday, 6 is Saturday 
-      let statusText; 
-      if (statusFilter.value === 'Absent') {
-        if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
-          statusText = 'W'; 
-        } else if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.shifts[date] === 'W') {
-          statusText = 'W'; 
-        } else if (!employee.shifts[date] || employee.shifts[date] === 'W') {
-          statusText = 'Absent';
+function renderReport(data) {
+  console.log("Data:", data);
+  const totalRecords = data.length;
+  const totalPages = Math.ceil(totalRecords / recordsPerPage);
+  
+  if (totalRecords === 0) {
+    musterRollBody.innerHTML = '<tr><td colspan="3">No data found</td></tr>';
+    return;
+  }
+
+  // Pagination: Get the records for the current page
+  const startIndex = (currentPage - 1) * recordsPerPage;
+  const endIndex = startIndex + recordsPerPage;
+  const paginatedData = data.slice(startIndex, endIndex);
+
+  musterRollBody.innerHTML = '';
+  headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
+
+  const uniqueDates = [...new Set(data.flatMap(employee => Object.keys(employee.shifts)))];
+  uniqueDates.sort().forEach(date => {
+    const headerCell = document.createElement('th');
+    headerCell.textContent = date;
+    headerCell.classList.add('date-column');
+    headerRow.appendChild(headerCell);
+  });
+
+  paginatedData.forEach(employee => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${employee.emp_id}</td>
+      <td>${employee.emp_name}</td>
+      ${uniqueDates.map(date => {
+        const dateObj = new Date(date);
+        const dayOfWeek = dateObj.getUTCDay();
+        let statusText;
+        if (statusFilter.value === 'Absent') {
+          if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
+            statusText = 'W';
+          } else if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.shifts[date] === 'W') {
+            statusText = 'W';
+          } else if (!employee.shifts[date] || employee.shifts[date] === 'W') {
+            statusText = 'Absent';
+          } else {
+            statusText = '';
+          }
+        } else if (statusFilter.value === 'Miss Swipe') {
+          if (employee.shifts[date] === 'Miss Swipe') {
+            statusText = 'Miss Swipe';
+          } else if (employee.Nationalityid == 3 && (dayOfWeek === 0 || dayOfWeek === 6)) {
+            statusText = 'W';
+          } else if (employee.Nationalityid !== 3 && dayOfWeek === 6) {
+            statusText = 'W';
+          } else {
+            statusText = '';
+          }
+        } else if (statusFilter.value === 'Present') {
+          if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
+            statusText = 'W';
+          } else if (employee.shifts[date] && employee.shifts[date] !== 'Absent') {
+            statusText = employee.shifts[date] === 'W' ? 'W' : 'Present';
+          } else {
+            statusText = '';
+          }
         } else {
-          statusText = '';
+          if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
+            statusText = 'W';
+          } else {
+            statusText = employee.shifts[date] || 'absent';
+          }
         }
-      } else if (statusFilter.value === 'Miss Swipe') {
-        if (employee.shifts[date] === 'Miss Swipe') {
-          statusText = 'Miss Swipe'; 
-        } else if (employee.Nationalityid == 3 && (dayOfWeek === 0 || dayOfWeek === 6)) {
-          statusText = 'W'; 
-        } else if (employee.Nationalityid !== 3 && dayOfWeek === 6) {
-          statusText = 'W'; 
-        } else {
-          statusText = ''; // Hide absent and other statuses
-        }
-      } else if (statusFilter.value === 'Present') {
-        if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
-          statusText = 'W'; 
-        } else if (employee.shifts[date] && employee.shifts[date] !== 'Absent') {
-          statusText = employee.shifts[date] === 'W' ? 'W' : 'Present'; 
-        } else {
-          statusText = ''; // Hide absent
-        }
-      } else {
-        if ((dayOfWeek === 0 || dayOfWeek === 6) && employee.Nationalityid == 3) {
-          statusText = 'W'; 
-        } else {
-          statusText = employee.shifts[date] || 'absent'; 
-        }
-      }
-      const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
-      return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
-    }).join('')}`
-  ;
-  musterRollBody.appendChild(row);
-});
- }
+        const statusClass = statusText.toLowerCase().replace(/\s+/g, '-');
+        return `<td class="date-column ${statusClass}" style="min-width: 150px;">${statusText}</td>`;
+      }).join('')}`;
+    musterRollBody.appendChild(row);
+  });
+
+  // Pagination controls
+  const paginationControls = document.getElementById('pagination-controls');
+  paginationControls.innerHTML = `
+<button class="btn custom-btn" onclick="changePage(${currentPage - 1})" ${currentPage === totalPages ? 'disabled' : ''}>previous</button>
+<span>Page ${currentPage} of ${totalPages}</span>
+<button class="btn custom-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+
+  `;
+}
+
+function changePage(page) {
+  const totalPages = Math.ceil(reportData.length / recordsPerPage);
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderReport(filterReportData(monthFilter.value, statusFilter.value, nameFilter.value, idFilter.value));
+}
+
     function clearReport() {
       musterRollBody.innerHTML = '';
       headerRow.innerHTML = '<th>Employee ID</th><th>Employee Name</th>';
@@ -845,36 +899,20 @@ function exportToExcel() {
 }
 
 
-
 function exportToPdf() {
   console.log('Generating PDF...');
-  const table = document.querySelector('#muster-roll-table');
-  const pdf = new jspdf.jsPDF();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const pageWidth = pdf.internal.pageSize.getWidth();
-
-  html2canvas(table, {
-    scale: 2, // Increase scale for better quality
-    onrendered: function (canvas) {
+  html2canvas(document.querySelector('#muster-roll-table'), {
+    scale: 4, // increase the scale to make the image larger
+    onrendered: function(canvas) {
+      const pdf = new jspdf.jsPDF();
       const imgData = canvas.toDataURL('image/png');
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let yPosition = 0;
-      while (yPosition < imgHeight) {
-        pdf.addImage(imgData, 'PNG', 0, -yPosition, imgWidth, imgHeight);
-        yPosition += pageHeight;
-        if (yPosition < imgHeight) {
-          pdf.addPage();
-        }
-      }
-
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save('muster_roll.pdf');
-    },
+    }
   });
 }
-
-
 
 
 
