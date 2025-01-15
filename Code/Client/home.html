@@ -722,10 +722,17 @@ function signout() {
 
             const table = document.createElement('table');
             const header = table.insertRow();
-            header.insertCell().innerText = 'EmpID';
-            header.insertCell().innerText = 'FullName';
-            header.insertCell().innerText = 'EmailID';
-            header.insertCell().innerText = 'Attendance Status';
+            const headers = ['EmpID', 'FullName', 'Email-ID', 'Attendance Status'];
+
+headers.forEach(text => {
+    const cell = document.createElement('th');
+    cell.innerText = text;
+    cell.style.backgroundColor = '#943240'; // Set header background color
+    cell.style.color = 'white'; // Set header font color
+    cell.style.padding = '10px'; // Optional: Add some padding for better readability
+    cell.style.textAlign = 'left'; // Optional: Align text to the left
+    header.appendChild(cell);
+});
 
             data.forEach(employee => {
                 const row = table.insertRow();
