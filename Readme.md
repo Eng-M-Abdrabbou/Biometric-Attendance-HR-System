@@ -94,7 +94,7 @@ The main dashboard provides a clear overview of attendance data and system statu
 
 **Attendance Records (Graphical - 1):**
 
-![Attendance Records Graphical 1](/Images/GAR1.PNG)
+![Attendance Records Graphical 1](/Images/GAR1.png)
 
 Graphical representation of attendance trends for easy analysis.
 
