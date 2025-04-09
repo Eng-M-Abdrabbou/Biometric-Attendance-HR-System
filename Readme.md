@@ -124,9 +124,9 @@ The muster roll displays employee attendance records for a specific date.
 ### Author/s:
 
 * Mahmoud Abdrabbou - Software Engineer - [Github(Eng-M-Abdrabbou)](https://github.com/Eng-M-Abdrabbou) - Al Ain University student 202010177
-* Talal Qassim - Software Engineer - [Github()](https://github.com/) - Al Ain University student 202010728 *(Please add the correct GitHub link)*
-* Mohammed Saqib - Software Engineer - [Github()](https://github.com/) - Al Ain University student 202030601 *(Please add the correct GitHub link)*
-* Dina Al Taha - Software Engineer - [Github()](https://github.com/) - Al Ain University student *(Please add the correct GitHub link and student ID if available)*
+* Talal Qassim - Software Engineer - [Github(Talal-q19)](https://github.com/Talal-q19) - Al Ain University student 202010728 
+* Mohammed Saqib - Software Engineer - [Github(Mansoor-98)](https://github.com/Mansoor-98) - Al Ain University student 202030601 
+* Dina Al Taha - Software Engineer - [Github()](https://github.com/) - Al Ain University student
 
 ### Individual Code Ownership License
 
