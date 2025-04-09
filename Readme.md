@@ -78,8 +78,6 @@ The **Biometric Attendance System for Federal Transformers Company LLC Branch 1*
 
 4.  **Usage:**
     * Access the Biometric Attendance System by navigating to `http://localhost:8000` (or the specified port in your Express.js configuration).
-    * Explore the attendance tracking features and personalized recommendations. *(This part seems like a leftover from the previous description and might need adjustment for this project)*
-    * Connect with others, chat with friends, and share your favorite features. *(Again, this might need adjustment as it's a biometric attendance system)*
 
 ## Demo and Screenshots:
 
