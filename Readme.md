@@ -59,7 +59,6 @@ The **Biometric Attendance System for Federal Transformers Company LLC Branch 1*
         git clone [https://github.com/yourusername/biometric-attendance.git](https://github.com/yourusername/biometric-attendance.git)
         cd biometric-attendance
         ```
-        *(Remember to replace `https://github.com/yourusername/biometric-attendance.git` with your actual repository URL)*
     * Install the required Node.js packages:
         ```bash
         npm install
